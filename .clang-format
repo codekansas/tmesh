@@ -1,6 +1,6 @@
 BasedOnStyle: Google
 IndentWidth: 4
-ColumnLimit: 120
+ColumnLimit: 80
 IncludeBlocks: Regroup
-NamespaceIndentation: Inner
+NamespaceIndentation: None
 SortUsingDeclarations: True
