@@ -1,0 +1,5 @@
+# .gitignore
+
+build/
+*.so
+*.py[cio]
