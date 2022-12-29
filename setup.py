@@ -124,7 +124,7 @@ class CMakeBuild(build_ext):
 
         show_and_run(["cmake", ext.sourcedir] + cmake_args)
         show_and_run(["cmake", "--build", "."] + build_args)
-        # show_and_run(["stubgen", "-p", ext.name, "-o", "."])
+        show_and_run(["stubgen", "-p", f"{ext.name}.{ext.name}", "-o", "."])
         # self.write_stub(os.getcwd(), ext)
 
 

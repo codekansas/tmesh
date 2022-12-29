@@ -1,11 +1,18 @@
+"""Tests the CPU trimesh implementation."""
+
 import random
 
-from fast_trimesh import fast_trimesh
+from fast_trimesh.fast_trimesh.cpu import Trimesh
 
 
 def test_simple_trimesh_ops() -> None:
-    tr_a = fast_trimesh.cpu.Trimesh()
-    tr_b = fast_trimesh.cpu.Trimesh()
+    """Tests simple trimesh operations.
+
+    This test creates two trimeshes, adds some random vertices and
+    faces to each, and then tests adding the two trimeshes together.
+    """
+
+    tr_a, tr_b = Trimesh(), Trimesh()
 
     # Add some random vertices.
     for _ in range(10):
