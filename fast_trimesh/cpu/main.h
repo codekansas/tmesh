@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "trimesh.h"
+#include "util.h"
 
 namespace py = pybind11;
 

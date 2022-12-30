@@ -1,0 +1,21 @@
+[tool.black]
+
+line-length = 120
+target-version = ["py310"]
+include = '\.pyi?$'
+
+[tool.isort]
+
+profile = "black"
+known_first_party = ["fast_trimesh", "tests"]
+forced_separate = ["tests"]
+combine_as_imports = true
+
+[tool.pytest.ini_options]
+
+addopts = "-rx -rf -x -q --full-trace"
+testpaths = ["tests"]
+
+markers = [
+    "has_gpu: Marks test as requiring a GPU to run",
+]

@@ -124,8 +124,17 @@ class CMakeBuild(build_ext):
 
         show_and_run(["cmake", ext.sourcedir] + cmake_args)
         show_and_run(["cmake", "--build", "."] + build_args)
-        show_and_run(["stubgen", "-p", f"{ext.name}.{ext.name}", "-o", "."])
-        # self.write_stub(os.getcwd(), ext)
+
+    def run(self) -> None:
+        super().run()
+
+        def gen_stubs(ext: Extension) -> None:
+            cmd = ["stubgen", "-p", f"{ext.name}.{ext.name}", "-o", "."]
+            print(" ".join(cmd))
+            subprocess.run(cmd, check=True)
+
+        for ext in self.extensions:
+            gen_stubs(ext)
 
 
 # The information here can also be placed in setup.cfg - better separation of

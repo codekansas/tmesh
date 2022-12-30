@@ -2,7 +2,7 @@
 
 import random
 
-from fast_trimesh.fast_trimesh.cpu import Trimesh
+from fast_trimesh.fast_trimesh.cpu import Trimesh3D
 
 
 def test_simple_trimesh_ops() -> None:
@@ -12,12 +12,12 @@ def test_simple_trimesh_ops() -> None:
     faces to each, and then tests adding the two trimeshes together.
     """
 
-    tr_a, tr_b = Trimesh(), Trimesh()
+    tr_a, tr_b = Trimesh3D(), Trimesh3D()
 
     # Add some random vertices.
     for _ in range(10):
-        tr_a.add_vertex(random.random(), random.random(), random.random())
-        tr_b.add_vertex(random.random(), random.random(), random.random())
+        tr_a.add_vertex((random.random(), random.random(), random.random()))
+        tr_b.add_vertex((random.random(), random.random(), random.random()))
 
     # Add some random faces.
     for _ in range(10):

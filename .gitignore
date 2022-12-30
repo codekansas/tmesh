@@ -4,4 +4,4 @@ build/
 *.so
 *.py[cio]
 *.egg-info/
-
+.pytest_cache/
