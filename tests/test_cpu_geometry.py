@@ -2,9 +2,7 @@
 
 import pytest
 
-from fast_trimesh.fast_trimesh.cpu import (area, distance, intersection, intersects,
-                                           min_distance, nearest_intersection,
-                                           project)
+import fast_trimesh.fast_trimesh.cpu as trimesh
 
 Point2D = tuple[float, float]
 Point3D = tuple[float, float, float]
@@ -35,7 +33,7 @@ SQRT_3 = 1.7320508075688772
 def test_distance(lhs: Point, rhs: Point, expected: float) -> None:
     """Test distance between two points."""
 
-    assert abs(distance(lhs, rhs) - expected) < 1e-7  # type: ignore[arg-type]
+    assert abs(trimesh.distance(lhs, rhs) - expected) < 1e-7  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize(
@@ -50,7 +48,7 @@ def test_distance(lhs: Point, rhs: Point, expected: float) -> None:
 def test_area_triangle_2d(lhs: Triangle2D, expected: float) -> None:
     """Test area of a triangle in 2D."""
 
-    assert abs(area(lhs) - expected) < 1e-7
+    assert abs(trimesh.area(lhs) - expected) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -63,7 +61,7 @@ def test_area_triangle_2d(lhs: Triangle2D, expected: float) -> None:
 def test_area_triangle_3d(lhs: Triangle3D, expected: float) -> None:
     """Test area of a triangle in 2D."""
 
-    assert abs(area(lhs) - expected) < 1e-7
+    assert abs(trimesh.area(lhs) - expected) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -78,7 +76,7 @@ def test_area_triangle_3d(lhs: Triangle3D, expected: float) -> None:
 def test_project_point_to_line_2d(lhs: Point2D, rhs: Line2D, expected: Point2D | None) -> None:
     """Test projection of a point onto a line in 2D."""
 
-    result = project(lhs, rhs)
+    result = trimesh.project(lhs, rhs)
     if result is None:
         assert expected is None
     else:
@@ -100,7 +98,7 @@ def test_project_point_to_line_2d(lhs: Point2D, rhs: Line2D, expected: Point2D |
 def test_project_point_to_line_3d(lhs: Point3D, rhs: Line3D, expected: Point3D | None) -> None:
     """Test projection of a point onto a line in 3D."""
 
-    result = project(lhs, rhs)
+    result = trimesh.project(lhs, rhs)
     if result is None:
         assert expected is None
     else:
@@ -120,12 +118,12 @@ def test_project_point_to_line_3d(lhs: Point3D, rhs: Line3D, expected: Point3D |
 def test_project_point_to_triangle_3d(lhs: Point3D, rhs: Triangle3D, expected: Point3D | None) -> None:
     """Test projection of a point onto a triangle in 3D."""
 
-    result = project(lhs, rhs)
+    result = trimesh.project(lhs, rhs)
     if result is None:
         assert expected is None
     else:
         assert expected is not None
-        assert abs(distance(result, expected)) < 1e-7
+        assert abs(trimesh.distance(result, expected)) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -141,12 +139,12 @@ def test_project_point_to_triangle_3d(lhs: Point3D, rhs: Triangle3D, expected: P
 def test_line_line_intersection_2d(lhs: Line2D, rhs: Line2D, expected: Point2D | None) -> None:
     """Test intersection of two lines in 2D."""
 
-    result = intersection(lhs, rhs)
+    result = trimesh.intersection(lhs, rhs)
     if result is None:
         assert expected is None
     else:
         assert expected is not None
-        assert abs(distance(result, expected)) < 1e-7
+        assert abs(trimesh.distance(result, expected)) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -160,13 +158,13 @@ def test_line_line_intersection_2d(lhs: Line2D, rhs: Line2D, expected: Point2D |
 def test_line_line_nearest_intersection_3d(lhs: Line3D, rhs: Line3D, expected: tuple[Point3D, Point3D] | None) -> None:
     """Test intersection of two lines in 3D."""
 
-    result = nearest_intersection(lhs, rhs)
+    result = trimesh.nearest_intersection(lhs, rhs)
     if result is None:
         assert expected is None, result
     else:
         assert expected is not None, result
-        assert abs(distance(result[0], expected[0])) < 1e-7
-        assert abs(distance(result[1], expected[1])) < 1e-7
+        assert abs(trimesh.distance(result[0], expected[0])) < 1e-7
+        assert abs(trimesh.distance(result[1], expected[1])) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -180,15 +178,15 @@ def test_line_line_nearest_intersection_3d(lhs: Line3D, rhs: Line3D, expected: t
 def test_line_triangle_intersection_3d(lhs: Line3D, rhs: Triangle3D, expected: Point3D | None) -> None:
     """Test intersection of a line and a triangle in 3D."""
 
-    result = intersection(lhs, rhs)
-    does_intersect = intersects(lhs, rhs)
+    result = trimesh.intersection(lhs, rhs)
+    does_intersect = trimesh.intersects(lhs, rhs)
     assert does_intersect == (result is not None)
 
     if result is None:
         assert expected is None
     else:
         assert expected is not None, result
-        assert abs(distance(result, expected)) < 1e-7
+        assert abs(trimesh.distance(result, expected)) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -203,29 +201,29 @@ def test_line_triangle_intersection_3d(lhs: Line3D, rhs: Triangle3D, expected: P
 def test_point_to_line_2d_min_distance(lhs: Point2D, rhs: Line2D, expected: float) -> None:
     """Test distance between a point and a line in 2D."""
 
-    assert abs(min_distance(lhs, rhs) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
 
 
 @pytest.mark.parametrize(
     "lhs,rhs,expected",
     [
-        # (((0, 0), (1, 0)), ((0, 0), (1, 0)), 0),
-        # (((0, 0), (1, 0)), ((0, 0), (0, 1)), 0),
-        # (((0, 0), (1, 0)), ((1, 0), (2, 0)), 0),
-        # (((0, 0), (1, 0)), ((0, 1), (1, 1)), 1),
+        (((0, 0), (1, 0)), ((0, 0), (1, 0)), 0),
+        (((0, 0), (1, 0)), ((0, 0), (0, 1)), 0),
+        (((0, 0), (1, 0)), ((1, 0), (2, 0)), 0),
+        (((0, 0), (1, 0)), ((0, 1), (1, 1)), 1),
         (((0, 0), (1, 0)), ((0, 1), (0, 2)), 1),
         (((0, 0), (1, 0)), ((0, 2), (0, 3)), 2),
-        # (((0, 0), (0, 1)), ((1, 2), (1, 3)), SQRT_2),
+        (((0, 0), (0, 1)), ((1, 2), (1, 3)), SQRT_2),
     ],
 )
 def test_line_to_line_2d_min_distance(lhs: Line2D, rhs: Line2D, expected: float) -> None:
     """Tests minimum distances between two lines in 2D."""
 
-    assert abs(min_distance(lhs, rhs) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
-    assert abs(min_distance((lhs[1], lhs[0]), rhs) - expected) < 1e-7
-    assert abs(min_distance((lhs[1], lhs[0]), (rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance((lhs[1], lhs[0]), rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance((lhs[1], lhs[0]), (rhs[1], rhs[0])) - expected) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -243,9 +241,9 @@ def test_line_to_line_2d_min_distance(lhs: Line2D, rhs: Line2D, expected: float)
 def test_point_to_triangle_2d_min_distance(lhs: Point2D, rhs: Triangle2D, expected: float) -> None:
     """Tests minimum distances between a point and a triangle in 2D."""
 
-    assert abs(min_distance(lhs, rhs) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[2], rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[2], rhs[1], rhs[0])) - expected) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -261,12 +259,12 @@ def test_point_to_triangle_2d_min_distance(lhs: Point2D, rhs: Triangle2D, expect
 def test_line_to_triangle_2d_min_distance(lhs: Line2D, rhs: Triangle2D, expected: float) -> None:
     """Tests minimum distances between a line and a triangle in 2D."""
 
-    assert abs(min_distance(lhs, rhs) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[2], rhs[1], rhs[0])) - expected) < 1e-7
-    assert abs(min_distance((lhs[1], lhs[0]), rhs) - expected) < 1e-7
-    assert abs(min_distance((lhs[1], lhs[0]), (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
-    assert abs(min_distance((lhs[1], lhs[0]), (rhs[2], rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[2], rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance((lhs[1], lhs[0]), rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance((lhs[1], lhs[0]), (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance((lhs[1], lhs[0]), (rhs[2], rhs[1], rhs[0])) - expected) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -283,8 +281,8 @@ def test_line_to_triangle_2d_min_distance(lhs: Line2D, rhs: Triangle2D, expected
 def test_point_to_line_3d_min_distance(lhs: Point3D, rhs: Line3D, expected: float) -> None:
     """Test distance between a point and a line."""
 
-    assert abs(min_distance(lhs, rhs) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -301,10 +299,10 @@ def test_point_to_line_3d_min_distance(lhs: Point3D, rhs: Line3D, expected: floa
 def test_line_to_line_3d_min_distance(lhs: Line3D, rhs: Line3D, expected: float) -> None:
     """Test distance between a line and a line."""
 
-    assert abs(min_distance(lhs, rhs) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
-    assert abs(min_distance((lhs[1], lhs[0]), rhs) - expected) < 1e-7
-    assert abs(min_distance((lhs[1], lhs[0]), (rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance((lhs[1], lhs[0]), rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance((lhs[1], lhs[0]), (rhs[1], rhs[0])) - expected) < 1e-7
 
 
 @pytest.mark.parametrize(
@@ -319,6 +317,6 @@ def test_line_to_line_3d_min_distance(lhs: Line3D, rhs: Line3D, expected: float)
 def test_point_to_triangle_3d_min_distance(lhs: Point3D, rhs: Triangle3D, expected: float) -> None:
     """Tests minimum distances between a point and a triangle in 3D."""
 
-    assert abs(min_distance(lhs, rhs) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
-    assert abs(min_distance(lhs, (rhs[2], rhs[1], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
+    assert abs(trimesh.min_distance(lhs, (rhs[2], rhs[1], rhs[0])) - expected) < 1e-7
