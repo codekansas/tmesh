@@ -4,6 +4,7 @@
 #include <pybind11/stl.h>
 
 #include "trimesh.h"
+#include "util.h"
 
 namespace py = pybind11;
 
@@ -13,7 +14,7 @@ namespace triangulate {
 
 class Polygon {
    private:
-    std::vector<std::tuple<float, float>> vertices;
+    std::vector<util::Point2D> vertices;
 
    public:
     Polygon() = default;
@@ -22,7 +23,8 @@ class Polygon {
     void add_vertex(float x, float y) {
         vertices.push_back(std::make_tuple(x, y));
     }
-    std::vector<std::tuple<float, float>> get_vertices() { return vertices; }
+    std::vector<util::Point2D> get_vertices() { return vertices; }
+    trimesh::Trimesh<util::Point2D> triangulate();
 };
 
 void add_modules(py::module &m);

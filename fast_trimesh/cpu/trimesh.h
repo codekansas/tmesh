@@ -6,6 +6,8 @@
 #include <tuple>
 #include <vector>
 
+#include "util.h"
+
 namespace py = pybind11;
 
 namespace fast_trimesh {

@@ -6,8 +6,8 @@ namespace fast_trimesh {
 namespace cpu {
 namespace trimesh {
 
-using Trimesh2D = Trimesh<std::tuple<float, float>>;
-using Trimesh3D = Trimesh<std::tuple<float, float, float>>;
+using Trimesh2D = Trimesh<util::Point2D>;
+using Trimesh3D = Trimesh<util::Point3D>;
 
 void add_modules(py::module &m) {
     // 2D trimesh.

@@ -377,6 +377,12 @@ std::optional<std::tuple<Point3D, Point3D>> nearest_points(const Line3D &l1,
     return std::make_tuple(c1, c2);
 }
 
+bool is_inside(const Point2D &p, const Triangle2D &t) {
+    float a1, a2, a3;
+    std::tie(a1, a2, a3) = barycentric_coordinates(p, t);
+    return (a1 >= 0 && a2 >= 0 && a3 >= 0);
+}
+
 float min_distance(const Point2D &p, const Line2D &l) {
     // Unpacks the points.
     Point2D p1, p2;
@@ -420,12 +426,7 @@ float min_distance(const Line2D &l1, const Line2D &l2) {
 }
 
 float min_distance(const Point2D &p, const Triangle2D &t) {
-    // Check if the point is inside the triangle.
-    float a1, a2, a3;
-    std::tie(a1, a2, a3) = barycentric_coordinates(p, t);
-    if (a1 >= 0 && a2 >= 0 && a3 >= 0) {
-        return 0;
-    }
+    if (is_inside(p, t)) return 0.0;
 
     // Unpacks the triangle.
     Point2D l1, l2, l3;
@@ -445,14 +446,28 @@ float min_distance(const Point2D &p, const Triangle2D &t) {
 }
 
 float min_distance(const Line2D &l, const Triangle2D &t) {
+    // Unpacks the line.
+    Point2D p1, p2;
+    std::tie(p1, p2) = l;
+
     // Unpacks the triangle.
-    Point2D p1, p2, p3;
-    std::tie(p1, p2, p3) = t;
+    Point2D p3, p4, p5;
+    std::tie(p3, p4, p5) = t;
+
+    // If any of the line's endpoints are inside the triangle, returns zero.
+    if (is_inside(p1, t) || is_inside(p2, t)) return 0.0;
 
     // Minimum distance from the line to the triangle is the minimum
-    // distance from the line to any of the triangle's edges.
-    return std::min({min_distance(l, {p1, p2}), min_distance(l, {p2, p3}),
-                     min_distance(l, {p3, p1})});
+    // distance from the line to any of the triangle's edges, or the
+    // minimum distance from any of the triangle's vertices to the line.
+    return std::min({
+        min_distance(l, {p3, p4}),
+        min_distance(l, {p4, p5}),
+        min_distance(l, {p5, p3}),
+        min_distance(p3, l),
+        min_distance(p4, l),
+        min_distance(p5, l),
+    });
 }
 
 float min_distance(const Point3D &p, const Line3D &l) {
