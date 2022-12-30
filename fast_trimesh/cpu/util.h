@@ -23,11 +23,13 @@ Point2D operator-(const Point2D &p1, const Point2D &p2);
 Point2D operator-(const Point2D &p);
 Point2D operator*(const Point2D &p1, const Point2D &p2);
 Point2D operator*(const Point2D &p, float s);
+Point2D operator/(const Point2D &p, float s);
 Point3D operator+(const Point3D &p1, const Point3D &p2);
 Point3D operator-(const Point3D &p1, const Point3D &p2);
 Point3D operator-(const Point3D &p);
 Point3D operator*(const Point3D &p1, const Point3D &p2);
 Point3D operator*(const Point3D &p, float s);
+Point3D operator/(const Point3D &p, float s);
 
 // Vector products.
 float dot_product(const Point2D &p1, const Point2D &p2);
@@ -51,6 +53,9 @@ float distance(const Point3D &p1, const Point3D &p2);
 // Area functions.
 float area(const Triangle2D &t);
 float area(const Triangle3D &t);
+
+// Barycentric coordinate functions.
+Point3D barycentric_coordinates(const Point2D &p, const Triangle2D &t);
 
 // Projection functions.
 std::optional<Point2D> project(const Point2D &p, const Line2D &l);

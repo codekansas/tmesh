@@ -31,6 +31,10 @@ Point2D operator*(const Point2D &p, float s) {
     return {std::get<0>(p) * s, std::get<1>(p) * s};
 }
 
+Point2D operator/(const Point2D &p, float s) {
+    return {std::get<0>(p) / s, std::get<1>(p) / s};
+}
+
 Point3D operator+(const Point3D &p1, const Point3D &p2) {
     return {std::get<0>(p1) + std::get<0>(p2),
             std::get<1>(p1) + std::get<1>(p2),
@@ -55,6 +59,10 @@ Point3D operator*(const Point3D &p1, const Point3D &p2) {
 
 Point3D operator*(const Point3D &p, float s) {
     return {std::get<0>(p) * s, std::get<1>(p) * s, std::get<2>(p) * s};
+}
+
+Point3D operator/(const Point3D &p, float s) {
+    return {std::get<0>(p) / s, std::get<1>(p) / s, std::get<2>(p) / s};
 }
 
 float dot_product(const Point2D &p1, const Point2D &p2) {
@@ -128,13 +136,32 @@ float area(const Triangle2D &t) {
 float area(const Triangle3D &t) {
     Point3D p1, p2, p3;
     std::tie(p1, p2, p3) = t;
-    return 0.5 *
-           distance(util::cross_product({std::get<0>(p2) - std::get<0>(p1),
+    return 0.5 * distance(cross_product({std::get<0>(p2) - std::get<0>(p1),
                                          std::get<1>(p2) - std::get<1>(p1),
                                          std::get<2>(p2) - std::get<2>(p1)},
                                         {std::get<0>(p3) - std::get<0>(p1),
                                          std::get<1>(p3) - std::get<1>(p1),
                                          std::get<2>(p3) - std::get<2>(p1)}));
+}
+
+Point3D barycentric_coordinates(const Point2D &p, const Triangle2D &t) {
+    Point2D l1, l2, l3;
+    std::tie(l1, l2, l3) = t;
+
+    // Unpacks the points.
+    float x0, y0, x1, y1, x2, y2, x3, y3;
+    std::tie(x0, y0) = p;
+    std::tie(x1, y1) = l1;
+    std::tie(x2, y2) = l2;
+    std::tie(x3, y3) = l3;
+
+    // Computes the barycentric coordinates.
+    float a = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
+    float a1 = ((x2 - x0) * (y3 - y0) - (x3 - x0) * (y2 - y0)) / a;
+    float a2 = ((x3 - x0) * (y1 - y0) - (x1 - x0) * (y3 - y0)) / a;
+    float a3 = ((x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)) / a;
+
+    return {a1, a2, a3};
 }
 
 std::optional<Point2D> project(const Point2D &p, const Line2D &l) {
@@ -268,7 +295,7 @@ std::optional<Point3D> intersection(const Line3D &l1, const Line3D &l2) {
     if (distance(p1, p2) > EPSILON) return std::nullopt;
 
     // Otherwise, returns the intersection point.
-    return p1 + (p2 - p1) * 0.5;
+    return p1 + (p2 - p1) / 2.0;
 }
 
 bool intersects(const Line3D &l, const Triangle3D &tr) {
@@ -393,6 +420,13 @@ float min_distance(const Line2D &l1, const Line2D &l2) {
 }
 
 float min_distance(const Point2D &p, const Triangle2D &t) {
+    // Check if the point is inside the triangle.
+    float a1, a2, a3;
+    std::tie(a1, a2, a3) = barycentric_coordinates(p, t);
+    if (a1 >= 0 && a2 >= 0 && a3 >= 0) {
+        return 0;
+    }
+
     // Unpacks the triangle.
     Point2D l1, l2, l3;
     std::tie(l1, l2, l3) = t;
@@ -404,19 +438,8 @@ float min_distance(const Point2D &p, const Triangle2D &t) {
     std::tie(x2, y2) = l2;
     std::tie(x3, y3) = l3;
 
-    // Computes the distances.
+    // Computes the distances from the point to each edge.
     float d1 = distance(p, l1), d2 = distance(p, l2), d3 = distance(p, l3);
-
-    // Computes the barycentric coordinates.
-    float a = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
-    float a1 = ((x2 - x0) * (y3 - y0) - (x3 - x0) * (y2 - y0)) / a;
-    float a2 = ((x3 - x0) * (y1 - y0) - (x1 - x0) * (y3 - y0)) / a;
-    float a3 = ((x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)) / a;
-
-    // Checks if the point is inside the triangle.
-    if (a1 >= 0 && a2 >= 0 && a3 >= 0) {
-        return 0;
-    }
 
     return std::min({d1, d2, d3});
 }
@@ -531,6 +554,12 @@ void add_modules(py::module &m) {
     // Area functions.
     m.def("area", py::overload_cast<const Triangle2D &>(&area), "t"_a);
     m.def("area", py::overload_cast<const Triangle3D &>(&area), "t"_a);
+
+    // Barycentric coordinate functions.
+    m.def("barycentric_coordinates",
+          py::overload_cast<const Point2D &, const Triangle2D &>(
+              &barycentric_coordinates),
+          "p"_a, "t"_a);
 
     // Projection functions.
     m.def("project",
