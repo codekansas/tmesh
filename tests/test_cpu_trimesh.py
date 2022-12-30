@@ -29,6 +29,7 @@ def test_simple_trimesh_ops() -> None:
     assert len(tr_c.vertices) == 20
     assert len(tr_c.faces) == 20
 
+    # Tests adding the two trimeshes together in-place.
     tr_a += tr_b
     assert len(tr_a.vertices) == 20
     assert len(tr_a.faces) == 20

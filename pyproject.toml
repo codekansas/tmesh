@@ -13,7 +13,7 @@ combine_as_imports = true
 
 [tool.pytest.ini_options]
 
-addopts = "-rx -rf -x -q --full-trace"
+# addopts = "-rx -rf -x -q --full-trace"
 testpaths = ["tests"]
 
 markers = [

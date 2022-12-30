@@ -31,7 +31,13 @@ SQRT_3 = 1.7320508075688772
     ],
 )
 def test_distance(lhs: Point, rhs: Point, expected: float) -> None:
-    """Test distance between two points."""
+    """Test distance between two points.
+
+    Args:
+        lhs: The first point.
+        rhs: The second point.
+        expected: The expected distance.
+    """
 
     assert abs(trimesh.distance(lhs, rhs) - expected) < 1e-7  # type: ignore[arg-type]
 
@@ -46,7 +52,12 @@ def test_distance(lhs: Point, rhs: Point, expected: float) -> None:
     ],
 )
 def test_area_triangle_2d(lhs: Triangle2D, expected: float) -> None:
-    """Test area of a triangle in 2D."""
+    """Test area of a triangle in 2D.
+
+    Args:
+        lhs: The triangle.
+        expected: The expected area.
+    """
 
     assert abs(trimesh.area(lhs) - expected) < 1e-7
 
@@ -59,7 +70,12 @@ def test_area_triangle_2d(lhs: Triangle2D, expected: float) -> None:
     ],
 )
 def test_area_triangle_3d(lhs: Triangle3D, expected: float) -> None:
-    """Test area of a triangle in 2D."""
+    """Test area of a triangle in 2D.
+
+    Args:
+        lhs: The triangle.
+        expected: The expected area.
+    """
 
     assert abs(trimesh.area(lhs) - expected) < 1e-7
 
@@ -74,7 +90,13 @@ def test_area_triangle_3d(lhs: Triangle3D, expected: float) -> None:
     ],
 )
 def test_project_point_to_line_2d(lhs: Point2D, rhs: Line2D, expected: Point2D | None) -> None:
-    """Test projection of a point onto a line in 2D."""
+    """Test projection of a point onto a line in 2D.
+
+    Args:
+        lhs: The point.
+        rhs: The line.
+        expected: The expected projection.
+    """
 
     result = trimesh.project(lhs, rhs)
     if result is None:
@@ -96,7 +118,13 @@ def test_project_point_to_line_2d(lhs: Point2D, rhs: Line2D, expected: Point2D |
     ],
 )
 def test_project_point_to_line_3d(lhs: Point3D, rhs: Line3D, expected: Point3D | None) -> None:
-    """Test projection of a point onto a line in 3D."""
+    """Test projection of a point onto a line in 3D.
+
+    Args:
+        lhs: The point.
+        rhs: The line.
+        expected: The expected projection.
+    """
 
     result = trimesh.project(lhs, rhs)
     if result is None:
@@ -116,7 +144,13 @@ def test_project_point_to_line_3d(lhs: Point3D, rhs: Line3D, expected: Point3D |
     ],
 )
 def test_project_point_to_triangle_3d(lhs: Point3D, rhs: Triangle3D, expected: Point3D | None) -> None:
-    """Test projection of a point onto a triangle in 3D."""
+    """Test projection of a point onto a triangle in 3D.
+
+    Args:
+        lhs: The point.
+        rhs: The triangle.
+        expected: The expected projection.
+    """
 
     result = trimesh.project(lhs, rhs)
     if result is None:
@@ -137,7 +171,13 @@ def test_project_point_to_triangle_3d(lhs: Point3D, rhs: Triangle3D, expected: P
     ],
 )
 def test_line_line_intersection_2d(lhs: Line2D, rhs: Line2D, expected: Point2D | None) -> None:
-    """Test intersection of two lines in 2D."""
+    """Test intersection of two lines in 2D.
+
+    Args:
+        lhs: The first line.
+        rhs: The second line.
+        expected: The expected intersection.
+    """
 
     result = trimesh.intersection(lhs, rhs)
     if result is None:
@@ -156,7 +196,13 @@ def test_line_line_intersection_2d(lhs: Line2D, rhs: Line2D, expected: Point2D |
     ],
 )
 def test_line_line_nearest_points_3d(lhs: Line3D, rhs: Line3D, expected: tuple[Point3D, Point3D] | None) -> None:
-    """Test intersection of two lines in 3D."""
+    """Test intersection of two lines in 3D.
+
+    Args:
+        lhs: The first line.
+        rhs: The second line.
+        expected: The expected intersection.
+    """
 
     result = trimesh.nearest_points(lhs, rhs)
     if result is None:
@@ -176,7 +222,13 @@ def test_line_line_nearest_points_3d(lhs: Line3D, rhs: Line3D, expected: tuple[P
     ],
 )
 def test_line_triangle_intersection_3d(lhs: Line3D, rhs: Triangle3D, expected: Point3D | None) -> None:
-    """Test intersection of a line and a triangle in 3D."""
+    """Test intersection of a line and a triangle in 3D.
+
+    Args:
+        lhs: The line.
+        rhs: The triangle.
+        expected: The expected intersection.
+    """
 
     result = trimesh.intersection(lhs, rhs)
     does_intersect = trimesh.intersects(lhs, rhs)
@@ -199,7 +251,13 @@ def test_line_triangle_intersection_3d(lhs: Line3D, rhs: Triangle3D, expected: P
     ],
 )
 def test_point_to_line_2d_min_distance(lhs: Point2D, rhs: Line2D, expected: float) -> None:
-    """Test distance between a point and a line in 2D."""
+    """Test distance between a point and a line in 2D.
+
+    Args:
+        lhs: The point.
+        rhs: The line.
+        expected: The expected distance.
+    """
 
     assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
     assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
@@ -218,7 +276,13 @@ def test_point_to_line_2d_min_distance(lhs: Point2D, rhs: Line2D, expected: floa
     ],
 )
 def test_line_to_line_2d_min_distance(lhs: Line2D, rhs: Line2D, expected: float) -> None:
-    """Tests minimum distances between two lines in 2D."""
+    """Tests minimum distances between two lines in 2D.
+
+    Args:
+        lhs: The first line.
+        rhs: The second line.
+        expected: The expected minimum distance.
+    """
 
     assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
     assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
@@ -239,7 +303,13 @@ def test_line_to_line_2d_min_distance(lhs: Line2D, rhs: Line2D, expected: float)
     ],
 )
 def test_point_to_triangle_2d_min_distance(lhs: Point2D, rhs: Triangle2D, expected: float) -> None:
-    """Tests minimum distances between a point and a triangle in 2D."""
+    """Tests minimum distances between a point and a triangle in 2D.
+
+    Args:
+        lhs: The point.
+        rhs: The triangle.
+        expected: The expected minimum distance.
+    """
 
     assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
     assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
@@ -257,7 +327,13 @@ def test_point_to_triangle_2d_min_distance(lhs: Point2D, rhs: Triangle2D, expect
     ],
 )
 def test_line_to_triangle_2d_min_distance(lhs: Line2D, rhs: Triangle2D, expected: float) -> None:
-    """Tests minimum distances between a line and a triangle in 2D."""
+    """Tests minimum distances between a line and a triangle in 2D.
+
+    Args:
+        lhs: The line.
+        rhs: The triangle.
+        expected: The expected minimum distance.
+    """
 
     assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
     assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7
@@ -279,7 +355,13 @@ def test_line_to_triangle_2d_min_distance(lhs: Line2D, rhs: Triangle2D, expected
     ],
 )
 def test_point_to_line_3d_min_distance(lhs: Point3D, rhs: Line3D, expected: float) -> None:
-    """Test distance between a point and a line."""
+    """Test distance between a point and a line.
+
+    Args:
+        lhs: The point.
+        rhs: The line.
+        expected: The expected minimum distance.
+    """
 
     assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
     assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
@@ -297,7 +379,13 @@ def test_point_to_line_3d_min_distance(lhs: Point3D, rhs: Line3D, expected: floa
     ],
 )
 def test_line_to_line_3d_min_distance(lhs: Line3D, rhs: Line3D, expected: float) -> None:
-    """Test distance between a line and a line."""
+    """Test distance between a line and a line.
+
+    Args:
+        lhs: The line.
+        rhs: The line.
+        expected: The expected minimum distance.
+    """
 
     assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
     assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[0])) - expected) < 1e-7
@@ -315,7 +403,13 @@ def test_line_to_line_3d_min_distance(lhs: Line3D, rhs: Line3D, expected: float)
     ],
 )
 def test_point_to_triangle_3d_min_distance(lhs: Point3D, rhs: Triangle3D, expected: float) -> None:
-    """Tests minimum distances between a point and a triangle in 3D."""
+    """Tests minimum distances between a point and a triangle in 3D.
+
+    Args:
+        lhs: The point.
+        rhs: The triangle.
+        expected: The expected minimum distance.
+    """
 
     assert abs(trimesh.min_distance(lhs, rhs) - expected) < 1e-7
     assert abs(trimesh.min_distance(lhs, (rhs[1], rhs[2], rhs[0])) - expected) < 1e-7

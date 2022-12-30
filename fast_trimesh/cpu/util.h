@@ -13,18 +13,21 @@ namespace util {
 using Point2D = std::tuple<float, float>;
 using Line2D = std::tuple<Point2D, Point2D>;
 using Triangle2D = std::tuple<Point2D, Point2D, Point2D>;
+using Polygon2D = std::vector<Point2D>;
 using Point3D = std::tuple<float, float, float>;
 using Line3D = std::tuple<Point3D, Point3D>;
 using Triangle3D = std::tuple<Point3D, Point3D, Point3D>;
 
 // Vector operations.
 Point2D operator+(const Point2D &p1, const Point2D &p2);
+void operator+=(Point2D &p1, const Point2D &p2);
 Point2D operator-(const Point2D &p1, const Point2D &p2);
 Point2D operator-(const Point2D &p);
 Point2D operator*(const Point2D &p1, const Point2D &p2);
 Point2D operator*(const Point2D &p, float s);
 Point2D operator/(const Point2D &p, float s);
 Point3D operator+(const Point3D &p1, const Point3D &p2);
+void operator+=(Point3D &p1, const Point3D &p2);
 Point3D operator-(const Point3D &p1, const Point3D &p2);
 Point3D operator-(const Point3D &p);
 Point3D operator*(const Point3D &p1, const Point3D &p2);
@@ -34,7 +37,21 @@ Point3D operator/(const Point3D &p, float s);
 // Vector products.
 float dot_product(const Point2D &p1, const Point2D &p2);
 float dot_product(const Point3D &p1, const Point3D &p2);
+float cross_product(const Point2D &p1, const Point2D &p2);
 Point3D cross_product(const Point3D &p1, const Point3D &p2);
+
+// Orientation.
+float signed_angle(const Point2D &p1, const Point2D &p2, const Point2D &p3);
+float angle(const Point2D &p1, const Point2D &p2, const Point2D &p3);
+float angle(const Point3D &p1, const Point3D &p2, const Point3D &p3);
+float angle_sum(const Polygon2D &p);
+
+// Angle convexity.
+bool is_convex(const Point2D &p1, const Point2D &p2, const Point2D &p3);
+
+// Signed area.
+float signed_area(const Polygon2D &p);
+bool is_clockwise(const Polygon2D &p);
 
 // Signed volume.
 float signed_volume(const Point3D &p1, const Point3D &p2, const Point3D &p3,
@@ -53,6 +70,10 @@ float distance(const Point3D &p1, const Point3D &p2);
 // Area functions.
 float area(const Triangle2D &t);
 float area(const Triangle3D &t);
+
+// Get center point.
+Point2D center(const std::vector<Point2D> &p);
+Point3D center(const std::vector<Point3D> &p);
 
 // Barycentric coordinate functions.
 Point3D barycentric_coordinates(const Point2D &p, const Triangle2D &t);

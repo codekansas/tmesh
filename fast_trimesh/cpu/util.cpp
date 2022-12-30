@@ -13,6 +13,11 @@ Point2D operator+(const Point2D &p1, const Point2D &p2) {
             std::get<1>(p1) + std::get<1>(p2)};
 }
 
+void operator+=(Point2D &p1, const Point2D &p2) {
+    std::get<0>(p1) += std::get<0>(p2);
+    std::get<1>(p1) += std::get<1>(p2);
+}
+
 Point2D operator-(const Point2D &p1, const Point2D &p2) {
     return {std::get<0>(p1) - std::get<0>(p2),
             std::get<1>(p1) - std::get<1>(p2)};
@@ -39,6 +44,12 @@ Point3D operator+(const Point3D &p1, const Point3D &p2) {
     return {std::get<0>(p1) + std::get<0>(p2),
             std::get<1>(p1) + std::get<1>(p2),
             std::get<2>(p1) + std::get<2>(p2)};
+}
+
+void operator+=(Point3D &p1, const Point3D &p2) {
+    std::get<0>(p1) += std::get<0>(p2);
+    std::get<1>(p1) += std::get<1>(p2);
+    std::get<2>(p1) += std::get<2>(p2);
 }
 
 Point3D operator-(const Point3D &p1, const Point3D &p2) {
@@ -76,12 +87,67 @@ float dot_product(const Point3D &p1, const Point3D &p2) {
            std::get<2>(p1) * std::get<2>(p2);
 }
 
+float cross_product(const Point2D &p1, const Point2D &p2) {
+    return std::get<0>(p1) * std::get<1>(p2) -
+           std::get<1>(p1) * std::get<0>(p2);
+}
+
 Point3D cross_product(const Point3D &p1, const Point3D &p2) {
     return {
         std::get<1>(p1) * std::get<2>(p2) - std::get<2>(p1) * std::get<1>(p2),
         std::get<2>(p1) * std::get<0>(p2) - std::get<0>(p1) * std::get<2>(p2),
         std::get<0>(p1) * std::get<1>(p2) - std::get<1>(p1) * std::get<0>(p2)};
 }
+
+float signed_angle(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
+    float angle = std::atan2(cross_product(p2 - p1, p2 - p3),
+                             dot_product(p2 - p1, p2 - p3));
+    return angle;
+}
+
+float angle(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
+    float cos_angle = dot_product(p2 - p1, p2 - p3) /
+                      std::sqrt(dot_product(p2 - p1, p2 - p1) *
+                                dot_product(p2 - p3, p2 - p3));
+    return std::acos(cos_angle);
+}
+
+float angle(const Point3D &p1, const Point3D &p2, const Point3D &p3) {
+    float cos_angle = dot_product(p2 - p1, p2 - p3) /
+                      std::sqrt(dot_product(p2 - p1, p2 - p1) *
+                                dot_product(p2 - p3, p2 - p3));
+    return std::acos(cos_angle);
+}
+
+float angle_sum(const Polygon2D &p) {
+    int n = p.size();
+    float sum = 0;
+    for (int j = 0; j < n; j++) {
+        int i = (j + n - 1) % n, k = (j + 1) % n;
+        sum += signed_angle(p[i], p[j], p[k]);
+    }
+    return sum;
+}
+
+bool is_convex(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
+    // Equivalent to angle(p1, p2, p3) < 0, meaning that a convex polygon
+    // is traversed in counter-clockwise order.
+    return determinant(p2 - p1, p3 - p1) > 0;
+}
+
+float signed_area(const Polygon2D &p) {
+    int n = p.size();
+    float area = 0;
+    for (int j = 0; j < n; j++) {
+        int i = (j + n - 1) % n;
+        float x1 = std::get<0>(p[i]), y1 = std::get<1>(p[i]),
+              x2 = std::get<0>(p[j]), y2 = std::get<1>(p[j]);
+        area += (x2 - x1) * (y2 + y1);
+    }
+    return area / 2;
+}
+
+bool is_clockwise(const Polygon2D &p) { return signed_area(p) > 0; }
 
 float signed_volume(const Point3D &p1, const Point3D &p2, const Point3D &p3,
                     const Point3D &p4) {
@@ -142,6 +208,20 @@ float area(const Triangle3D &t) {
                                         {std::get<0>(p3) - std::get<0>(p1),
                                          std::get<1>(p3) - std::get<1>(p1),
                                          std::get<2>(p3) - std::get<2>(p1)}));
+}
+
+Point2D center(const std::vector<Point2D> &p) {
+    Point2D c = {0, 0};
+    if (p.size() == 0) return c;
+    for (const auto &p : p) c += p;
+    return c / p.size();
+}
+
+Point3D center(const std::vector<Point3D> &p) {
+    Point3D c = {0, 0, 0};
+    if (p.size() == 0) return c;
+    for (const auto &p : p) c += p;
+    return c / p.size();
 }
 
 Point3D barycentric_coordinates(const Point2D &p, const Triangle2D &t) {
@@ -539,7 +619,37 @@ void add_modules(py::module &m) {
     m.def("dot_product",
           py::overload_cast<const Point3D &, const Point3D &>(&dot_product),
           "p1"_a, "p2"_a);
-    m.def("cross_product", &cross_product, "p1"_a, "p2"_a);
+    m.def("cross_product",
+          py::overload_cast<const Point2D &, const Point2D &>(&cross_product),
+          "p1"_a, "p2"_a);
+    m.def("cross_product",
+          py::overload_cast<const Point3D &, const Point3D &>(&cross_product),
+          "p1"_a, "p2"_a);
+
+    // Orientation.
+    m.def("signed_angle",
+          py::overload_cast<const Point2D &, const Point2D &, const Point2D &>(
+              &signed_angle),
+          "p1"_a, "p2"_a, "p3"_a);
+    m.def("angle",
+          py::overload_cast<const Point2D &, const Point2D &, const Point2D &>(
+              &angle),
+          "p1"_a, "p2"_a, "p3"_a);
+    m.def("angle",
+          py::overload_cast<const Point3D &, const Point3D &, const Point3D &>(
+              &angle),
+          "p1"_a, "p2"_a, "p3"_a);
+    m.def("angle_sum", &angle_sum, "p"_a);
+
+    // Angle convexity.
+    m.def("is_convex",
+          py::overload_cast<const Point2D &, const Point2D &, const Point2D &>(
+              &is_convex),
+          "p1"_a, "p2"_a, "p3"_a);
+
+    // Signed area.
+    m.def("signed_area", &signed_area, "p"_a);
+    m.def("is_clockwise", &is_clockwise, "p"_a);
 
     // Signed volume.
     m.def("signed_volume",
@@ -569,6 +679,12 @@ void add_modules(py::module &m) {
     // Area functions.
     m.def("area", py::overload_cast<const Triangle2D &>(&area), "t"_a);
     m.def("area", py::overload_cast<const Triangle3D &>(&area), "t"_a);
+
+    // Get center point.
+    m.def("center", py::overload_cast<const std::vector<Point2D> &>(&center),
+          "p"_a);
+    m.def("center", py::overload_cast<const std::vector<Point3D> &>(&center),
+          "p"_a);
 
     // Barycentric coordinate functions.
     m.def("barycentric_coordinates",

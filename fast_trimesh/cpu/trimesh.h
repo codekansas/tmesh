@@ -3,6 +3,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <numeric>
 #include <tuple>
 #include <vector>
 
@@ -31,6 +32,10 @@ class Trimesh {
     }
     std::vector<T> get_vertices() { return vertices; }
     std::vector<std::tuple<int, int, int>> get_faces() { return faces; }
+    T get_vertex(int i) { return vertices[i]; }
+    std::tuple<int, int, int> get_face(int i) { return faces[i]; }
+    int num_vertices() { return vertices.size(); }
+    int num_faces() { return faces.size(); }
 
     // Boolean operators
     Trimesh operator+(const Trimesh &other) {
@@ -61,6 +66,11 @@ class Trimesh {
         return *this;
     }
 };
+
+using Trimesh2D = Trimesh<util::Point2D>;
+using Trimesh3D = Trimesh<util::Point3D>;
+
+Trimesh2D triangulate(const util::Polygon2D &polygon, bool is_convex = false);
 
 void add_modules(py::module &m);
 

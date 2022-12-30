@@ -5,7 +5,6 @@
 
 #include <vector>
 
-#include "triangulate.h"
 #include "trimesh.h"
 #include "util.h"
 

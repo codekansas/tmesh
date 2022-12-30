@@ -8,7 +8,6 @@ void add_modules(py::module &m) {
 
     s.doc() = "CPU backend";
 
-    triangulate::add_modules(s);
     trimesh::add_modules(s);
     util::add_modules(s);
 }
