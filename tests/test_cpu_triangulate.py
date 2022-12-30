@@ -7,7 +7,6 @@ import pytest
 
 from fast_trimesh.fast_trimesh.cpu import (
     angle,
-    angle_sum,
     is_clockwise,
     is_convex,
     signed_angle,
@@ -74,30 +73,14 @@ def test_angles_3d(points: Angle3D, expected: float) -> None:
         ([(0, 0), (1, 0), (1, 1), (0, 1), (0.1, 0.9), (0.1, 0.1)], 1.0 - 0.09, False),
     ],
 )
-def test_angle_sum(vertices: list[Point2D], area: float, clockwise: bool) -> None:
-    """Tests the angle sum calculation.
+def test_signed_area(vertices: list[Point2D], area: float, clockwise: bool) -> None:
+    """Tests the signed area calculation.
 
     Args:
         vertices: The vertices of the polygon.
         area: The area of the polygon.
         clockwise: Whether the polygon is clockwise.
     """
-
-    angles = []
-    for j, vert_j in enumerate(vertices):
-        i, k = (j - 1) % len(vertices), (j + 1) % len(vertices)
-        vert_i, vert_k = vertices[i], vertices[k]
-        ang = signed_angle(vert_i, vert_j, vert_k)
-        angles.append(ang)
-        assert is_convex(vert_i, vert_j, vert_k) == (ang < 0), (vert_i, vert_j, vert_k)
-
-    expected = sum(angles)
-
-    asum = angle_sum(vertices)
-    assert asum == pytest.approx(expected, abs=1e-4), asum
-
-    asum = angle_sum(vertices[::-1])
-    assert asum == pytest.approx(-expected, abs=1e-4), asum
 
     # Checks the signed area function.
     sarea = signed_area(vertices[::-1] if clockwise else vertices)

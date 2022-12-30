@@ -119,16 +119,6 @@ float angle(const Point3D &p1, const Point3D &p2, const Point3D &p3) {
     return std::acos(cos_angle);
 }
 
-float angle_sum(const Polygon2D &p) {
-    int n = p.size();
-    float sum = 0;
-    for (int j = 0; j < n; j++) {
-        int i = (j + n - 1) % n, k = (j + 1) % n;
-        sum += signed_angle(p[i], p[j], p[k]);
-    }
-    return sum;
-}
-
 bool is_convex(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
     // Equivalent to angle(p1, p2, p3) < 0, meaning that a convex polygon
     // is traversed in counter-clockwise order.
@@ -240,6 +230,44 @@ Point3D barycentric_coordinates(const Point2D &p, const Triangle2D &t) {
     float a1 = ((x2 - x0) * (y3 - y0) - (x3 - x0) * (y2 - y0)) / a;
     float a2 = ((x3 - x0) * (y1 - y0) - (x1 - x0) * (y3 - y0)) / a;
     float a3 = ((x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)) / a;
+
+    return {a1, a2, a3};
+}
+
+Point3D barycentric_coordinates(const Point3D &p, const Triangle3D &t) {
+    Point3D l1, l2, l3;
+    std::tie(l1, l2, l3) = t;
+
+    // Unpacks the points.
+    float x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3;
+    std::tie(x0, y0, z0) = p;
+    std::tie(x1, y1, z1) = l1;
+    std::tie(x2, y2, z2) = l2;
+    std::tie(x3, y3, z3) = l3;
+
+    // Gets the normal vector of the triangle.
+    Point3D n =
+        cross_product({x2 - x1, y2 - y1, z2 - z1}, {x3 - x1, y3 - y1, z3 - z1});
+    float xn, yn, zn;
+    std::tie(xn, yn, zn) = n;
+
+    // Projects the point onto the plane of the triangle.
+    float t1 = (xn * (x1 - x0) + yn * (y1 - y0) + zn * (z1 - z0)) /
+               (xn * xn + yn * yn + zn * zn);
+    Point3D tp = {x0 + t1 * xn, y0 + t1 * yn, z0 + t1 * zn};
+    float xtp, ytp, ztp;
+    std::tie(xtp, ytp, ztp) = tp;
+
+    // Computes the barycentric coordinates.
+    float a1 = dot_product(cross_product({x2 - x1, y2 - y1, z2 - z1},
+                                         {xtp - x1, ytp - y1, ztp - z1}),
+                           n),
+          a2 = dot_product(cross_product({x3 - x1, y3 - y1, z3 - z1},
+                                         {xtp - x2, ytp - y2, ztp - z2}),
+                           n),
+          a3 = dot_product(cross_product({x1 - x2, y1 - y2, z1 - z2},
+                                         {xtp - x3, ytp - y3, ztp - z3}),
+                           n);
 
     return {a1, a2, a3};
 }
@@ -463,6 +491,18 @@ bool is_inside(const Point2D &p, const Triangle2D &t) {
     return (a1 >= 0 && a2 >= 0 && a3 >= 0);
 }
 
+bool is_inside(const Point3D &p, const Triangle3D &t) {
+    float a1, a2, a3;
+    std::tie(a1, a2, a3) = barycentric_coordinates(p, t);
+    return (a1 >= 0 && a2 >= 0 && a3 >= 0);
+}
+
+bool is_coplanar(const Point3D &p, const Triangle3D &t) {
+    float a1, a2, a3;
+    std::tie(a1, a2, a3) = barycentric_coordinates(p, t);
+    return (a1 == 0 || a2 == 0 || a3 == 0);
+}
+
 float min_distance(const Point2D &p, const Line2D &l) {
     // Unpacks the points.
     Point2D p1, p2;
@@ -639,7 +679,6 @@ void add_modules(py::module &m) {
           py::overload_cast<const Point3D &, const Point3D &, const Point3D &>(
               &angle),
           "p1"_a, "p2"_a, "p3"_a);
-    m.def("angle_sum", &angle_sum, "p"_a);
 
     // Angle convexity.
     m.def("is_convex",
@@ -691,6 +730,10 @@ void add_modules(py::module &m) {
           py::overload_cast<const Point2D &, const Triangle2D &>(
               &barycentric_coordinates),
           "p"_a, "t"_a);
+    m.def("barycentric_coordinates",
+          py::overload_cast<const Point3D &, const Triangle3D &>(
+              &barycentric_coordinates),
+          "p"_a, "t"_a);
 
     // Projection functions.
     m.def("project",
@@ -721,6 +764,17 @@ void add_modules(py::module &m) {
     m.def("nearest_points",
           py::overload_cast<const Line3D &, const Line3D &>(&nearest_points),
           "p"_a, "l"_a);
+
+    // Check if point is inside triangle.
+    m.def("is_inside",
+          py::overload_cast<const Point2D &, const Triangle2D &>(&is_inside),
+          "p"_a, "t"_a);
+    m.def("is_inside",
+          py::overload_cast<const Point3D &, const Triangle3D &>(&is_inside),
+          "p"_a, "t"_a);
+    m.def("is_coplanar",
+          py::overload_cast<const Point3D &, const Triangle3D &>(&is_coplanar),
+          "p"_a, "t"_a);
 
     // Geometric utility functions.
     m.def("min_distance",

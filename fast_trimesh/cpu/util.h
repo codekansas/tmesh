@@ -44,7 +44,6 @@ Point3D cross_product(const Point3D &p1, const Point3D &p2);
 float signed_angle(const Point2D &p1, const Point2D &p2, const Point2D &p3);
 float angle(const Point2D &p1, const Point2D &p2, const Point2D &p3);
 float angle(const Point3D &p1, const Point3D &p2, const Point3D &p3);
-float angle_sum(const Polygon2D &p);
 
 // Angle convexity.
 bool is_convex(const Point2D &p1, const Point2D &p2, const Point2D &p3);
@@ -77,6 +76,7 @@ Point3D center(const std::vector<Point3D> &p);
 
 // Barycentric coordinate functions.
 Point3D barycentric_coordinates(const Point2D &p, const Triangle2D &t);
+Point3D barycentric_coordinates(const Point3D &p, const Triangle3D &t);
 
 // Projection functions.
 std::optional<Point2D> project(const Point2D &p, const Line2D &l);
@@ -95,6 +95,8 @@ std::optional<std::tuple<Point3D, Point3D>> nearest_points(const Line3D &l1,
 
 // Check if point is inside triangle.
 bool is_inside(const Point2D &p, const Triangle2D &t);
+bool is_inside(const Point3D &p, const Triangle3D &t);
+bool is_coplanar(const Point3D &p, const Triangle3D &t);
 
 // Minimum distances between geometric objects.
 float min_distance(const Point2D &p, const Line2D &l);
