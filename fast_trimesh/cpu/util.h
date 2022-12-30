@@ -64,8 +64,8 @@ bool intersects(const Line3D &l, const Triangle3D &tr);
 std::optional<Point3D> intersection(const Line3D &l, const Triangle3D &tr);
 
 // Nearest intersection functions.
-std::optional<std::tuple<Point3D, Point3D>> nearest_intersection(
-    const Line3D &l1, const Line3D &l2);
+std::optional<std::tuple<Point3D, Point3D>> nearest_points(const Line3D &l1,
+                                                           const Line3D &l2);
 
 // Minimum distances between geometric objects.
 float min_distance(const Point2D &p, const Line2D &l);

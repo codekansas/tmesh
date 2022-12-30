@@ -155,10 +155,10 @@ def test_line_line_intersection_2d(lhs: Line2D, rhs: Line2D, expected: Point2D |
         (((0, 0, 0), (1, 1, 1)), ((0, 0, 1), (1, 1, 2)), None),  # Parallel
     ],
 )
-def test_line_line_nearest_intersection_3d(lhs: Line3D, rhs: Line3D, expected: tuple[Point3D, Point3D] | None) -> None:
+def test_line_line_nearest_points_3d(lhs: Line3D, rhs: Line3D, expected: tuple[Point3D, Point3D] | None) -> None:
     """Test intersection of two lines in 3D."""
 
-    result = trimesh.nearest_intersection(lhs, rhs)
+    result = trimesh.nearest_points(lhs, rhs)
     if result is None:
         assert expected is None, result
     else:

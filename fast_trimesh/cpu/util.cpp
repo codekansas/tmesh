@@ -255,7 +255,7 @@ std::optional<Point2D> intersection(const Line2D &l1, const Line2D &l2) {
 
 std::optional<Point3D> intersection(const Line3D &l1, const Line3D &l2) {
     // Gets the nearest intersection point.
-    auto p = nearest_intersection(l1, l2);
+    auto p = nearest_points(l1, l2);
 
     // If there is no intersection, return null.
     if (!p.has_value()) return std::nullopt;
@@ -316,8 +316,8 @@ std::optional<Point3D> intersection(const Line3D &l, const Triangle3D &tr) {
     return q1 + (q2 - q1) * t;
 }
 
-std::optional<std::tuple<Point3D, Point3D>> nearest_intersection(
-    const Line3D &l1, const Line3D &l2) {
+std::optional<std::tuple<Point3D, Point3D>> nearest_points(const Line3D &l1,
+                                                           const Line3D &l2) {
     // Unpacks the points.
     Point3D p1, p2, p3, p4;
     std::tie(p1, p2) = l1;
@@ -464,8 +464,7 @@ float min_distance(const Line3D &l1, const Line3D &l2) {
     std::tie(p3, p4) = l2;
 
     // Checks if the lines intersect.
-    std::optional<std::tuple<Point3D, Point3D>> p =
-        nearest_intersection(l1, l2);
+    std::optional<std::tuple<Point3D, Point3D>> p = nearest_points(l1, l2);
 
     // If nearest intersection points were found, return their distance.
     if (p) return distance(std::get<0>(p.value()), std::get<1>(p.value()));
@@ -559,9 +558,8 @@ void add_modules(py::module &m) {
           "l"_a, "t"_a);
 
     // Nearest intersection functions.
-    m.def("nearest_intersection",
-          py::overload_cast<const Line3D &, const Line3D &>(
-              &nearest_intersection),
+    m.def("nearest_points",
+          py::overload_cast<const Line3D &, const Line3D &>(&nearest_points),
           "p"_a, "l"_a);
 
     // Geometric utility functions.
