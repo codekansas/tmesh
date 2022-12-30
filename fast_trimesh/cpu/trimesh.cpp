@@ -1,7 +1,5 @@
 #include "trimesh.h"
 
-#include <iostream>
-
 using namespace pybind11::literals;
 
 namespace fast_trimesh {
@@ -44,12 +42,9 @@ Trimesh2D triangulate(const util::Polygon2D &polygon, bool is_convex) {
     while (indices.size() > 3) {
         bool found = false;
         int n = indices.size();
-        std::cout << "Number of indices: " << n << std::endl;
         for (int i = 0; i < n; i++) {
             int j = (i + 1) % n;
             int k = (i + 2) % n;
-            std::cout << "Checking: " << i << ", " << j << ", " << k
-                      << std::endl;
             int vi = indices[i], vj = indices[j], vk = indices[k];
             util::Point2D pi = polygon[vi], pj = polygon[vj], pk = polygon[vk];
             if (is_convex || is_ear(polygon, vi, vj, vk)) {
