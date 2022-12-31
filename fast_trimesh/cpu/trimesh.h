@@ -39,10 +39,14 @@ class Trimesh {
     ~Trimesh() = default;
 
     // Accessor methods
-    void add_vertex(T vertex) { vertices.push_back(vertex); }
+    size_t add_vertex(T vertex) {
+        vertices.push_back(vertex);
+        return vertices.size() - 1;
+    }
     void set_vertices(std::vector<T> vertices) { this->vertices = vertices; }
-    void add_face(int i, int j, int k) {
+    size_t add_face(int i, int j, int k) {
         faces.push_back(std::make_tuple(i, j, k));
+        return faces.size() - 1;
     }
     void set_faces(std::vector<std::tuple<int, int, int>> faces) {
         this->faces = faces;
@@ -79,9 +83,6 @@ class AffineTransformation {
         return translation;
     }
     std::optional<float> get_scale() const { return scale; }
-
-    AffineTransformation &operator*=(const AffineTransformation &other);
-    AffineTransformation operator*(const AffineTransformation &other) const;
 };
 
 // Combine two 3D trimeshes.

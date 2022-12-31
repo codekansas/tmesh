@@ -15,6 +15,8 @@ namespace io {
 
 void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh);
 
+trimesh::Trimesh3D load_stl(const std::string &filename);
+
 void add_modules(py::module &m);
 
 }  // namespace io

@@ -6,44 +6,6 @@ namespace fast_trimesh {
 namespace cpu {
 namespace trimesh {
 
-AffineTransformation &AffineTransformation::operator*=(
-    const AffineTransformation &other) {
-    // if (other.rotation.has_value()) {
-    //     if (rotation.has_value()) {
-    //         rotation = rotation.value() * other.rotation.value();
-    //     } else {
-    //         rotation = other.rotation;
-    //     }
-    // }
-
-    // if (other.translation.has_value()) {
-    //     if (translation.has_value()) {
-    //         translation = translation.value() *
-    //         other.translation.value();
-    //     } else {
-    //         translation = other.translation;
-    //     }
-    // }
-
-    // if (other.scale.has_value()) {
-    //     if (scale.has_value()) {
-    //         scale = scale.value() * other.scale.value();
-    //     } else {
-    //         scale = other.scale;
-    //     }
-    // }
-
-    return *this;
-}
-
-AffineTransformation AffineTransformation::operator*(
-    const AffineTransformation &other) const {
-    AffineTransformation result(std::nullopt, std::nullopt, std::nullopt);
-    result *= *this;
-    result *= other;
-    return result;
-}
-
 template <typename T>
 Trimesh<T> &operator+=(Trimesh<T> &a, const Trimesh<T> &other) {
     auto offset = a.vertices.size();
@@ -194,11 +156,6 @@ void add_affine_transform_module(pybind11::module &m) {
                       std::optional<geometry::Point3D>, std::optional<float>>(),
              "rotation"_a = std::nullopt, "translation"_a = std::nullopt,
              "scale"_a = std::nullopt)
-        .def("__matmul__", &AffineTransformation::operator*,
-             "Transforms a given trimesh", "trimesh"_a, py::is_operator())
-        .def("__imatmul__", &AffineTransformation::operator*=,
-             "Transforms a given trimesh in-place", "trimesh"_a,
-             py::is_operator())
         .def("__rshift__", &operator>>,
              "Applies affine transformation to 3D mesh", "trimesh"_a,
              py::is_operator());
