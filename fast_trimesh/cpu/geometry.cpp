@@ -76,6 +76,48 @@ Point3D operator/(const Point3D &p, float s) {
     return {std::get<0>(p) / s, std::get<1>(p) / s, std::get<2>(p) / s};
 }
 
+Point2D scale(const Point2D &p, float s) {
+    return {std::get<0>(p) * s, std::get<1>(p) * s};
+}
+
+Point3D scale(const Point3D &p, float s) {
+    return {std::get<0>(p) * s, std::get<1>(p) * s, std::get<2>(p) * s};
+}
+
+Point2D translate(const Point2D &p, const Point2D &v) {
+    return {std::get<0>(p) + std::get<0>(v), std::get<1>(p) + std::get<1>(v)};
+}
+
+Point3D translate(const Point3D &p, const Point3D &v) {
+    return {std::get<0>(p) + std::get<0>(v), std::get<1>(p) + std::get<1>(v),
+            std::get<2>(p) + std::get<2>(v)};
+}
+
+Point2D rotate(const Point2D &p, const Point2D &angle) {
+    float x = std::get<0>(p);
+    float y = std::get<1>(p);
+    float cos_x = std::cos(std::get<0>(angle));
+    float sin_x = std::sin(std::get<0>(angle));
+    float cos_y = std::cos(std::get<1>(angle));
+    float sin_y = std::sin(std::get<1>(angle));
+    return {x * cos_y - y * sin_x * sin_y, x * sin_y + y * sin_x * cos_y};
+}
+
+Point3D rotate(const Point3D &p, const Point3D &angle) {
+    float x = std::get<0>(p);
+    float y = std::get<1>(p);
+    float z = std::get<2>(p);
+    float cos_x = std::cos(std::get<0>(angle));
+    float sin_x = std::sin(std::get<0>(angle));
+    float cos_y = std::cos(std::get<1>(angle));
+    float sin_y = std::sin(std::get<1>(angle));
+    float cos_z = std::cos(std::get<2>(angle));
+    float sin_z = std::sin(std::get<2>(angle));
+    return {x * cos_y * cos_z - y * cos_x * sin_z + z * sin_x * sin_y * cos_z,
+            x * cos_y * sin_z + y * cos_x * cos_z - z * sin_x * sin_y * sin_z,
+            x * sin_y + y * sin_x * cos_y + z * cos_x * cos_y};
+}
+
 float dot_product(const Point2D &p1, const Point2D &p2) {
     return std::get<0>(p1) * std::get<0>(p2) +
            std::get<1>(p1) * std::get<1>(p2);
@@ -485,6 +527,12 @@ std::optional<std::tuple<Point3D, Point3D>> nearest_points(const Line3D &l1,
     return std::make_tuple(c1, c2);
 }
 
+Point3D normal(const Triangle3D &t) {
+    Point3D p1, p2, p3;
+    std::tie(p1, p2, p3) = t;
+    return cross_product(p2 - p1, p3 - p1);
+}
+
 bool is_inside(const Point2D &p, const Triangle2D &t) {
     float a1, a2, a3;
     std::tie(a1, a2, a3) = barycentric_coordinates(p, t);
@@ -655,6 +703,28 @@ void add_modules(py::module &m) {
     py::module s = m.def_submodule("geometry");
     s.doc() = "Geometry helper functions.";
 
+    // Scales a point from the origin by a scalar.
+    s.def("scale", py::overload_cast<const Point2D &, float>(&scale),
+          "Scales a 2D point from the origin by a scalar", "p"_a, "s"_a);
+    s.def("scale", py::overload_cast<const Point3D &, float>(&scale),
+          "Scales a 3D point from the origin by a scalar", "p"_a, "s"_a);
+
+    // Translates a point by a vector.
+    s.def("translate",
+          py::overload_cast<const Point2D &, const Point2D &>(&translate),
+          "Translates a 2D point by a vector", "p"_a, "v"_a);
+    s.def("translate",
+          py::overload_cast<const Point3D &, const Point3D &>(&translate),
+          "Translates a 3D point by a vector", "p"_a, "v"_a);
+
+    // Rotate a point by an angle.
+    s.def("rotate",
+          py::overload_cast<const Point2D &, const Point2D &>(&rotate),
+          "Rotates a 2D point by a rotation vector", "p"_a, "angle"_a);
+    s.def("rotate",
+          py::overload_cast<const Point3D &, const Point3D &>(&rotate),
+          "Rotates a 3D point by a rotation vector", "p"_a, "angle"_a);
+
     // Vector products.
     s.def("dot_product",
           py::overload_cast<const Point2D &, const Point2D &>(&dot_product),
@@ -687,7 +757,8 @@ void add_modules(py::module &m) {
     s.def("is_convex",
           py::overload_cast<const Point2D &, const Point2D &, const Point2D &>(
               &is_convex),
-          "Equivalent to `angle(p1, p2, p3) < 0`; convex polygon is traversed "
+          "Equivalent to `angle(p1, p2, p3) < 0`; convex polygon is "
+          "traversed "
           "in counter-clockwise order",
           "p1"_a, "p2"_a, "p3"_a);
 
@@ -746,12 +817,14 @@ void add_modules(py::module &m) {
     s.def("barycentric_coordinates",
           py::overload_cast<const Point2D &, const Triangle2D &>(
               &barycentric_coordinates),
-          "Barycentric coordinates of a 2D point with respect to a 2D triangle",
+          "Barycentric coordinates of a 2D point with respect to a 2D "
+          "triangle",
           "p"_a, "t"_a);
     s.def("barycentric_coordinates",
           py::overload_cast<const Point3D &, const Triangle3D &>(
               &barycentric_coordinates),
-          "Barycentric coordinates of a 3D point with respect to a 3D triangle",
+          "Barycentric coordinates of a 3D point with respect to a 3D "
+          "triangle",
           "p"_a, "t"_a);
 
     // Projection functions.
@@ -762,7 +835,8 @@ void add_modules(py::module &m) {
           "p"_a, "l"_a);
     s.def("project",
           py::overload_cast<const Point3D &, const Line3D &>(&project),
-          "Project a 3D point onto a 3D line, returning None if the projected "
+          "Project a 3D point onto a 3D line, returning None if the "
+          "projected "
           "point is outside the line segment",
           "p"_a, "l"_a);
     s.def("project",
@@ -774,7 +848,8 @@ void add_modules(py::module &m) {
     // Intersection functions.
     s.def("intersection",
           py::overload_cast<const Line2D &, const Line2D &>(&intersection),
-          "Gets the intersection of two line segments, returning None if they "
+          "Gets the intersection of two line segments, returning None if "
+          "they "
           "do not intersect",
           "l1"_a, "l2"_a);
     s.def("intersection",
@@ -785,17 +860,21 @@ void add_modules(py::module &m) {
     s.def("intersects",
           py::overload_cast<const Line3D &, const Triangle3D &>(&intersects),
           "Checks if a 3D line intersects a 3D triangle", "l1"_a, "l2"_a);
-    s.def(
-        "intersection",
-        py::overload_cast<const Line3D &, const Triangle3D &>(&intersection),
-        "Gets the intersection of a 3D line and a 3D triangle, returning None "
-        "if they do not intersect",
-        "l"_a, "t"_a);
+    s.def("intersection",
+          py::overload_cast<const Line3D &, const Triangle3D &>(&intersection),
+          "Gets the intersection of a 3D line and a 3D triangle, returning "
+          "None "
+          "if they do not intersect",
+          "l"_a, "t"_a);
 
     // Nearest intersection functions.
     s.def("nearest_points",
           py::overload_cast<const Line3D &, const Line3D &>(&nearest_points),
           "Gets the nearest points between two lines", "p"_a, "l"_a);
+
+    // Normal vector.
+    s.def("normal", py::overload_cast<const Triangle3D &>(&normal),
+          "Normal vector of a 3D triangle", "t"_a);
 
     // Check if point is inside triangle.
     s.def("is_inside",
@@ -811,7 +890,8 @@ void add_modules(py::module &m) {
     // Geometric utility functions.
     s.def("min_distance",
           py::overload_cast<const Point2D &, const Line2D &>(&min_distance),
-          "Gets the minimum distance between a 2D point and a 2D line segment",
+          "Gets the minimum distance between a 2D point and a 2D line "
+          "segment",
           "p"_a, "l"_a);
     s.def("min_distance",
           py::overload_cast<const Line2D &, const Line2D &>(&min_distance),
@@ -828,7 +908,8 @@ void add_modules(py::module &m) {
           "l"_a, "t"_a);
     s.def("min_distance",
           py::overload_cast<const Point3D &, const Line3D &>(&min_distance),
-          "Gets the minimum distance between a 3D point and a 3D line segment",
+          "Gets the minimum distance between a 3D point and a 3D line "
+          "segment",
           "p"_a, "l"_a);
     s.def("min_distance",
           py::overload_cast<const Line3D &, const Line3D &>(&min_distance),

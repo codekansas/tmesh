@@ -15,11 +15,24 @@ namespace fast_trimesh {
 namespace cpu {
 namespace trimesh {
 
+class AffineTransformation;
+
+template <typename T>
+class Trimesh;
+
+using Trimesh2D = Trimesh<geometry::Point2D>;
+using Trimesh3D = Trimesh<geometry::Point3D>;
+
 template <typename T>
 class Trimesh {
    private:
     std::vector<T> vertices;
     std::vector<std::tuple<int, int, int>> faces;
+
+    friend Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf);
+
+    template <typename Tf>
+    friend Trimesh<Tf> &operator+=(Trimesh<Tf> &a, const Trimesh<Tf> &other);
 
    public:
     Trimesh() = default;
@@ -34,48 +47,52 @@ class Trimesh {
     void set_faces(std::vector<std::tuple<int, int, int>> faces) {
         this->faces = faces;
     }
-    std::vector<T> get_vertices() { return vertices; }
-    std::vector<std::tuple<int, int, int>> get_faces() { return faces; }
-    T get_vertex(int i) { return vertices[i]; }
-    std::tuple<int, int, int> get_face(int i) { return faces[i]; }
-    int num_vertices() { return vertices.size(); }
-    int num_faces() { return faces.size(); }
-
-    // Boolean operators
-    Trimesh operator+(const Trimesh &other) {
-        Trimesh result;
-        result.vertices = vertices;
-        result.faces = faces;
-        auto offset = vertices.size();
-        for (auto &face : other.faces) {
-            result.faces.push_back(std::make_tuple(std::get<0>(face) + offset,
-                                                   std::get<1>(face) + offset,
-                                                   std::get<2>(face) + offset));
-        }
-        result.vertices.insert(result.vertices.end(), other.vertices.begin(),
-                               other.vertices.end());
-
-        return result;
-    }
-
-    Trimesh operator+=(const Trimesh &other) {
-        auto offset = vertices.size();
-        for (auto &face : other.faces) {
-            faces.push_back(std::make_tuple(std::get<0>(face) + offset,
-                                            std::get<1>(face) + offset,
-                                            std::get<2>(face) + offset));
-        }
-        vertices.insert(vertices.end(), other.vertices.begin(),
-                        other.vertices.end());
-        return *this;
-    }
+    std::vector<T> get_vertices() const { return vertices; }
+    std::vector<std::tuple<int, int, int>> get_faces() const { return faces; }
+    T get_vertex(int i) const { return vertices[i]; }
+    std::tuple<int, int, int> get_face(int i) const { return faces[i]; }
+    size_t num_vertices() const { return vertices.size(); }
+    size_t num_faces() const { return faces.size(); }
 };
-
-using Trimesh2D = Trimesh<geometry::Point2D>;
-using Trimesh3D = Trimesh<geometry::Point3D>;
 
 Trimesh2D triangulate(const geometry::Polygon2D &polygon,
                       bool is_convex = false);
+
+class AffineTransformation {
+   private:
+    std::optional<geometry::Point3D> rotation;     // ZYX Euler angles
+    std::optional<geometry::Point3D> translation;  // Translation vector
+    std::optional<float> scale;                    // Scale factor
+
+    friend Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf);
+
+   public:
+    AffineTransformation(std::optional<geometry::Point3D> rotation,
+                         std::optional<geometry::Point3D> translation,
+                         std::optional<float> scale)
+        : rotation(rotation), translation(translation), scale(scale) {}
+
+    ~AffineTransformation() = default;
+
+    std::optional<geometry::Point3D> get_rotation() const { return rotation; }
+    std::optional<geometry::Point3D> get_translation() const {
+        return translation;
+    }
+    std::optional<float> get_scale() const { return scale; }
+
+    void operator*=(const AffineTransformation &other);
+    AffineTransformation operator*(const AffineTransformation &other) const;
+};
+
+// Combine two 3D trimeshes.
+template <typename T>
+Trimesh<T> &operator+=(Trimesh<T> &a, const Trimesh<T> &other);
+template <typename T>
+Trimesh<T> operator+(const Trimesh<T> &a, const Trimesh<T> &b);
+
+// Apply affine transformation to a 3D trimesh.
+Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf);
+Trimesh3D operator+(const Trimesh3D &t, const AffineTransformation &tf);
 
 void add_modules(py::module &m);
 

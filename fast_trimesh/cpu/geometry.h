@@ -34,6 +34,18 @@ Point3D operator*(const Point3D &p1, const Point3D &p2);
 Point3D operator*(const Point3D &p, float s);
 Point3D operator/(const Point3D &p, float s);
 
+// Scales a point from the origin by a scalar.
+Point2D scale(const Point2D &p, float s);
+Point3D scale(const Point3D &p, float s);
+
+// Translates a point by a vector.
+Point2D translate(const Point2D &p, const Point2D &v);
+Point3D translate(const Point3D &p, const Point3D &v);
+
+// Rotate a point by an angle.
+Point2D rotate(const Point2D &p, const Point2D &angle);
+Point3D rotate(const Point3D &p, const Point3D &angle);
+
 // Vector products.
 float dot_product(const Point2D &p1, const Point2D &p2);
 float dot_product(const Point3D &p1, const Point3D &p2);
@@ -92,6 +104,9 @@ std::optional<Point3D> intersection(const Line3D &l, const Triangle3D &tr);
 // Nearest intersection functions.
 std::optional<std::tuple<Point3D, Point3D>> nearest_points(const Line3D &l1,
                                                            const Line3D &l2);
+
+// Normal vector.
+Point3D normal(const Triangle3D &t);
 
 // Check if point is inside triangle.
 bool is_inside(const Point2D &p, const Triangle2D &t);

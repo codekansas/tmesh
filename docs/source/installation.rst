@@ -23,7 +23,8 @@ Next, clone and install the package:
     make install-conda  # Installs Conda requirements
     make install        # Builds and installs package
 
-Alternatively, if you have `cmake` and `pybind` available, you can install the package directly from Github using:
+Alternatively, if you have `cmake` and `pybind` available, you can install
+the package directly from Github using:
 
 .. code-block:: console
 

@@ -6,6 +6,91 @@ namespace fast_trimesh {
 namespace cpu {
 namespace trimesh {
 
+void AffineTransformation::operator*=(const AffineTransformation &other) {
+    // if (other.rotation.has_value()) {
+    //     if (rotation.has_value()) {
+    //         rotation = rotation.value() * other.rotation.value();
+    //     } else {
+    //         rotation = other.rotation;
+    //     }
+    // }
+
+    // if (other.translation.has_value()) {
+    //     if (translation.has_value()) {
+    //         translation = translation.value() *
+    //         other.translation.value();
+    //     } else {
+    //         translation = other.translation;
+    //     }
+    // }
+
+    // if (other.scale.has_value()) {
+    //     if (scale.has_value()) {
+    //         scale = scale.value() * other.scale.value();
+    //     } else {
+    //         scale = other.scale;
+    //     }
+    // }
+}
+
+AffineTransformation AffineTransformation::operator*(
+    const AffineTransformation &other) const {
+    AffineTransformation result(std::nullopt, std::nullopt, std::nullopt);
+    result *= *this;
+    result *= other;
+    return result;
+}
+
+template <typename T>
+Trimesh<T> &operator+=(Trimesh<T> &a, const Trimesh<T> &other) {
+    auto offset = a.vertices.size();
+    for (auto &face : other.faces) {
+        a.faces.push_back(std::make_tuple(std::get<0>(face) + offset,
+                                          std::get<1>(face) + offset,
+                                          std::get<2>(face) + offset));
+    }
+    a.vertices.insert(a.vertices.end(), other.vertices.begin(),
+                      other.vertices.end());
+    return a;
+}
+
+template <typename T>
+Trimesh<T> operator+(const Trimesh<T> &a, const Trimesh<T> &b) {
+    Trimesh<T> result;
+    result += a;
+    result += b;
+    return result;
+}
+
+Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf) {
+    if (tf.rotation.has_value()) {
+        for (auto &vertex : t.vertices) {
+            vertex = geometry::rotate(vertex, tf.rotation.value());
+        }
+    }
+
+    if (tf.translation.has_value()) {
+        for (auto &vertex : t.vertices) {
+            vertex = geometry::translate(vertex, tf.translation.value());
+        }
+    }
+
+    if (tf.scale.has_value()) {
+        for (auto &vertex : t.vertices) {
+            vertex = geometry::scale(vertex, tf.scale.value());
+        }
+    }
+
+    return t;
+}
+
+Trimesh3D operator+(const Trimesh3D &t, const AffineTransformation &tf) {
+    Trimesh3D result;
+    result += t;
+    result += tf;
+    return result;
+}
+
 bool is_ear(const geometry::Polygon2D &polygon, int vi, int vj, int vk) {
     geometry::Point2D pi = polygon[vi], pj = polygon[vj], pk = polygon[vk];
 
@@ -65,9 +150,8 @@ Trimesh2D triangulate(const geometry::Polygon2D &polygon, bool is_convex) {
 }
 
 template <typename T>
-void add_module_for(pybind11::module &m, const char *type_name) {
-    py::class_<Trimesh<T>>(m, type_name,
-                           "Defines " + std::string(type_name) + " class.")
+void add_trimesh_module_for(pybind11::module &m, const char *type_name) {
+    py::class_<Trimesh<T>>(m, type_name, "Defines trimesh class.")
         .def(py::init<>())
         .def("add_vertex", &Trimesh<T>::add_vertex, "Adds a vertex to the mesh",
              "vertex"_a)
@@ -89,9 +173,23 @@ void add_module_for(pybind11::module &m, const char *type_name) {
              "The number of vertices in the mesh")
         .def("num_faces", &Trimesh<T>::num_faces,
              "The number of faces in the mesh")
-        .def("__add__", &Trimesh<T>::operator+, "Adds two meshes together",
+        .def("__add__", &operator+<T>, "Adds two meshes together", "other"_a,
              py::is_operator())
-        .def("__iadd__", &Trimesh<T>::operator+=, "Adds two meshes together",
+        .def("__iadd__", &operator+=<T>, "Adds two meshes together", "other"_a,
+             py::is_operator());
+}
+
+void add_affine_transform_module(pybind11::module &m) {
+    py::class_<AffineTransformation>(m, "AffineTransformation",
+                                     "Defines affine transformation class.")
+        .def(py::init<std::optional<geometry::Point3D>,
+                      std::optional<geometry::Point3D>, std::optional<float>>(),
+             "rotation"_a = std::nullopt, "translation"_a = std::nullopt,
+             "scale"_a = std::nullopt)
+        .def("__matmul__", &AffineTransformation::operator*,
+             "Transforms a given trimesh", "trimesh"_a, py::is_operator())
+        .def("__imatmul__", &AffineTransformation::operator*=,
+             "Transforms a given trimesh in-place", "trimesh"_a,
              py::is_operator());
 }
 
@@ -99,8 +197,11 @@ void add_modules(py::module &m) {
     py::module s = m.def_submodule("trimesh");
     s.doc() = "CPU trimesh implementation.";
 
-    add_module_for<geometry::Point2D>(s, "Trimesh2D");
-    add_module_for<geometry::Point3D>(s, "Trimesh3D");
+    add_trimesh_module_for<geometry::Point2D>(s, "Trimesh2D");
+    add_trimesh_module_for<geometry::Point3D>(s, "Trimesh3D");
+
+    add_affine_transform_module(s);
+
     s.def("triangulate", &triangulate, "Converts a polygon to a 2D trimesh",
           "polygon"_a, "is_convex"_a = false);
 }
