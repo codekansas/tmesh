@@ -1,4 +1,4 @@
-#include "util.h"
+#include "geometry.h"
 
 #define EPSILON 1e-6
 
@@ -6,7 +6,7 @@ using namespace pybind11::literals;
 
 namespace fast_trimesh {
 namespace cpu {
-namespace util {
+namespace geometry {
 
 Point2D operator+(const Point2D &p1, const Point2D &p2) {
     return {std::get<0>(p1) + std::get<0>(p2),
@@ -134,10 +134,10 @@ float signed_area(const Polygon2D &p) {
               x2 = std::get<0>(p[j]), y2 = std::get<1>(p[j]);
         area += (x2 - x1) * (y2 + y1);
     }
-    return area / 2;
+    return -area / 2;
 }
 
-bool is_clockwise(const Polygon2D &p) { return signed_area(p) > 0; }
+bool is_clockwise(const Polygon2D &p) { return signed_area(p) < 0; }
 
 float signed_volume(const Point3D &p1, const Point3D &p2, const Point3D &p3,
                     const Point3D &p4) {
@@ -652,154 +652,196 @@ float min_distance(const Point3D &p, const Triangle3D &t) {
 }
 
 void add_modules(py::module &m) {
+    py::module s = m.def_submodule("geometry");
+    s.doc() = "Geometry helper functions.";
+
     // Vector products.
-    m.def("dot_product",
+    s.def("dot_product",
           py::overload_cast<const Point2D &, const Point2D &>(&dot_product),
-          "p1"_a, "p2"_a);
-    m.def("dot_product",
+          "Dot product of two 2D vectors", "p1"_a, "p2"_a);
+    s.def("dot_product",
           py::overload_cast<const Point3D &, const Point3D &>(&dot_product),
-          "p1"_a, "p2"_a);
-    m.def("cross_product",
+          "Dot product of two 3D vectors", "p1"_a, "p2"_a);
+    s.def("cross_product",
           py::overload_cast<const Point2D &, const Point2D &>(&cross_product),
-          "p1"_a, "p2"_a);
-    m.def("cross_product",
+          "Cross product of two 2D vectors", "p1"_a, "p2"_a);
+    s.def("cross_product",
           py::overload_cast<const Point3D &, const Point3D &>(&cross_product),
-          "p1"_a, "p2"_a);
+          "Cross product of two 3D vectors", "p1"_a, "p2"_a);
 
     // Orientation.
-    m.def("signed_angle",
+    s.def("signed_angle",
           py::overload_cast<const Point2D &, const Point2D &, const Point2D &>(
               &signed_angle),
-          "p1"_a, "p2"_a, "p3"_a);
-    m.def("angle",
+          "Signed angle between two 2D vectors", "p1"_a, "p2"_a, "p3"_a);
+    s.def("angle",
           py::overload_cast<const Point2D &, const Point2D &, const Point2D &>(
               &angle),
-          "p1"_a, "p2"_a, "p3"_a);
-    m.def("angle",
+          "Angle between two 2D vectors", "p1"_a, "p2"_a, "p3"_a);
+    s.def("angle",
           py::overload_cast<const Point3D &, const Point3D &, const Point3D &>(
               &angle),
-          "p1"_a, "p2"_a, "p3"_a);
+          "Angle between two 3D vectors", "p1"_a, "p2"_a, "p3"_a);
 
     // Angle convexity.
-    m.def("is_convex",
+    s.def("is_convex",
           py::overload_cast<const Point2D &, const Point2D &, const Point2D &>(
               &is_convex),
+          "Equivalent to `angle(p1, p2, p3) < 0; convex polygon is traversed "
+          "in counter-clockwise order",
           "p1"_a, "p2"_a, "p3"_a);
 
     // Signed area.
-    m.def("signed_area", &signed_area, "p"_a);
-    m.def("is_clockwise", &is_clockwise, "p"_a);
+    s.def("signed_area", &signed_area,
+          "Signed area of a 2D polygon (positive if counter-clockwise, "
+          "negative if clockwise)",
+          "p"_a);
+    s.def("is_clockwise", &is_clockwise,
+          "Checks if points in a 2D polygon are in clockwise or "
+          "counter-clockwise order",
+          "p"_a);
 
     // Signed volume.
-    m.def("signed_volume",
+    s.def("signed_volume",
           py::overload_cast<const Point3D &, const Point3D &, const Point3D &,
                             const Point3D &>(&signed_volume),
+          "Signed volume of a 3D tetrahedron (positive if p1, p2, p3 are "
+          "counterclockwise when viewed from p4, negative if clockwise)",
           "p1"_a, "p2"_a, "p3"_a, "p4"_a);
 
     // Determinants.
-    m.def("determinant",
+    s.def("determinant",
           py::overload_cast<const Point2D &, const Point2D &>(&determinant),
-          "p1"_a, "p2"_a);
-    m.def("determinant",
+          "Determinant of a 2x2 matrix", "p1"_a, "p2"_a);
+    s.def("determinant",
           py::overload_cast<const Point3D &, const Point3D &, const Point3D &>(
               &determinant),
-          "p1"_a, "p2"_a, "p3"_a);
+          "Determinant of a 3x3 matrix", "p1"_a, "p2"_a, "p3"_a);
 
     // Euclidean distances.
-    m.def("distance", py::overload_cast<const Point2D &>(&distance), "p"_a);
-    m.def("distance",
+    s.def("distance", py::overload_cast<const Point2D &>(&distance),
+          "Magnitude of a 2D vector", "p"_a);
+    s.def("distance",
           py::overload_cast<const Point2D &, const Point2D &>(&distance),
-          "p1"_a, "p2"_a);
-    m.def("distance", py::overload_cast<const Point3D &>(&distance), "p"_a);
-    m.def("distance",
+          "Distance between two 2D points", "p1"_a, "p2"_a);
+    s.def("distance", py::overload_cast<const Point3D &>(&distance),
+          "Magnitude of a 3D vector", "p"_a);
+    s.def("distance",
           py::overload_cast<const Point3D &, const Point3D &>(&distance),
-          "p1"_a, "p2"_a);
+          "Distance between two 3D points", "p1"_a, "p2"_a);
 
     // Area functions.
-    m.def("area", py::overload_cast<const Triangle2D &>(&area), "t"_a);
-    m.def("area", py::overload_cast<const Triangle3D &>(&area), "t"_a);
+    s.def("area", py::overload_cast<const Triangle2D &>(&area),
+          "Area of a 2D triangle", "t"_a);
+    s.def("area", py::overload_cast<const Triangle3D &>(&area),
+          "Area of a 3D triangle", "t"_a);
 
     // Get center point.
-    m.def("center", py::overload_cast<const std::vector<Point2D> &>(&center),
-          "p"_a);
-    m.def("center", py::overload_cast<const std::vector<Point3D> &>(&center),
-          "p"_a);
+    s.def("center", py::overload_cast<const std::vector<Point2D> &>(&center),
+          "Center of a 2D polygon", "p"_a);
+    s.def("center", py::overload_cast<const std::vector<Point3D> &>(&center),
+          "Center of a 3D polygon", "p"_a);
 
     // Barycentric coordinate functions.
-    m.def("barycentric_coordinates",
+    s.def("barycentric_coordinates",
           py::overload_cast<const Point2D &, const Triangle2D &>(
               &barycentric_coordinates),
-          "p"_a, "t"_a);
-    m.def("barycentric_coordinates",
+          "Barycentric coordinates of a 2D point with respect to a 2D triangle"
+          "p"_a,
+          "t"_a);
+    s.def("barycentric_coordinates",
           py::overload_cast<const Point3D &, const Triangle3D &>(
               &barycentric_coordinates),
-          "p"_a, "t"_a);
+          "Barycentric coordinates of a 3D point with respect to a 3D triangle"
+          "p"_a,
+          "t"_a);
 
     // Projection functions.
-    m.def("project",
-          py::overload_cast<const Point2D &, const Line2D &>(&project), "p"_a,
-          "l"_a);
-    m.def("project",
-          py::overload_cast<const Point3D &, const Line3D &>(&project), "p"_a,
-          "l"_a);
-    m.def("project",
+    s.def("project",
+          py::overload_cast<const Point2D &, const Line2D &>(&project),
+          "Project a 2D point onto a 2D line segment, returning None if the "
+          "projected point is outside the line segment",
+          "p"_a, "l"_a);
+    s.def("project",
+          py::overload_cast<const Point3D &, const Line3D &>(&project),
+          "Project a 3D point onto a 3D line, returning None if the projected "
+          "point is outside the line segment",
+          "p"_a, "l"_a);
+    s.def("project",
           py::overload_cast<const Point3D &, const Triangle3D &>(&project),
+          "Project a 3D point onto a 3D triangle, returning None if the "
+          "projected point is outside the triangle",
           "p"_a, "t"_a);
 
     // Intersection functions.
-    m.def("intersection",
+    s.def("intersection",
           py::overload_cast<const Line2D &, const Line2D &>(&intersection),
+          "Gets the intersection of two line segments, returning None if they "
+          "do not intersect",
           "l1"_a, "l2"_a);
-    m.def("intersection",
+    s.def("intersection",
           py::overload_cast<const Line3D &, const Line3D &>(&intersection),
+          "Gets the intersection of two lines, returning None if they do not "
+          "intersect",
           "l1"_a, "l2"_a);
-    m.def("intersects",
+    s.def("intersects",
           py::overload_cast<const Line3D &, const Triangle3D &>(&intersects),
-          "l1"_a, "l2"_a);
-    m.def("intersection",
-          py::overload_cast<const Line3D &, const Triangle3D &>(&intersection),
-          "l"_a, "t"_a);
+          "Checks if a 3D line intersects a 3D triangle", "l1"_a, "l2"_a);
+    s.def(
+        "intersection",
+        py::overload_cast<const Line3D &, const Triangle3D &>(&intersection),
+        "Gets the intersection of a 3D line and a 3D triangle, returning None "
+        "if they do not intersect",
+        "l"_a, "t"_a);
 
     // Nearest intersection functions.
-    m.def("nearest_points",
+    s.def("nearest_points",
           py::overload_cast<const Line3D &, const Line3D &>(&nearest_points),
-          "p"_a, "l"_a);
+          "Gets the nearest points between two lines", "p"_a, "l"_a);
 
     // Check if point is inside triangle.
-    m.def("is_inside",
+    s.def("is_inside",
           py::overload_cast<const Point2D &, const Triangle2D &>(&is_inside),
-          "p"_a, "t"_a);
-    m.def("is_inside",
+          "Checks if a 2D point is inside a 2D triangle", "p"_a, "t"_a);
+    s.def("is_inside",
           py::overload_cast<const Point3D &, const Triangle3D &>(&is_inside),
-          "p"_a, "t"_a);
-    m.def("is_coplanar",
+          "Checks if a 3D point is inside a 3D triangle", "p"_a, "t"_a);
+    s.def("is_coplanar",
           py::overload_cast<const Point3D &, const Triangle3D &>(&is_coplanar),
-          "p"_a, "t"_a);
+          "Checks if a 3D point is coplanar with a 3D triangle", "p"_a, "t"_a);
 
     // Geometric utility functions.
-    m.def("min_distance",
+    s.def("min_distance",
           py::overload_cast<const Point2D &, const Line2D &>(&min_distance),
+          "Gets the minimum distance between a 2D point and a 2D line segment",
           "p"_a, "l"_a);
-    m.def("min_distance",
+    s.def("min_distance",
           py::overload_cast<const Line2D &, const Line2D &>(&min_distance),
-          "l1"_a, "l2"_a);
-    m.def("min_distance",
+          "Gets the minimum distance between two 2D line segments", "l1"_a,
+          "l2"_a);
+    s.def("min_distance",
           py::overload_cast<const Point2D &, const Triangle2D &>(&min_distance),
+          "Gets the minimum distance between a 2D point and a 2D triangle",
           "p"_a, "t"_a);
-    m.def("min_distance",
+    s.def("min_distance",
           py::overload_cast<const Line2D &, const Triangle2D &>(&min_distance),
+          "Gets the minimum distance between a 2D line segment and a 2D "
+          "triangle",
           "l"_a, "t"_a);
-    m.def("min_distance",
+    s.def("min_distance",
           py::overload_cast<const Point3D &, const Line3D &>(&min_distance),
+          "Gets the minimum distance between a 3D point and a 3D line segment",
           "p"_a, "l"_a);
-    m.def("min_distance",
+    s.def("min_distance",
           py::overload_cast<const Line3D &, const Line3D &>(&min_distance),
-          "l1"_a, "l2"_a);
-    m.def("min_distance",
+          "Gets the minimum distance between two 3D line segments", "l1"_a,
+          "l2"_a);
+    s.def("min_distance",
           py::overload_cast<const Point3D &, const Triangle3D &>(&min_distance),
+          "Gets the minimum distance between a 3D point and a 3D triangle",
           "p"_a, "t"_a);
 }
 
-}  // namespace util
+}  // namespace geometry
 }  // namespace cpu
 }  // namespace fast_trimesh

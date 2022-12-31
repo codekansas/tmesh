@@ -2,7 +2,7 @@
 
 import random
 
-from fast_trimesh.fast_trimesh.cpu import Trimesh3D
+from fast_trimesh.fast_trimesh.cpu.trimesh import Trimesh3D
 
 
 def test_simple_trimesh_ops() -> None:

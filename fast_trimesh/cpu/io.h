@@ -3,19 +3,20 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <vector>
+#include <string>
 
-#include "geometry.h"
-#include "io.h"
-#include "shapes.h"
 #include "trimesh.h"
 
 namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
+namespace io {
+
+void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh);
 
 void add_modules(py::module &m);
 
+}  // namespace io
 }  // namespace cpu
 }  // namespace fast_trimesh

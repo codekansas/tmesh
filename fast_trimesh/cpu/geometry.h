@@ -7,7 +7,7 @@ namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
-namespace util {
+namespace geometry {
 
 // Define some common types.
 using Point2D = std::tuple<float, float>;
@@ -109,6 +109,6 @@ float min_distance(const Point3D &p, const Triangle3D &t);
 
 void add_modules(py::module &m);
 
-}  // namespace util
+}  // namespace geometry
 }  // namespace cpu
 }  // namespace fast_trimesh

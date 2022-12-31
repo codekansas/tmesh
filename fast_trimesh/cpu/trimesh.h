@@ -7,7 +7,7 @@
 #include <tuple>
 #include <vector>
 
-#include "util.h"
+#include "geometry.h"
 
 namespace py = pybind11;
 
@@ -27,8 +27,12 @@ class Trimesh {
 
     // Accessor methods
     void add_vertex(T vertex) { vertices.push_back(vertex); }
+    void set_vertices(std::vector<T> vertices) { this->vertices = vertices; }
     void add_face(int i, int j, int k) {
         faces.push_back(std::make_tuple(i, j, k));
+    }
+    void set_faces(std::vector<std::tuple<int, int, int>> faces) {
+        this->faces = faces;
     }
     std::vector<T> get_vertices() { return vertices; }
     std::vector<std::tuple<int, int, int>> get_faces() { return faces; }
@@ -67,10 +71,11 @@ class Trimesh {
     }
 };
 
-using Trimesh2D = Trimesh<util::Point2D>;
-using Trimesh3D = Trimesh<util::Point3D>;
+using Trimesh2D = Trimesh<geometry::Point2D>;
+using Trimesh3D = Trimesh<geometry::Point3D>;
 
-Trimesh2D triangulate(const util::Polygon2D &polygon, bool is_convex = false);
+Trimesh2D triangulate(const geometry::Polygon2D &polygon,
+                      bool is_convex = false);
 
 void add_modules(py::module &m);
 

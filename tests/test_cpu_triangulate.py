@@ -5,14 +5,8 @@ import random
 
 import pytest
 
-from fast_trimesh.fast_trimesh.cpu import (
-    angle,
-    is_clockwise,
-    is_convex,
-    signed_angle,
-    signed_area,
-    triangulate,
-)
+from fast_trimesh.fast_trimesh.cpu.geometry import angle, is_clockwise, signed_area
+from fast_trimesh.fast_trimesh.cpu.trimesh import triangulate
 
 Point2D = tuple[float, float]
 Point3D = tuple[float, float, float]
@@ -83,8 +77,8 @@ def test_signed_area(vertices: list[Point2D], area: float, clockwise: bool) -> N
     """
 
     # Checks the signed area function.
-    sarea = signed_area(vertices[::-1] if clockwise else vertices)
-    assert abs(sarea) == pytest.approx(area), sarea
+    sarea = signed_area(vertices)
+    assert sarea == pytest.approx(-area if clockwise else area), sarea
     assert is_clockwise(vertices) == clockwise
     assert is_clockwise(vertices[::-1]) != clockwise
 
