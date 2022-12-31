@@ -15,6 +15,8 @@ Line = tuple[Point, Point]
 Triangle2D = tuple[Point2D, Point2D, Point2D]
 Triangle3D = tuple[Point3D, Point3D, Point3D]
 Triangle = tuple[Point, Point, Point]
+Angle2D = tuple[Point2D, Point2D, Point2D]
+Angle3D = tuple[Point3D, Point3D, Point3D]
 
 SQRT_2 = math.sqrt(2)
 SQRT_3 = math.sqrt(3)
@@ -285,6 +287,96 @@ def test_line_triangle_intersection_3d(lhs: Line3D, rhs: Triangle3D, expected: P
     else:
         assert expected is not None, result
         assert result == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "points,expected",
+    [
+        (((0, 0), (1, 0), (1, 1)), math.pi / 2),
+        (((0, 0), (1, 0), (2, 0)), math.pi),
+    ],
+)
+def test_angles_2d(points: Angle2D, expected: float) -> None:
+    """Tests the angle calculation.
+
+    Args:
+        points: The points to test.
+        expected: The expected angle.
+    """
+
+    aval = geometry.angle(points[0], points[1], points[2])
+    assert aval == pytest.approx(expected), aval
+
+    aval = geometry.angle(points[2], points[1], points[0])
+    assert aval == pytest.approx(expected), aval
+
+
+@pytest.mark.parametrize(
+    "points,expected",
+    [
+        (((0, 0, 0), (1, 0, 0), (1, 1, 1)), math.pi / 2),
+        (((0, 0, 0), (1, 0, 0), (2, 0, 0)), math.pi),
+    ],
+)
+def test_angles_3d(points: Angle3D, expected: float) -> None:
+    """Tests the angle calculation.
+
+    Args:
+        points: The points to test.
+        expected: The expected angle.
+    """
+
+    aval = geometry.angle(points[0], points[1], points[2])
+    assert aval == pytest.approx(expected), aval
+
+    aval = geometry.angle(points[2], points[1], points[0])
+    assert aval == pytest.approx(expected), aval
+
+
+@pytest.mark.parametrize(
+    "vertices,area,clockwise",
+    [
+        ([(0, 0), (1, 0), (1, 1), (0, 1)], 1.0, False),
+        ([(0, 0), (0.5, 0.5), (0, 1), (1, 1), (1, 0)], 1.0 - 0.25, True),
+        ([(0, 0), (1, 0), (1, 1), (0, 1), (0.1, 0.9), (0.1, 0.1)], 1.0 - 0.09, False),
+    ],
+)
+def test_signed_area(vertices: list[Point2D], area: float, clockwise: bool) -> None:
+    """Tests the signed area calculation.
+
+    Args:
+        vertices: The vertices of the polygon.
+        area: The area of the polygon.
+        clockwise: Whether the polygon is clockwise.
+    """
+
+    # Checks the signed area function.
+    sarea = geometry.signed_area(vertices)
+    assert sarea == pytest.approx(-area if clockwise else area), sarea
+    assert geometry.is_clockwise(vertices) == clockwise
+    assert geometry.is_clockwise(vertices[::-1]) != clockwise
+
+
+@pytest.mark.parametrize(
+    "vertices,hull",
+    [
+        ([(0, 0), (1, 0), (1, 1), (0, 1)], [(0, 0), (1, 0), (1, 1), (0, 1)]),
+        ([(0, 0), (0.5, 0.5), (0, 1), (1, 1), (1, 0)], [(0, 0), (1, 0), (1, 1), (0, 1)]),
+        ([(0, 0), (1, 0), (1, 1), (0, 1), (0.1, 0.9), (0.1, 0.1)], [(0, 0), (1, 0), (1, 1), (0, 1)]),
+    ],
+)
+def test_convex_hull(vertices: list[Point2D], hull: list[Point2D]) -> None:
+    """Tests the convex hull calculation.
+
+    Args:
+        vertices: The vertices of the polygon.
+        hull: The vertices of the convex hull.
+    """
+
+    # Checks the convex hull function.
+    pred_hull = sorted(geometry.convex_hull(vertices))
+    hull = sorted([(float(a), float(b)) for a, b in hull])
+    assert pred_hull == pytest.approx(hull), (pred_hull, hull)
 
 
 @pytest.mark.parametrize(

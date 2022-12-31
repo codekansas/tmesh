@@ -11,6 +11,7 @@ void add_modules(py::module &m) {
     geometry::add_modules(s);
     io::add_modules(s);
     shapes::add_modules(s);
+    ops::add_modules(s);
 }
 
 }  // namespace cpu

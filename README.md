@@ -37,3 +37,6 @@ This repo has my implementations of boolean operations on 3D meshes (union, inte
 - [ ] Benchmarks
   - [ ] CPU
   - [ ] CUDA
+- [ ] Documentation
+  - [ ] Add to PyPi
+  - [ ] Automatically build Sphinx docs

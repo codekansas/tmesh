@@ -191,6 +191,37 @@ float signed_volume(const Point3D &p1, const Point3D &p2, const Point3D &p3,
     return (1.0 / 6.0) * dot_product(cross_product(p2 - p1, p3 - p1), p4 - p1);
 }
 
+Polygon2D convex_hull(const Polygon2D &p) {
+    int n = p.size();
+    if (n <= 3) return p;
+
+    Polygon2D hull;
+    hull.reserve(n);
+
+    // Find the leftmost point.
+    int leftmost = 0;
+    for (int i = 1; i < n; i++) {
+        if (std::get<0>(p[i]) < std::get<0>(p[leftmost])) {
+            leftmost = i;
+        }
+    }
+
+    // Find the convex hull.
+    int current = leftmost;
+    do {
+        hull.push_back(p[current]);
+        int next = (current + 1) % n;
+        for (int i = 0; i < n; i++) {
+            if (is_convex(p[current], p[next], p[i])) {
+                next = i;
+            }
+        }
+        current = next;
+    } while (current != leftmost);
+
+    return hull;
+}
+
 float determinant(const Point2D &p1, const Point2D &p2) {
     return std::get<0>(p1) * std::get<1>(p2) -
            std::get<1>(p1) * std::get<0>(p2);
@@ -783,6 +814,10 @@ void add_modules(py::module &m) {
           "Signed volume of a 3D tetrahedron (positive if p1, p2, p3 are "
           "counterclockwise when viewed from p4, negative if clockwise)",
           "p1"_a, "p2"_a, "p3"_a, "p4"_a);
+
+    // Convex hull.
+    s.def("convex_hull", &convex_hull,
+          "Computes the convex hull of a set of 2D points", "p"_a);
 
     // Determinants.
     s.def("determinant",
