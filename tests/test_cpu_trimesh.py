@@ -3,7 +3,9 @@
 import random
 from pathlib import Path
 
-from fast_trimesh.fast_trimesh.cpu.io import load_stl, save_stl
+import pytest
+
+from fast_trimesh.fast_trimesh.cpu.io import load_obj, load_stl, save_obj, save_stl
 from fast_trimesh.fast_trimesh.cpu.shapes import cuboid
 from fast_trimesh.fast_trimesh.cpu.trimesh import AffineTransformation
 
@@ -13,6 +15,12 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
 
     This test creates two trimeshes, adds some random vertices and
     faces to each, and then tests adding the two trimeshes together.
+
+    This test also tests serializing the trimeshes to disk using various
+    formats.
+
+    Args:
+        tmpdir: The temporary directory to use for testing.
     """
 
     # Gets two trimeshes.
@@ -40,7 +48,7 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     assert tr_c.vertices == tr_a.vertices
     assert tr_c.faces == tr_a.faces
 
-    # Tests saving and loading the trimesh.
+    # Tests saving and loading the trimesh as an STL.
     stl_path = str(tmpdir / "file.stl")
     save_stl(stl_path, tr_a)
     tr_d = load_stl(stl_path)
@@ -53,3 +61,12 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     tr_a_face_vertices = [tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces]
     tr_d_face_vertices = [tuple(tr_d.vertices[j] for j in i) for i in tr_d.faces]
     assert tr_a_face_vertices == tr_d_face_vertices
+
+    # Tests saving and loading the trimesh as an OBJ.
+    obj_path = str(tmpdir / "file.obj")
+    save_obj(obj_path, tr_a)
+    tr_e = load_obj(obj_path)
+    assert len(tr_e.vertices) == 16, len(tr_e.vertices)
+    assert len(tr_e.faces) == 24, len(tr_e.faces)
+    assert all(a == pytest.approx(b, abs=1e-5) for a, b in zip(tr_e.vertices, tr_a.vertices))
+    assert tr_e.faces == tr_a.faces

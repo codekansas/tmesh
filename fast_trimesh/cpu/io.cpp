@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 using namespace pybind11::literals;
 
@@ -104,6 +105,60 @@ trimesh::Trimesh3D load_stl(const std::string &filename) {
     return mesh;
 }
 
+void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh) {
+    std::ofstream f;
+    f.open(filename, std::ios::out);
+
+    // Write the vertices.
+    for (size_t i = 0; i < mesh.num_vertices(); i++) {
+        geometry::Point3D vertex = mesh.get_vertex(i);
+        f << "v " << std::get<0>(vertex) << " " << std::get<1>(vertex) << " "
+          << std::get<2>(vertex) << std::endl;
+    }
+
+    // Write the faces.
+    for (size_t i = 0; i < mesh.num_faces(); i++) {
+        std::tuple<int, int, int> face = mesh.get_face(i);
+        f << "f " << std::get<0>(face) + 1 << " " << std::get<1>(face) + 1
+          << " " << std::get<2>(face) + 1 << std::endl;
+    }
+
+    f.close();
+}
+
+trimesh::Trimesh3D load_obj(const std::string &filename) {
+    std::ifstream f;
+    f.open(filename, std::ios::in);
+
+    trimesh::Trimesh3D mesh;
+
+    // Keeps track of the unique vertices.
+    std::map<geometry::Point3D, size_t> vertex_map;
+
+    std::string line;
+    while (std::getline(f, line)) {
+        std::stringstream ss(line);
+        std::string type;
+        ss >> type;
+
+        if (type == "v") {
+            // Vertex.
+            float x, y, z;
+            ss >> x >> y >> z;
+            mesh.add_vertex(geometry::Point3D(x, y, z));
+        } else if (type == "f") {
+            // Face.
+            int v1, v2, v3;
+            ss >> v1 >> v2 >> v3;
+            mesh.add_face(v1 - 1, v2 - 1, v3 - 1);
+        }
+    }
+
+    f.close();
+
+    return mesh;
+}
+
 void add_modules(py::module &m) {
     py::module s = m.def_submodule("io");
     s.doc() = "CPU IO implementation.";
@@ -111,6 +166,10 @@ void add_modules(py::module &m) {
     s.def("save_stl", &save_stl, "Saves a mesh to an STL file", "filename"_a,
           "mesh"_a);
     s.def("load_stl", &load_stl, "Loads a mesh from an STL file", "filename"_a);
+
+    s.def("save_obj", &save_obj, "Saves a mesh to an OBJ file", "filename"_a,
+          "mesh"_a);
+    s.def("load_obj", &load_obj, "Loads a mesh from an OBJ file", "filename"_a);
 }
 
 }  // namespace io
