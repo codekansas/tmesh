@@ -10,9 +10,10 @@ void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh) {}
 
 void add_modules(py::module &m) {
     // Defines a new submodule.
-    auto io = m.def_submodule("io");
+    py::module s = m.def_submodule("io");
+    s.doc() = "CPU IO implementation.";
 
-    m.def("save_stl", &save_stl, "Saves a mesh to an STL file", "filename"_a,
+    s.def("save_stl", &save_stl, "Saves a mesh to an STL file", "filename"_a,
           "mesh"_a);
 }
 

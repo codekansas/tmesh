@@ -66,7 +66,8 @@ Trimesh2D triangulate(const geometry::Polygon2D &polygon, bool is_convex) {
 
 template <typename T>
 void add_module_for(pybind11::module &m, const char *type_name) {
-    py::class_<Trimesh<T>>(m, type_name)
+    py::class_<Trimesh<T>>(m, type_name,
+                           "Defines " + std::string(type_name) + " class.")
         .def(py::init<>())
         .def("add_vertex", &Trimesh<T>::add_vertex, "Adds a vertex to the mesh",
              "vertex"_a)
@@ -97,9 +98,11 @@ void add_module_for(pybind11::module &m, const char *type_name) {
 void add_modules(py::module &m) {
     py::module s = m.def_submodule("trimesh");
     s.doc() = "CPU trimesh implementation.";
+
     add_module_for<geometry::Point2D>(s, "Trimesh2D");
     add_module_for<geometry::Point3D>(s, "Trimesh3D");
-    s.def("triangulate", &triangulate, "polygon"_a, "is_convex"_a = false);
+    s.def("triangulate", &triangulate, "Converts a polygon to a 2D trimesh",
+          "polygon"_a, "is_convex"_a = false);
 }
 
 }  // namespace trimesh

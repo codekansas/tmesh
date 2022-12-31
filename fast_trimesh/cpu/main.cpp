@@ -4,7 +4,7 @@ namespace fast_trimesh {
 namespace cpu {
 
 void add_modules(py::module &m) {
-    auto s = m.def_submodule("cpu");
+    py::module s = m.def_submodule("cpu");
     s.doc() = "CPU backend";
 
     trimesh::add_modules(s);

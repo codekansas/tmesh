@@ -687,7 +687,7 @@ void add_modules(py::module &m) {
     s.def("is_convex",
           py::overload_cast<const Point2D &, const Point2D &, const Point2D &>(
               &is_convex),
-          "Equivalent to `angle(p1, p2, p3) < 0; convex polygon is traversed "
+          "Equivalent to `angle(p1, p2, p3) < 0`; convex polygon is traversed "
           "in counter-clockwise order",
           "p1"_a, "p2"_a, "p3"_a);
 
@@ -746,15 +746,13 @@ void add_modules(py::module &m) {
     s.def("barycentric_coordinates",
           py::overload_cast<const Point2D &, const Triangle2D &>(
               &barycentric_coordinates),
-          "Barycentric coordinates of a 2D point with respect to a 2D triangle"
-          "p"_a,
-          "t"_a);
+          "Barycentric coordinates of a 2D point with respect to a 2D triangle",
+          "p"_a, "t"_a);
     s.def("barycentric_coordinates",
           py::overload_cast<const Point3D &, const Triangle3D &>(
               &barycentric_coordinates),
-          "Barycentric coordinates of a 3D point with respect to a 3D triangle"
-          "p"_a,
-          "t"_a);
+          "Barycentric coordinates of a 3D point with respect to a 3D triangle",
+          "p"_a, "t"_a);
 
     // Projection functions.
     s.def("project",

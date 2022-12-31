@@ -52,6 +52,10 @@ install-conda: initialize
 		pybind11
 .PHONY: install-conda
 
+install: initialize
+	pip install .
+.PHONY: install
+
 # -----
 # Build
 # -----
