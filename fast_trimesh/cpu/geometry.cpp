@@ -93,29 +93,34 @@ Point3D translate(const Point3D &p, const Point3D &v) {
             std::get<2>(p) + std::get<2>(v)};
 }
 
-Point2D rotate(const Point2D &p, const Point2D &angle) {
+Point2D rotate(const Point2D &p, float angle) {
     float x = std::get<0>(p);
     float y = std::get<1>(p);
-    float cos_x = std::cos(std::get<0>(angle));
-    float sin_x = std::sin(std::get<0>(angle));
-    float cos_y = std::cos(std::get<1>(angle));
-    float sin_y = std::sin(std::get<1>(angle));
-    return {x * cos_y - y * sin_x * sin_y, x * sin_y + y * sin_x * cos_y};
+    float cos_a = std::cos(angle);
+    float sin_a = std::sin(angle);
+    return {x * cos_a - y * sin_a, x * sin_a + y * cos_a};
 }
 
 Point3D rotate(const Point3D &p, const Point3D &angle) {
     float x = std::get<0>(p);
     float y = std::get<1>(p);
     float z = std::get<2>(p);
+
     float cos_x = std::cos(std::get<0>(angle));
     float sin_x = std::sin(std::get<0>(angle));
     float cos_y = std::cos(std::get<1>(angle));
     float sin_y = std::sin(std::get<1>(angle));
     float cos_z = std::cos(std::get<2>(angle));
     float sin_z = std::sin(std::get<2>(angle));
-    return {x * cos_y * cos_z - y * cos_x * sin_z + z * sin_x * sin_y * cos_z,
-            x * cos_y * sin_z + y * cos_x * cos_z - z * sin_x * sin_y * sin_z,
-            x * sin_y + y * sin_x * cos_y + z * cos_x * cos_y};
+
+    float xx = cos_y * cos_z, xy = sin_x * sin_y * cos_z - cos_x * sin_z,
+          xz = cos_x * sin_y * cos_z + sin_x * sin_z;
+    float yx = cos_y * sin_z, yy = sin_x * sin_y * sin_z + cos_x * cos_z,
+          yz = cos_x * sin_y * sin_z - sin_x * cos_z;
+    float zx = -sin_y, zy = sin_x * cos_y, zz = cos_x * cos_y;
+
+    return {x * xx + y * xy + z * xz, x * yx + y * yy + z * yz,
+            x * zx + y * zy + z * zz};
 }
 
 float dot_product(const Point2D &p1, const Point2D &p2) {
@@ -718,8 +723,7 @@ void add_modules(py::module &m) {
           "Translates a 3D point by a vector", "p"_a, "v"_a);
 
     // Rotate a point by an angle.
-    s.def("rotate",
-          py::overload_cast<const Point2D &, const Point2D &>(&rotate),
+    s.def("rotate", py::overload_cast<const Point2D &, float>(&rotate),
           "Rotates a 2D point by a rotation vector", "p"_a, "angle"_a);
     s.def("rotate",
           py::overload_cast<const Point3D &, const Point3D &>(&rotate),

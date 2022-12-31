@@ -6,7 +6,8 @@ namespace fast_trimesh {
 namespace cpu {
 namespace trimesh {
 
-void AffineTransformation::operator*=(const AffineTransformation &other) {
+AffineTransformation &AffineTransformation::operator*=(
+    const AffineTransformation &other) {
     // if (other.rotation.has_value()) {
     //     if (rotation.has_value()) {
     //         rotation = rotation.value() * other.rotation.value();
@@ -31,6 +32,8 @@ void AffineTransformation::operator*=(const AffineTransformation &other) {
     //         scale = other.scale;
     //     }
     // }
+
+    return *this;
 }
 
 AffineTransformation AffineTransformation::operator*(
@@ -62,7 +65,7 @@ Trimesh<T> operator+(const Trimesh<T> &a, const Trimesh<T> &b) {
     return result;
 }
 
-Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf) {
+Trimesh3D &operator<<=(Trimesh3D &t, const AffineTransformation &tf) {
     if (tf.rotation.has_value()) {
         for (auto &vertex : t.vertices) {
             vertex = geometry::rotate(vertex, tf.rotation.value());
@@ -84,11 +87,15 @@ Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf) {
     return t;
 }
 
-Trimesh3D operator+(const Trimesh3D &t, const AffineTransformation &tf) {
+Trimesh3D operator<<(const Trimesh3D &t, const AffineTransformation &tf) {
     Trimesh3D result;
     result += t;
-    result += tf;
+    result <<= tf;
     return result;
+}
+
+Trimesh3D operator>>(const AffineTransformation &tf, const Trimesh3D &t) {
+    return t << tf;
 }
 
 bool is_ear(const geometry::Polygon2D &polygon, int vi, int vj, int vk) {
@@ -150,8 +157,9 @@ Trimesh2D triangulate(const geometry::Polygon2D &polygon, bool is_convex) {
 }
 
 template <typename T>
-void add_trimesh_module_for(pybind11::module &m, const char *type_name) {
-    py::class_<Trimesh<T>>(m, type_name, "Defines trimesh class.")
+py::class_<Trimesh<T>> add_trimesh_module_for(pybind11::module &m,
+                                              const char *type_name) {
+    return py::class_<Trimesh<T>>(m, type_name, "Defines trimesh class.")
         .def(py::init<>())
         .def("add_vertex", &Trimesh<T>::add_vertex, "Adds a vertex to the mesh",
              "vertex"_a)
@@ -190,6 +198,9 @@ void add_affine_transform_module(pybind11::module &m) {
              "Transforms a given trimesh", "trimesh"_a, py::is_operator())
         .def("__imatmul__", &AffineTransformation::operator*=,
              "Transforms a given trimesh in-place", "trimesh"_a,
+             py::is_operator())
+        .def("__rshift__", &operator>>,
+             "Applies affine transformation to 3D mesh", "trimesh"_a,
              py::is_operator());
 }
 
@@ -198,7 +209,10 @@ void add_modules(py::module &m) {
     s.doc() = "CPU trimesh implementation.";
 
     add_trimesh_module_for<geometry::Point2D>(s, "Trimesh2D");
-    add_trimesh_module_for<geometry::Point3D>(s, "Trimesh3D");
+    add_trimesh_module_for<geometry::Point3D>(s, "Trimesh3D")
+        .def("__lshift__", &operator<<,
+             "Applies affine transformation to 3D mesh", "affine"_a,
+             py::is_operator());
 
     add_affine_transform_module(s);
 

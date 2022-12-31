@@ -149,6 +149,6 @@ setup(
     ext_modules=[CMakeExtension("fast_trimesh")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
-    extras_require={"test": ["pytest>=6.0"]},
+    extras_require={"test": ["pytest"]},
     python_requires=">=3.7",
 )

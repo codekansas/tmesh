@@ -23,13 +23,14 @@ SQRT_3 = math.sqrt(3)
 @pytest.mark.parametrize(
     "lhs,rhs,expected",
     [
-        ((1, 0), (0, math.pi / 2), (0, 1)),
-        ((1, 0), (0, math.pi), (-1, 0)),
-        ((1, 0), (0, 3 * math.pi / 2), (0, -1)),
-        ((1, 0), (0, 2 * math.pi), (1, 0)),
+        ((1, 0), math.pi / 2, (0, 1)),
+        ((1, 0), math.pi, (-1, 0)),
+        ((0, 1), math.pi / 2, (-1, 0)),
+        ((0, 1), 3 * math.pi / 2, (1, 0)),
+        ((0, 1), 2 * math.pi, (0, 1)),
     ],
 )
-def test_rotate_2d(lhs: Point2D, rhs: Point2D, expected: Point2D) -> None:
+def test_rotate_2d(lhs: Point2D, rhs: float, expected: Point2D) -> None:
     """Test rotation of a point in 2D.
 
     Args:
@@ -39,8 +40,31 @@ def test_rotate_2d(lhs: Point2D, rhs: Point2D, expected: Point2D) -> None:
     """
 
     result = geometry.rotate(lhs, rhs)
-    assert result[0] == pytest.approx(expected[0], abs=1e-5)
-    assert result[1] == pytest.approx(expected[1], abs=1e-5)
+    assert result == pytest.approx(expected, abs=1e-5), (result, expected)
+
+
+@pytest.mark.parametrize(
+    "lhs,rhs,expected",
+    [
+        ((1, 0, 0), (0, 0, math.pi / 2), (0, 1, 0)),
+        ((1, 0, 0), (0, math.pi, 0), (-1, 0, 0)),
+        ((0, 1, 0), (0, 0, math.pi / 2), (-1, 0, 0)),
+        ((0, 1, 0), (0, 0, 3 * math.pi / 2), (1, 0, 0)),
+        ((0, 0, 1), (math.pi / 2, 0, 0), (0, -1, 0)),
+        ((0, 0, 1), (3 * math.pi / 2, 0, 0), (0, 1, 0)),
+    ],
+)
+def test_rotate_3d(lhs: Point3D, rhs: Point3D, expected: Point3D) -> None:
+    """Test rotation of a point in 3D.
+
+    Args:
+        lhs: The point.
+        rhs: The angle.
+        expected: The expected point.
+    """
+
+    result = geometry.rotate(lhs, rhs)
+    assert result == pytest.approx(expected, abs=1e-5), (result, expected)
 
 
 @pytest.mark.parametrize(
@@ -128,8 +152,7 @@ def test_project_point_to_line_2d(lhs: Point2D, rhs: Line2D, expected: Point2D |
         assert expected is None
     else:
         assert expected is not None
-        assert result[0] == pytest.approx(expected[0])
-        assert result[1] == pytest.approx(expected[1])
+        assert result == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -156,9 +179,7 @@ def test_project_point_to_line_3d(lhs: Point3D, rhs: Line3D, expected: Point3D |
         assert expected is None
     else:
         assert expected is not None
-        assert result[0] == pytest.approx(expected[0])
-        assert result[1] == pytest.approx(expected[1])
-        assert result[2] == pytest.approx(expected[2])
+        assert result == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -182,7 +203,7 @@ def test_project_point_to_triangle_3d(lhs: Point3D, rhs: Triangle3D, expected: P
         assert expected is None
     else:
         assert expected is not None
-        assert geometry.distance(result, expected) == pytest.approx(0)
+        assert result == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -209,7 +230,7 @@ def test_line_line_intersection_2d(lhs: Line2D, rhs: Line2D, expected: Point2D |
         assert expected is None
     else:
         assert expected is not None
-        assert geometry.distance(result, expected) == pytest.approx(0)
+        assert result == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -234,8 +255,8 @@ def test_line_line_nearest_points_3d(lhs: Line3D, rhs: Line3D, expected: tuple[P
         assert expected is None, result
     else:
         assert expected is not None, result
-        assert geometry.distance(result[0], expected[0]) == pytest.approx(0)
-        assert geometry.distance(result[1], expected[1]) == pytest.approx(0)
+        assert result[0] == pytest.approx(expected[0])
+        assert result[1] == pytest.approx(expected[1])
 
 
 @pytest.mark.parametrize(
@@ -263,7 +284,7 @@ def test_line_triangle_intersection_3d(lhs: Line3D, rhs: Triangle3D, expected: P
         assert expected is None
     else:
         assert expected is not None, result
-        assert geometry.distance(result, expected) == pytest.approx(0)
+        assert result == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(

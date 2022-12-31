@@ -29,7 +29,7 @@ class Trimesh {
     std::vector<T> vertices;
     std::vector<std::tuple<int, int, int>> faces;
 
-    friend Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf);
+    friend Trimesh3D &operator<<=(Trimesh3D &t, const AffineTransformation &tf);
 
     template <typename Tf>
     friend Trimesh<Tf> &operator+=(Trimesh<Tf> &a, const Trimesh<Tf> &other);
@@ -64,7 +64,7 @@ class AffineTransformation {
     std::optional<geometry::Point3D> translation;  // Translation vector
     std::optional<float> scale;                    // Scale factor
 
-    friend Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf);
+    friend Trimesh3D &operator<<=(Trimesh3D &t, const AffineTransformation &tf);
 
    public:
     AffineTransformation(std::optional<geometry::Point3D> rotation,
@@ -80,7 +80,7 @@ class AffineTransformation {
     }
     std::optional<float> get_scale() const { return scale; }
 
-    void operator*=(const AffineTransformation &other);
+    AffineTransformation &operator*=(const AffineTransformation &other);
     AffineTransformation operator*(const AffineTransformation &other) const;
 };
 
@@ -91,8 +91,9 @@ template <typename T>
 Trimesh<T> operator+(const Trimesh<T> &a, const Trimesh<T> &b);
 
 // Apply affine transformation to a 3D trimesh.
-Trimesh3D &operator+=(Trimesh3D &t, const AffineTransformation &tf);
-Trimesh3D operator+(const Trimesh3D &t, const AffineTransformation &tf);
+Trimesh3D &operator<<=(Trimesh3D &t, const AffineTransformation &tf);
+Trimesh3D operator<<(const Trimesh3D &t, const AffineTransformation &tf);
+Trimesh3D operator>>(const AffineTransformation &tf, const Trimesh3D &t);
 
 void add_modules(py::module &m);
 
