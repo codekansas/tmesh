@@ -107,6 +107,8 @@ std::optional<Point3D> project(const Point3D &p, const Line3D &l);
 std::optional<Point3D> project(const Point3D &p, const Triangle3D &t);
 
 // Bounding box functions.
+std::vector<std::tuple<int, int, int>> bbox_triangle_indices();
+std::vector<Point3D> bbox_corners(const BoundingBox3D &b);
 std::vector<Triangle3D> bbox_triangles(const BoundingBox3D &b);
 
 // Intersection functions.

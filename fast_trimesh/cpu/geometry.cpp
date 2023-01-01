@@ -485,7 +485,12 @@ std::optional<Point3D> project(const Point3D &p, const Triangle3D &t) {
     return tp;
 }
 
-std::vector<Triangle3D> bbox_triangles(const BoundingBox3D &b) {
+std::vector<std::tuple<int, int, int>> bbox_triangle_indices() {
+    return {{0, 2, 1}, {0, 3, 2}, {0, 5, 4}, {0, 1, 5}, {1, 6, 5}, {1, 2, 6},
+            {2, 7, 6}, {2, 3, 7}, {3, 4, 7}, {3, 0, 4}, {4, 6, 7}, {4, 5, 6}};
+}
+
+std::vector<Point3D> bbox_corners(const BoundingBox3D &b) {
     // Unpacks the bounding box.
     Point3D p1, p2;
     std::tie(p1, p2) = b;
@@ -495,19 +500,31 @@ std::vector<Triangle3D> bbox_triangles(const BoundingBox3D &b) {
     std::tie(x1, y1, z1) = p1;
     std::tie(x2, y2, z2) = p2;
 
-    // Returns the triangles.
-    return {{{x1, y1, z1}, {x2, y1, z1}, {x2, y2, z1}},
-            {{x1, y1, z1}, {x2, y2, z1}, {x1, y2, z1}},
-            {{x1, y1, z1}, {x1, y2, z1}, {x1, y2, z2}},
-            {{x1, y1, z1}, {x1, y2, z2}, {x1, y1, z2}},
-            {{x1, y1, z1}, {x1, y1, z2}, {x2, y1, z2}},
-            {{x1, y1, z1}, {x2, y1, z2}, {x2, y1, z1}},
-            {{x2, y2, z2}, {x1, y2, z2}, {x1, y1, z2}},
-            {{x2, y2, z2}, {x1, y1, z2}, {x2, y1, z2}},
-            {{x2, y2, z2}, {x2, y1, z2}, {x2, y1, z1}},
-            {{x2, y2, z2}, {x2, y1, z1}, {x2, y2, z1}},
-            {{x2, y2, z2}, {x2, y2, z1}, {x1, y2, z1}},
-            {{x2, y2, z2}, {x1, y2, z1}, {x1, y2, z2}}};
+    // Asserts that p2 is greater than p1.
+    if (x1 > x2 || y1 > y2 || z1 > z2) {
+        throw std::invalid_argument("p2 must be greater than p1");
+    }
+
+    // Gets the corner points of the bounding box.
+    return {{x1, y1, z1}, {x2, y1, z1}, {x2, y2, z1}, {x1, y2, z1},
+            {x1, y1, z2}, {x2, y1, z2}, {x2, y2, z2}, {x1, y2, z2}};
+}
+
+std::vector<Triangle3D> bbox_triangles(const BoundingBox3D &b) {
+    // Gets the corner points of the bounding box.
+    std::vector<Point3D> corners = bbox_corners(b);
+
+    // Gets the indices of each triangle.
+    std::vector<std::tuple<int, int, int>> indices = bbox_triangle_indices();
+
+    // Creates the triangles.
+    std::vector<Triangle3D> triangles;
+    for (auto &i : indices) {
+        triangles.push_back({corners[std::get<0>(i)], corners[std::get<1>(i)],
+                             corners[std::get<2>(i)]});
+    }
+
+    return triangles;
 }
 
 std::optional<Point2D> intersection(const Line2D &l1, const Line2D &l2) {
@@ -988,6 +1005,15 @@ void add_modules(py::module &m) {
           "projected point is outside the triangle",
           "p"_a, "t"_a);
 
+    // Bounding box functions.
+    s.def("bbox_triangle_indices", &bbox_triangle_indices,
+          "Gets triangle indices for a given bounding box");
+    s.def("bbox_corners", &bbox_corners,
+          "Gets corners for a given bounding box", "b"_a);
+    s.def("bbox_triangles",
+          py::overload_cast<const BoundingBox3D &>(&bbox_triangles),
+          "Gets triangles for a given bounding box", "b"_a);
+
     // Intersection functions.
     s.def("intersection",
           py::overload_cast<const Line2D &, const Line2D &>(&intersection),
@@ -1003,6 +1029,9 @@ void add_modules(py::module &m) {
     s.def("intersects",
           py::overload_cast<const Line3D &, const Triangle3D &>(&intersects),
           "Checks if a 3D line intersects a 3D triangle", "l1"_a, "l2"_a);
+    s.def("intersects",
+          py::overload_cast<const Line3D &, const BoundingBox3D &>(&intersects),
+          "Checks if a 3D line intersects a 3D bounding box", "l"_a, "b"_a);
     s.def("intersection",
           py::overload_cast<const Line3D &, const Triangle3D &>(&intersection),
           "Gets the intersection of a 3D line and a 3D triangle, returning "

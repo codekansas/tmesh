@@ -14,27 +14,17 @@ trimesh::Trimesh2D rectangle(float width, float height) {
 }
 
 trimesh::Trimesh3D cuboid(float width, float height, float depth) {
+    if (width < 0 || height < 0 || depth < 0)
+        throw std::runtime_error("Cuboid dimensions must be positive.");
+
+    // Gets cuboid bounding box.
+    geometry::BoundingBox3D bbox = {{0, 0, 0}, {width, height, depth}};
+
+    // Converts bounding box to a mesh.
     trimesh::Trimesh3D mesh;
-    mesh.set_vertices({{0, 0, 0},
-                       {width, 0, 0},
-                       {width, height, 0},
-                       {0, height, 0},
-                       {0, 0, depth},
-                       {width, 0, depth},
-                       {width, height, depth},
-                       {0, height, depth}});
-    mesh.set_faces({{0, 2, 1},
-                    {0, 3, 2},
-                    {0, 5, 4},
-                    {0, 1, 5},
-                    {1, 6, 5},
-                    {1, 2, 6},
-                    {2, 7, 6},
-                    {2, 3, 7},
-                    {3, 4, 7},
-                    {3, 0, 4},
-                    {4, 6, 7},
-                    {4, 5, 6}});
+    mesh.set_vertices(geometry::bbox_corners(bbox));
+    mesh.set_faces(geometry::bbox_triangle_indices());
+
     return mesh;
 }
 
