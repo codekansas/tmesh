@@ -7,7 +7,33 @@ import pytest
 
 from fast_trimesh.fast_trimesh.cpu.io import load_obj, load_stl, save_obj, save_stl
 from fast_trimesh.fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.fast_trimesh.cpu.trimesh import AffineTransformation
+from fast_trimesh.fast_trimesh.cpu.trimesh import AffineTransformation, triangulate
+
+Point2D = tuple[float, float]
+
+
+@pytest.mark.parametrize(
+    "polygon,valid",
+    [
+        ([], False),
+        ([(0.0, 0.0)], False),
+        ([(0.0, 0.0), (1.0, 0.0)], False),
+        ([(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)], True),
+    ],
+)
+def test_validate_2d_trimesh(polygon: list[Point2D], valid: bool) -> None:
+    """Tests validating a 2D trimesh.
+
+    Args:
+        polygon: The polygon to test.
+        valid: Whether the polygon is valid.
+    """
+
+    if valid:
+        triangulate(polygon).validate()
+    else:
+        with pytest.raises(RuntimeError):
+            triangulate(polygon).validate()
 
 
 def test_simple_trimesh_ops(tmpdir: Path) -> None:

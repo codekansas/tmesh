@@ -1,5 +1,7 @@
 #include "geometry.h"
 
+#include <numeric>
+
 #define EPSILON 1e-6
 
 using namespace pybind11::literals;
@@ -167,9 +169,9 @@ float angle(const Point3D &p1, const Point3D &p2, const Point3D &p3) {
 }
 
 bool is_convex(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
-    // Equivalent to angle(p1, p2, p3) < 0, meaning that a convex polygon
+    // Equivalent to angle(p1, p2, p3) <= 0, meaning that a convex polygon
     // is traversed in counter-clockwise order.
-    return determinant(p2 - p1, p3 - p1) > 0;
+    return determinant(p1, p2, p3) >= 0;
 }
 
 float signed_area(const Polygon2D &p) {
@@ -195,36 +197,51 @@ Polygon2D convex_hull(const Polygon2D &p) {
     int n = p.size();
     if (n <= 3) return p;
 
-    Polygon2D hull;
-    hull.reserve(n);
+    // Finds convex hull using Graham Scan algorithm.
+    // https://en.wikipedia.org/wiki/Graham_scan
 
-    // Find the leftmost point.
-    int leftmost = 0;
+    // Find the lowest y-coordinate and leftmost point, called P0.
+    int P0 = 0;
     for (int i = 1; i < n; i++) {
-        if (std::get<0>(p[i]) < std::get<0>(p[leftmost])) {
-            leftmost = i;
-        }
+        auto &[x, y] = p[i];
+        auto &[x0, y0] = p[P0];
+        if (y < y0 || (y == y0 && x < x0)) P0 = i;
     }
 
-    // Find the convex hull.
-    int current = leftmost;
-    do {
-        hull.push_back(p[current]);
-        int next = (current + 1) % n;
-        for (int i = 0; i < n; i++) {
-            if (is_convex(p[current], p[next], p[i])) {
-                next = i;
-            }
-        }
-        current = next;
-    } while (current != leftmost);
+    // Sort points by polar angle with P0, if several points have the same polar
+    // angle then put the closer one first.
+    std::vector<int> points(n);
+    std::iota(points.begin(), points.end(), 0);
+    std::sort(points.begin(), points.end(), [&](int i, int j) {
+        if (i == P0) return false;
+        float det = determinant(p[P0], p[i], p[j]);
+        if (det == 0) return distance(p[i], p[P0]) < distance(p[j], p[P0]);
+        return det < 0;
+    });
 
-    return hull;
+    // Traverses the points, keeping points which are convex.
+    Polygon2D stack;
+    stack.push_back(p[P0]);
+    stack.push_back(p[points[1]]);
+    for (int i = 2; i < n; i++) {
+        int point = points[i];
+        while (stack.size() > 1 && determinant(stack[stack.size() - 2],
+                                               stack.back(), p[point]) >= 0) {
+            stack.pop_back();
+        }
+        stack.push_back(p[point]);
+    }
+
+    return stack;
 }
 
 float determinant(const Point2D &p1, const Point2D &p2) {
     return std::get<0>(p1) * std::get<1>(p2) -
            std::get<1>(p1) * std::get<0>(p2);
+}
+
+float determinant(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
+    return determinant(p2 - p1, p3 - p1);
 }
 
 float determinant(const Point3D &p1, const Point3D &p2, const Point3D &p3) {

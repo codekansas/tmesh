@@ -10,8 +10,6 @@ trimesh::Trimesh3D linear_extrude(const trimesh::Trimesh2D &mesh,
                                   float height) {
     trimesh::Trimesh3D mesh3d;
 
-    // TODO: Implement this
-
     return mesh3d;
 }
 

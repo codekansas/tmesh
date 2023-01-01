@@ -73,6 +73,7 @@ Polygon2D convex_hull(const Polygon2D &p);
 
 // Determinants.
 float determinant(const Point2D &p1, const Point2D &p2);
+float determinant(const Point2D &p1, const Point2D &p2, const Point2D &p3);
 float determinant(const Point3D &p1, const Point3D &p2, const Point3D &p3);
 
 // Euclidean distances.

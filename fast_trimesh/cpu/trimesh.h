@@ -20,19 +20,11 @@ class AffineTransformation;
 template <typename T>
 class Trimesh;
 
-using Trimesh2D = Trimesh<geometry::Point2D>;
-using Trimesh3D = Trimesh<geometry::Point3D>;
-
 template <typename T>
 class Trimesh {
-   private:
+   protected:
     std::vector<T> vertices;
     std::vector<std::tuple<int, int, int>> faces;
-
-    friend Trimesh3D &operator<<=(Trimesh3D &t, const AffineTransformation &tf);
-
-    template <typename Tf>
-    friend Trimesh<Tf> &operator+=(Trimesh<Tf> &a, const Trimesh<Tf> &other);
 
    public:
     Trimesh() = default;
@@ -57,18 +49,43 @@ class Trimesh {
     std::tuple<int, int, int> get_face(int i) const { return faces[i]; }
     size_t num_vertices() const { return vertices.size(); }
     size_t num_faces() const { return faces.size(); }
+
+    Trimesh<T> &operator+=(const Trimesh<T> &other);
+    Trimesh<T> operator+(const Trimesh<T> &other) const;
+};
+
+class Trimesh2D : public Trimesh<geometry::Point2D> {
+   public:
+    Trimesh2D() = default;
+    ~Trimesh2D() = default;
+
+    void validate() const;
+    Trimesh2D &operator+=(const Trimesh2D &other);
+    Trimesh2D operator+(const Trimesh2D &other) const;
+};
+
+class Trimesh3D : public Trimesh<geometry::Point3D> {
+   public:
+    Trimesh3D() = default;
+    ~Trimesh3D() = default;
+
+    void validate() const;
+    Trimesh3D &operator<<=(const AffineTransformation &tf);
+    Trimesh3D operator<<(const AffineTransformation &tf) const;
+    Trimesh3D &operator+=(const Trimesh3D &other);
+    Trimesh3D operator+(const Trimesh3D &other) const;
 };
 
 Trimesh2D triangulate(const geometry::Polygon2D &polygon,
                       bool is_convex = false);
 
 class AffineTransformation {
-   private:
+   protected:
     std::optional<geometry::Point3D> rotation;     // ZYX Euler angles
     std::optional<geometry::Point3D> translation;  // Translation vector
     std::optional<float> scale;                    // Scale factor
 
-    friend Trimesh3D &operator<<=(Trimesh3D &t, const AffineTransformation &tf);
+    friend class Trimesh3D;
 
    public:
     AffineTransformation(std::optional<geometry::Point3D> rotation,
@@ -83,18 +100,8 @@ class AffineTransformation {
         return translation;
     }
     std::optional<float> get_scale() const { return scale; }
+    Trimesh3D operator>>(const Trimesh3D &t);
 };
-
-// Combine two 3D trimeshes.
-template <typename T>
-Trimesh<T> &operator+=(Trimesh<T> &a, const Trimesh<T> &other);
-template <typename T>
-Trimesh<T> operator+(const Trimesh<T> &a, const Trimesh<T> &b);
-
-// Apply affine transformation to a 3D trimesh.
-Trimesh3D &operator<<=(Trimesh3D &t, const AffineTransformation &tf);
-Trimesh3D operator<<(const Trimesh3D &t, const AffineTransformation &tf);
-Trimesh3D operator>>(const AffineTransformation &tf, const Trimesh3D &t);
 
 void add_modules(py::module &m);
 

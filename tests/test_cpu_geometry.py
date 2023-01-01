@@ -374,8 +374,10 @@ def test_convex_hull(vertices: list[Point2D], hull: list[Point2D]) -> None:
     """
 
     # Checks the convex hull function.
-    pred_hull = sorted(geometry.convex_hull(vertices))
-    hull = sorted([(float(a), float(b)) for a, b in hull])
+    pred_hull = geometry.convex_hull(vertices)
+    pred_hull.sort()
+    hull = [(float(a), float(b)) for a, b in hull]
+    hull.sort()
     assert pred_hull == pytest.approx(hull), (pred_hull, hull)
 
 
