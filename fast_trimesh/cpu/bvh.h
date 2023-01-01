@@ -18,15 +18,13 @@ class BoundaryVolumeHierarchy {
 
     // Defines the hierarchical box tree structure to support 3D queries.
     // The tree is represented as a vector of nodes, where each node is
-    // represented as a tuple of (left_child, right_child, box).
-    // The root node is at index 0, and the left and right children of node i
-    // are at indices 2i + 1 and 2i + 2, respectively.
+    // represented as a tuple of (triangle_id, left_child, right_child, box).
     // The box is represented as a tuple of (min, max), where min and max are
     // the minimum and maximum coordinates of the box, respectively.
-    // The box is represented as a tuple of (min, max), where min and max are
-    // the minimum and maximum coordinates of the box, respectively.
-    std::vector<std::tuple<size_t, size_t, size_t, geometry::BoundingBox3D>>
-        tree;
+    // The triangle ID points to the triangle in the trimesh. If a ray
+    // doesn't intersect a box, then we don't need to check any of the
+    // triangles in the box.
+    std::vector<std::tuple<int, int, int, geometry::BoundingBox3D>> tree;
 
    public:
     BoundaryVolumeHierarchy(trimesh::Trimesh3D &t);
@@ -36,16 +34,13 @@ class BoundaryVolumeHierarchy {
     std::shared_ptr<trimesh::Trimesh3D> get_trimesh() const {
         return this->trimesh;
     }
-    std::vector<std::tuple<size_t, size_t, size_t, geometry::BoundingBox3D>>
-    get_tree() const {
+    std::vector<std::tuple<int, int, int, geometry::BoundingBox3D>> get_tree()
+        const {
         return this->tree;
     }
 
-    // Functions for querying geometric intersections.
-    // std::vector<geometry::Triangle3D> intersections(
-    //     const geometry::Line3D &l) const;
-    // std::vector<geometry::Triangle3D> intersections(
-    //     const geometry::Triangle3D &t) const;
+    // Returns the IDs of all intersected triangles.
+    std::vector<int> intersections(const geometry::Line3D &l) const;
 };
 
 void add_modules(py::module &m);

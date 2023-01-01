@@ -485,6 +485,31 @@ std::optional<Point3D> project(const Point3D &p, const Triangle3D &t) {
     return tp;
 }
 
+std::vector<Triangle3D> bbox_triangles(const BoundingBox3D &b) {
+    // Unpacks the bounding box.
+    Point3D p1, p2;
+    std::tie(p1, p2) = b;
+
+    // Unpacks the points.
+    float x1, y1, z1, x2, y2, z2;
+    std::tie(x1, y1, z1) = p1;
+    std::tie(x2, y2, z2) = p2;
+
+    // Returns the triangles.
+    return {{{x1, y1, z1}, {x2, y1, z1}, {x2, y2, z1}},
+            {{x1, y1, z1}, {x2, y2, z1}, {x1, y2, z1}},
+            {{x1, y1, z1}, {x1, y2, z1}, {x1, y2, z2}},
+            {{x1, y1, z1}, {x1, y2, z2}, {x1, y1, z2}},
+            {{x1, y1, z1}, {x1, y1, z2}, {x2, y1, z2}},
+            {{x1, y1, z1}, {x2, y1, z2}, {x2, y1, z1}},
+            {{x2, y2, z2}, {x1, y2, z2}, {x1, y1, z2}},
+            {{x2, y2, z2}, {x1, y1, z2}, {x2, y1, z2}},
+            {{x2, y2, z2}, {x2, y1, z2}, {x2, y1, z1}},
+            {{x2, y2, z2}, {x2, y1, z1}, {x2, y2, z1}},
+            {{x2, y2, z2}, {x2, y2, z1}, {x1, y2, z1}},
+            {{x2, y2, z2}, {x1, y2, z1}, {x1, y2, z2}}};
+}
+
 std::optional<Point2D> intersection(const Line2D &l1, const Line2D &l2) {
     // Unpacks the points.
     Point2D p1, p2, p3, p4;
@@ -549,6 +574,36 @@ bool intersects(const Line3D &l, const Triangle3D &tr) {
          s5 = signed_volume(q1, q2, p3, p1) > 0;
 
     return (s1 != s2) && (s3 == s4 && s4 == s5);
+}
+
+bool intersects(const Line3D &l, const BoundingBox3D &b) {
+    // Unpacks the bounding box.
+    Point3D p1, p2;
+    std::tie(p1, p2) = b;
+
+    // Unpacks the line.
+    Point3D q1, q2;
+    std::tie(q1, q2) = l;
+
+    // Unpacks the points.
+    float x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4;
+    std::tie(x1, y1, z1) = p1;
+    std::tie(x2, y2, z2) = p2;
+    std::tie(x3, y3, z3) = q1;
+    std::tie(x4, y4, z4) = q2;
+
+    // Checks if either endpoint of the line is inside the bounding box.
+    if (x3 >= x1 && x3 <= x2 && y3 >= y1 && y3 <= y2 && z3 >= z1 && z3 <= z2)
+        return true;
+    if (x4 >= x1 && x4 <= x2 && y4 >= y1 && y4 <= y2 && z4 >= z1 && z4 <= z2)
+        return true;
+
+    // Checks if the line intersects any of the triangles that make up the
+    // faces of the bounding box.
+    for (auto tr : bbox_triangles(b))
+        if (intersects(l, tr)) return true;
+
+    return false;
 }
 
 std::optional<Point3D> intersection(const Line3D &l, const Triangle3D &tr) {

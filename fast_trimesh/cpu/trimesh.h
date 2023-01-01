@@ -69,6 +69,7 @@ class Trimesh3D : public Trimesh<geometry::Point3D> {
     Trimesh3D() = default;
     ~Trimesh3D() = default;
 
+    geometry::Triangle3D get_triangle(int i) const;
     void validate() const;
     Trimesh3D &operator<<=(const AffineTransformation &tf);
     Trimesh3D operator<<(const AffineTransformation &tf) const;

@@ -106,10 +106,14 @@ std::optional<Point2D> project(const Point2D &p, const Line2D &l);
 std::optional<Point3D> project(const Point3D &p, const Line3D &l);
 std::optional<Point3D> project(const Point3D &p, const Triangle3D &t);
 
+// Bounding box functions.
+std::vector<Triangle3D> bbox_triangles(const BoundingBox3D &b);
+
 // Intersection functions.
 std::optional<Point2D> intersection(const Line2D &l1, const Line2D &l2);
 std::optional<Point3D> intersection(const Line3D &l1, const Line3D &l2);
 bool intersects(const Line3D &l, const Triangle3D &tr);
+bool intersects(const Line3D &l, const BoundingBox3D &b);
 std::optional<Point3D> intersection(const Line3D &l, const Triangle3D &tr);
 
 // Nearest intersection functions.

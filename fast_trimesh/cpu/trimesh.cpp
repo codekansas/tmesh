@@ -130,6 +130,14 @@ Trimesh2D Trimesh2D::operator+(const Trimesh2D &other) const {
     return result;
 }
 
+geometry::Triangle3D Trimesh3D::get_triangle(int i) const {
+    if (i < 0 || i >= faces.size())
+        throw std::runtime_error("Invalid face index.");
+    int vi = std::get<0>(faces[i]), vj = std::get<1>(faces[i]),
+        vk = std::get<2>(faces[i]);
+    return {vertices[vi], vertices[vj], vertices[vk]};
+}
+
 void Trimesh3D::validate() const {
     // Checks that there are at least 3 vertices.
     if (vertices.size() < 3)

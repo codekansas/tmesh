@@ -7,12 +7,11 @@ namespace bvh {
 void sort_bounding_boxes(
     const std::vector<geometry::BoundingBox3D> &boxes,
     std::vector<size_t> &indices,
-    std::vector<std::tuple<size_t, size_t, size_t, geometry::BoundingBox3D>>
-        &tree,
+    std::vector<std::tuple<int, int, int, geometry::BoundingBox3D>> &tree,
     size_t lo, size_t hi) {
     // If the number of boxes is less than 2, then there is nothing to sort.
     if (hi - lo < 2) {
-        tree[lo] = {indices[lo], lo, lo, boxes[indices[lo]]};
+        tree[lo] = {indices[lo], -1, -1, boxes[indices[lo]]};
         return;
     }
 
@@ -77,12 +76,11 @@ void sort_bounding_boxes(
               });
 
     // Gets the middle element, which will be the root of the subtree.
-    size_t mid = (hi - lo) / 2;
-    size_t root = indices[lo + mid];
+    size_t mid = (hi - lo + 1) / 2;
     std::swap(indices[lo], indices[lo + mid]);
     tree[lo] = {indices[lo],
-                lo + 1,
-                lo + mid,
+                mid == 1 ? -1 : lo + 1,
+                mid == (hi - lo) ? -1 : lo + mid,
                 {{min_x, min_y, min_z}, {max_x, max_y, max_z}}};
 
     // Recursively sorts the left and right halves.
@@ -133,6 +131,39 @@ BoundaryVolumeHierarchy::BoundaryVolumeHierarchy(trimesh::Trimesh3D &t) {
     sort_bounding_boxes(boxes, indices, tree, 0, boxes.size());
 }
 
+void intersections_helper(
+    std::vector<std::tuple<int, int, int, geometry::BoundingBox3D>> tree,
+    const std::shared_ptr<trimesh::Trimesh3D> &trimesh, int id,
+    const geometry::Line3D &l, std::vector<int> &intersections) {
+    if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
+
+    // Gets the bounding box of the current node.
+    auto box = std::get<3>(tree[id]);
+
+    // Checks if the line intersects the bounding box.
+    if (!geometry::intersects(l, box)) {
+        return;
+    }
+
+    // Checks if the line intersects the current triangle.
+    auto face = trimesh->get_triangle(std::get<0>(tree[id]));
+    if (geometry::intersects(l, face)) {
+        intersections.push_back(std::get<0>(tree[id]));
+    }
+
+    // Recursively checks the left and right subtrees.
+    auto lhs = std::get<1>(tree[id]), rhs = std::get<2>(tree[id]);
+    if (lhs != -1) intersections_helper(tree, trimesh, lhs, l, intersections);
+    if (rhs != -1) intersections_helper(tree, trimesh, rhs, l, intersections);
+}
+
+std::vector<int> BoundaryVolumeHierarchy::intersections(
+    const geometry::Line3D &l) const {
+    std::vector<int> intersections;
+    intersections_helper(tree, trimesh, 0, l, intersections);
+    return intersections;
+}
+
 void add_modules(py::module &m) {
     py::module s = m.def_submodule("bvh");
     s.doc() = "Bounding volume hierarchy module";
@@ -142,6 +173,8 @@ void add_modules(py::module &m) {
         s, "BoundaryVolumeHierarchy")
         .def(py::init<trimesh::Trimesh3D &>(), "Boundary volume hierarchy",
              py::arg("trimesh"))
+        .def("intersections", &BoundaryVolumeHierarchy::intersections,
+             "Intersections", py::arg("line"))
         .def_property_readonly("trimesh", &BoundaryVolumeHierarchy::get_trimesh,
                                "Trimesh")
         .def_property_readonly("tree", &BoundaryVolumeHierarchy::get_tree,
