@@ -5,6 +5,7 @@
 
 #include <vector>
 
+#include "bvh.h"
 #include "geometry.h"
 #include "io.h"
 #include "ops.h"

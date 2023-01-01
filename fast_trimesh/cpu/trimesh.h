@@ -91,7 +91,14 @@ class AffineTransformation {
     AffineTransformation(std::optional<geometry::Point3D> rotation,
                          std::optional<geometry::Point3D> translation,
                          std::optional<float> scale)
-        : rotation(rotation), translation(translation), scale(scale) {}
+        : rotation(rotation), translation(translation), scale(scale) {
+        // Checks that only one of rotation, translation, and scale is set.
+        if (rotation.has_value() + translation.has_value() + scale.has_value() >
+            1) {
+            throw std::invalid_argument(
+                "Only one of rotation, translation, and scale can be set");
+        }
+    }
 
     ~AffineTransformation() = default;
 

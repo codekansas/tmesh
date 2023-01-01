@@ -55,11 +55,9 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     # Applies a random transformation to the second trimesh, moving it
     # far enough away from the first trimesh that the two trimeshes
     # should not overlap.
-    rand_tf = AffineTransformation(
-        rotation=(random.random(), random.random(), random.random()),
-        translation=(3.0, 3.0, 3.0),
-    )
-    tr_b <<= rand_tf
+    tf_1 = AffineTransformation(rotation=(random.random(), random.random(), random.random()))
+    tf_2 = AffineTransformation(translation=(3.0, 3.0, 3.0))
+    tr_b = tr_b << tf_1 << tf_2
 
     # Tests adding the two trimeshes together.
     tr_c = tr_a + tr_b

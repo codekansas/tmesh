@@ -16,8 +16,8 @@ This repo has my implementations of boolean operations on 3D meshes (union, inte
 - [ ] CPU
   - [ ] Mesh data structure
     - [x] Represent vertices and faces
-    - [ ] Check for manifoldness (no dangling edges, no non-manifold edges, no non-manifold faces)
-    - [ ] Represent curved edges and faces
+    - [x] Check for manifoldness (no dangling edges, no non-manifold edges, no non-manifold faces)
+    - [ ] Represent curved edges and faces (e.g. NURBS, big refactor)
   - [x] Affine transformations
   - [ ] Shapes
     - [x] Cuboid
@@ -27,8 +27,14 @@ This repo has my implementations of boolean operations on 3D meshes (union, inte
     - [ ] Linear extrude
     - [ ] Radial extrude
   - [ ] Add mesh operations
-    - [ ] Intersection
-    - [ ] Complement
+    - [ ] 2D
+      - [ ] Implement boundary volume hierarchy data structure for polygons
+      - [ ] Intersection
+      - [ ] Complement
+    - [ ] 3D
+      - [ ] Implement boundary volume hierarchy data structure
+      - [ ] Intersection
+      - [ ] Complement
 - [ ] CUDA
   - [ ] Mesh data structure
   - [ ] Add mesh operations

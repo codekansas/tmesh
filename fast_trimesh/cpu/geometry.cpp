@@ -235,6 +235,38 @@ Polygon2D convex_hull(const Polygon2D &p) {
     return stack;
 }
 
+BoundingBox2D bounding_box(const Polygon2D &p) {
+    float min_x = std::numeric_limits<float>::max(),
+          min_y = std::numeric_limits<float>::max(),
+          max_x = std::numeric_limits<float>::lowest(),
+          max_y = std::numeric_limits<float>::lowest();
+    for (auto &[x, y] : p) {
+        min_x = std::min(min_x, x);
+        min_y = std::min(min_y, y);
+        max_x = std::max(max_x, x);
+        max_y = std::max(max_y, y);
+    }
+    return {{min_x, min_y}, {max_x, max_y}};
+}
+
+BoundingBox3D bounding_box(const std::vector<Point3D> &p) {
+    float min_x = std::numeric_limits<float>::max(),
+          min_y = std::numeric_limits<float>::max(),
+          min_z = std::numeric_limits<float>::max(),
+          max_x = std::numeric_limits<float>::lowest(),
+          max_y = std::numeric_limits<float>::lowest(),
+          max_z = std::numeric_limits<float>::lowest();
+    for (auto &[x, y, z] : p) {
+        min_x = std::min(min_x, x);
+        min_y = std::min(min_y, y);
+        min_z = std::min(min_z, z);
+        max_x = std::max(max_x, x);
+        max_y = std::max(max_y, y);
+        max_z = std::max(max_z, z);
+    }
+    return {{min_x, min_y, min_z}, {max_x, max_y, max_z}};
+}
+
 float determinant(const Point2D &p1, const Point2D &p2) {
     return std::get<0>(p1) * std::get<1>(p2) -
            std::get<1>(p1) * std::get<0>(p2);

@@ -203,8 +203,9 @@ Trimesh2D triangulate(const geometry::Polygon2D &polygon, bool is_convex) {
 template <typename T>
 py::class_<T> add_trimesh_module_for(pybind11::module &m,
                                      const char *type_name) {
-    return py::class_<T>(m, type_name, "Defines trimesh class.")
-        .def(py::init<>())
+    return py::class_<T, std::shared_ptr<T>>(m, type_name,
+                                             "Defines trimesh class.")
+        .def(py::init<>(), "Creates an empty trimesh.")
         .def("add_vertex", &T::add_vertex, "Adds a vertex to the mesh",
              "vertex"_a)
         .def("set_vertices", &T::set_vertices, "Sets the mesh vertices",
@@ -224,12 +225,12 @@ py::class_<T> add_trimesh_module_for(pybind11::module &m,
 }
 
 void add_affine_transform_module(pybind11::module &m) {
-    py::class_<AffineTransformation>(m, "AffineTransformation",
-                                     "Defines affine transformation class.")
+    py::class_<AffineTransformation, std::shared_ptr<AffineTransformation>>(
+        m, "AffineTransformation", "Defines affine transformation class.")
         .def(py::init<std::optional<geometry::Point3D>,
                       std::optional<geometry::Point3D>, std::optional<float>>(),
-             "rotation"_a = std::nullopt, "translation"_a = std::nullopt,
-             "scale"_a = std::nullopt)
+             "Creates an affine transformation", "rotation"_a = std::nullopt,
+             "translation"_a = std::nullopt, "scale"_a = std::nullopt)
         .def("__rshift__", &AffineTransformation::operator>>,
              "Applies affine transformation to 3D mesh", "trimesh"_a,
              py::is_operator());

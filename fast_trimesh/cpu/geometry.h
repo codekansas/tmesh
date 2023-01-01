@@ -14,9 +14,11 @@ using Point2D = std::tuple<float, float>;
 using Line2D = std::tuple<Point2D, Point2D>;
 using Triangle2D = std::tuple<Point2D, Point2D, Point2D>;
 using Polygon2D = std::vector<Point2D>;
+using BoundingBox2D = std::tuple<Point2D, Point2D>;
 using Point3D = std::tuple<float, float, float>;
 using Line3D = std::tuple<Point3D, Point3D>;
 using Triangle3D = std::tuple<Point3D, Point3D, Point3D>;
+using BoundingBox3D = std::tuple<Point3D, Point3D>;
 
 // Vector operations.
 Point2D operator+(const Point2D &p1, const Point2D &p2);
@@ -70,6 +72,11 @@ float signed_volume(const Point3D &p1, const Point3D &p2, const Point3D &p3,
 
 // Convex hull.
 Polygon2D convex_hull(const Polygon2D &p);
+
+// Boundary box.
+BoundingBox2D bounding_box(const Polygon2D &p);
+BoundingBox3D bounding_box(const std::vector<Point3D> &p);
+BoundingBox3D bounding_box(const std::vector<BoundingBox3D> &b);
 
 // Determinants.
 float determinant(const Point2D &p1, const Point2D &p2);
