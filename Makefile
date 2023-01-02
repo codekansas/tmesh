@@ -86,5 +86,16 @@ format: initialize
 # -----
 
 clean:
-	rm -rf build **/*.so **/*.pyi **/*.pyc **/*.pyd **/*.pyo **/__pycache__
+	rm -rf build dist *.so **/*.so **/*.pyi **/*.pyc **/*.pyd **/*.pyo **/__pycache__ *.egg-info
 .PHONY: clean
+
+# ------------
+# Distribution
+# ------------
+
+dist: initialize
+	python -m build
+
+upload: initialize
+	python -m twine upload dist/*
+.PHONY: upload

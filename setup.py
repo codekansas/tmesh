@@ -13,11 +13,13 @@ Usage:
 
 import os
 import re
+import shutil
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 
-from setuptools import Extension, setup
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 PLAT_TO_CMAKE = {
@@ -42,10 +44,10 @@ class CMakeExtension(Extension):
         )
     """
 
-    def __init__(self, name: str, sourcedir: str = "") -> None:
+    def __init__(self, name: str) -> None:
         super().__init__(name, sources=[])
 
-        self.sourcedir = os.fspath(Path(sourcedir).resolve() / name)
+        self.sourcedir = os.fspath(Path(__file__).parent.resolve() / name)
 
 
 class CMakeBuild(build_ext):
@@ -65,9 +67,13 @@ class CMakeBuild(build_ext):
     def initialize_options(self) -> None:
         super().initialize_options()
 
+        # Setting the package name is required for the build to work.
         self.package = "fast_trimesh"
 
     def build_extension(self, ext: CMakeExtension) -> None:
+        # pylint: disable-next=import-outside-toplevel
+        import pybind11  # noqa: F401
+
         ext_fullpath = Path.cwd() / self.get_ext_fullpath(ext.name)  # type: ignore[no-untyped-call]
         extdir = ext_fullpath.parent.resolve()
         debug = int(os.environ.get("DEBUG", 0)) if self.debug is None else self.debug
@@ -76,6 +82,9 @@ class CMakeBuild(build_ext):
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
+            f"-DPYTHON_INCLUDE_DIR={sysconfig.get_path('include')}",
+            f"-DPYTHON_LIBRARY={sysconfig.get_path('platlib')}",
+            f"-DCMAKE_PREFIX_PATH={pybind11.get_cmake_dir()}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
         ]
         build_args = []
@@ -133,22 +142,36 @@ class CMakeBuild(build_ext):
             print(" ".join(cmd))
             subprocess.run(cmd, check=True)
 
-        for ext in self.extensions:
-            gen_stubs(ext)
+        if shutil.which("stubgen") is not None:
+            for ext in self.extensions:
+                gen_stubs(ext)
+
+
+with open("fast_trimesh/__version__.txt", "r", encoding="utf-8") as fh:
+    version = fh.read().strip()
+
+
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="fast-trimesh",
-    version="0.0.1",
+    packages=find_packages(exclude=[]),
+    include_package_data=True,
+    url="https://github.com/codekansas/fast-trimesh",
+    version=version,
     author="Ben Bolte",
     author_email="ben@bolte.cc",
     description="A fast trimesh implementation",
-    long_description="",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     ext_modules=[CMakeExtension("fast_trimesh")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
+    setup_requires=["cmake", "mypy", "pybind11"],
     extras_require={"test": ["pytest"]},
     python_requires=">=3.7",
 )

@@ -1,9 +1,11 @@
 # .gitignore
 
 build/
+dist/
 *.so
 *.py[cio]
 *.egg-info/
 .pytest_cache/
 *.stl
 *.obj
+docs.*
