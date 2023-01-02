@@ -44,17 +44,31 @@ endif
 .PHONY: initialize
 
 install-conda: initialize
-	mamba install \
+	@mamba install \
 		-c conda-forge \
-		cmake \
 		cmake-format \
-		clang-format \
-		pybind11
+		clang-format
 .PHONY: install-conda
 
+install-pip: initialize
+	@python -m pip install \
+		black \
+		cmake \
+		darglint \
+		flake8 \
+		isort \
+		mypy \
+		pybind11 \
+		pylint \
+		pytest \
+
 install: initialize
-	pip install .
+	python -m pip install .
 .PHONY: install
+
+develop: initialize
+	python setup.py develop
+.PHONY: develop
 
 # -----
 # Build
@@ -99,3 +113,11 @@ dist: initialize
 upload: initialize
 	python -m twine upload dist/*
 .PHONY: upload
+
+# --------
+# Examples
+# --------
+
+examples: initialize
+	cd examples && make build
+.PHONY: examples

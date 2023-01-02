@@ -5,7 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from fast_trimesh.fast_trimesh.cpu.io import load_obj, load_stl, save_obj, save_stl
+from fast_trimesh.fast_trimesh.cpu.io import (
+    load_obj,
+    load_stl,
+    load_stl_text,
+    save_obj,
+    save_stl,
+    save_stl_text,
+)
 from fast_trimesh.fast_trimesh.cpu.shapes import cuboid
 from fast_trimesh.fast_trimesh.cpu.trimesh import AffineTransformation, triangulate
 
@@ -86,11 +93,25 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     tr_d_face_vertices = [tuple(tr_d.vertices[j] for j in i) for i in tr_d.faces]
     assert tr_a_face_vertices == tr_d_face_vertices
 
+    # Tests saving and loading the trimesh as a text STL.
+    stl_path = str(tmpdir / "file.stl")
+    save_stl_text(stl_path, tr_a)
+    tr_e = load_stl_text(stl_path)
+
+    assert len(tr_e.vertices) == 16, len(tr_e.vertices)
+    assert len(tr_e.faces) == 24, len(tr_e.faces)
+    assert set(tr_e.vertices) == set(tr_a.vertices)
+
+    # Converts the faces and vertices to the absolute vertices.
+    tr_a_face_vertices = [tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces]
+    tr_e_face_vertices = [tuple(tr_e.vertices[j] for j in i) for i in tr_e.faces]
+    assert tr_a_face_vertices == tr_e_face_vertices
+
     # Tests saving and loading the trimesh as an OBJ.
     obj_path = str(tmpdir / "file.obj")
     save_obj(obj_path, tr_a)
-    tr_e = load_obj(obj_path)
-    assert len(tr_e.vertices) == 16, len(tr_e.vertices)
-    assert len(tr_e.faces) == 24, len(tr_e.faces)
-    assert all(a == pytest.approx(b, abs=1e-5) for a, b in zip(tr_e.vertices, tr_a.vertices))
-    assert tr_e.faces == tr_a.faces
+    tr_f = load_obj(obj_path)
+    assert len(tr_f.vertices) == 16, len(tr_f.vertices)
+    assert len(tr_f.faces) == 24, len(tr_f.faces)
+    assert all(a == pytest.approx(b, abs=1e-5) for a, b in zip(tr_f.vertices, tr_a.vertices))
+    assert tr_f.faces == tr_a.faces

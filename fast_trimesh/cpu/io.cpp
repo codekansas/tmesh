@@ -105,6 +105,104 @@ trimesh::Trimesh3D load_stl(const std::string &filename) {
     return mesh;
 }
 
+void save_stl_text(const std::string &filename,
+                   const trimesh::Trimesh3D &mesh) {
+    std::ofstream f;
+    f.open(filename, std::ios::out);
+
+    // Write the header.
+    f << "solid fast_trimesh STL file" << std::endl;
+
+    // Write each triangle.
+    for (size_t i = 0; i < mesh.num_faces(); i++) {
+        // Normal.
+        std::tuple<int, int, int> face = mesh.get_face(i);
+        geometry::Triangle3D triangle(mesh.get_vertex(std::get<0>(face)),
+                                      mesh.get_vertex(std::get<1>(face)),
+                                      mesh.get_vertex(std::get<2>(face)));
+        geometry::Point3D normal = geometry::normal(triangle);
+        f << "facet normal " << std::get<0>(normal) << " "
+          << std::get<1>(normal) << " " << std::get<2>(normal) << std::endl;
+        f << "outer loop" << std::endl;
+
+        // Vertices.
+        geometry::Point3D v1 = mesh.get_vertex(std::get<0>(face)),
+                          v2 = mesh.get_vertex(std::get<1>(face)),
+                          v3 = mesh.get_vertex(std::get<2>(face));
+        f << "vertex " << std::get<0>(v1) << " " << std::get<1>(v1) << " "
+          << std::get<2>(v1) << std::endl;
+        f << "vertex " << std::get<0>(v2) << " " << std::get<1>(v2) << " "
+          << std::get<2>(v2) << std::endl;
+        f << "vertex " << std::get<0>(v3) << " " << std::get<1>(v3) << " "
+          << std::get<2>(v3) << std::endl;
+
+        f << "endloop" << std::endl;
+        f << "endfacet" << std::endl;
+    }
+
+    // Write the footer.
+    f << "endsolid fast_trimesh STL file" << std::endl;
+
+    f.close();
+}
+
+trimesh::Trimesh3D load_stl_text(const std::string &filename) {
+    std::ifstream f;
+    f.open(filename, std::ios::in);
+
+    // Skip the header.
+    std::string line;
+    std::getline(f, line);
+
+    trimesh::Trimesh3D mesh;
+
+    // Keeps track of the unique vertices.
+    std::map<geometry::Point3D, size_t> vertex_map;
+
+    // Lambda function to get the index of a vertex.
+    auto get_vertex_index = [&vertex_map,
+                             &mesh](const geometry::Point3D &vertex) {
+        if (vertex_map.find(vertex) == vertex_map.end()) {
+            size_t index = mesh.add_vertex(vertex);
+            vertex_map[vertex] = index;
+        }
+        return vertex_map[vertex];
+    };
+
+    // Read each triangle.
+    while (std::getline(f, line)) {
+        // Skip the facet normal.
+        std::getline(f, line);
+
+        // Read the vertices.
+        geometry::Point3D v1, v2, v3;
+        std::getline(f, line);
+        std::stringstream ss(line);
+        ss >> std::get<0>(v1) >> std::get<1>(v1) >> std::get<2>(v1);
+        std::getline(f, line);
+        ss = std::stringstream(line);
+        ss >> std::get<0>(v2) >> std::get<1>(v2) >> std::get<2>(v2);
+        std::getline(f, line);
+        ss = std::stringstream(line);
+        ss >> std::get<0>(v3) >> std::get<1>(v3) >> std::get<2>(v3);
+
+        // Add the vertices.
+        size_t v1_index = get_vertex_index(v1), v2_index = get_vertex_index(v2),
+               v3_index = get_vertex_index(v3);
+
+        // Add the triangle face.
+        mesh.add_face(v1_index, v2_index, v3_index);
+
+        // Skip the endloop and endfacet.
+        std::getline(f, line);
+        std::getline(f, line);
+    }
+
+    f.close();
+
+    return mesh;
+}
+
 void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     std::ofstream f;
     f.open(filename, std::ios::out);
@@ -166,6 +264,11 @@ void add_modules(py::module &m) {
     s.def("save_stl", &save_stl, "Saves a mesh to an STL file", "filename"_a,
           "mesh"_a);
     s.def("load_stl", &load_stl, "Loads a mesh from an STL file", "filename"_a);
+
+    s.def("save_stl_text", &save_stl_text,
+          "Saves a mesh to an STL file in text format", "filename"_a, "mesh"_a);
+    s.def("load_stl_text", &load_stl_text,
+          "Loads a mesh from an STL file in text format", "filename"_a);
 
     s.def("save_obj", &save_obj, "Saves a mesh to an OBJ file", "filename"_a,
           "mesh"_a);

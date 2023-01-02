@@ -7,6 +7,4 @@ dist/
 *.egg-info/
 .eggs/
 .pytest_cache/
-*.stl
-*.obj
 docs.*

@@ -17,6 +17,10 @@ namespace io {
 void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh);
 trimesh::Trimesh3D load_stl(const std::string &filename);
 
+// Functions for saving and loading STLs as text.
+void save_stl_text(const std::string &filename, const trimesh::Trimesh3D &mesh);
+trimesh::Trimesh3D load_stl_text(const std::string &filename);
+
 // Functions for saving and loading OBJs.
 void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh);
 trimesh::Trimesh3D load_obj(const std::string &filename);
