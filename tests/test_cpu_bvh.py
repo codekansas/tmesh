@@ -28,4 +28,6 @@ def test_simple_bvh() -> None:
         (0, -1, -1, ((0.0, 0.0, 0.0), (1.0, 2.0, 0.0))),
     ]
 
-    assert set(bvh.intersections(((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)))) == {9}
+    assert len(bvh.intersections(((-1.0, 0.25, 0.25), (2.0, 0.25, 0.25)))) == 2
+    assert len(bvh.intersections(((-1.0, 0.25, 0.25), (0.5, 0.25, 0.25)))) == 1
+    assert len(bvh.intersections(((0.5, 0.25, 0.25), (2.0, 0.25, 0.25)))) == 1

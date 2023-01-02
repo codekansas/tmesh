@@ -13,6 +13,7 @@ void add_modules(py::module &m) {
     shapes::add_modules(s);
     bvh::add_modules(s);
     ops::add_modules(s);
+    boolean::add_modules(s);
 }
 
 }  // namespace cpu

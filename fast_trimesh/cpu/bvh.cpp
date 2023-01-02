@@ -1,5 +1,7 @@
 #include "bvh.h"
 
+using namespace pybind11::literals;
+
 namespace fast_trimesh {
 namespace cpu {
 namespace bvh {
@@ -172,9 +174,9 @@ void add_modules(py::module &m) {
                std::shared_ptr<BoundaryVolumeHierarchy>>(
         s, "BoundaryVolumeHierarchy")
         .def(py::init<trimesh::Trimesh3D &>(), "Boundary volume hierarchy",
-             py::arg("trimesh"))
+             "trimesh"_a)
         .def("intersections", &BoundaryVolumeHierarchy::intersections,
-             "Intersections", py::arg("line"))
+             "Intersections", "line"_a)
         .def_property_readonly("trimesh", &BoundaryVolumeHierarchy::get_trimesh,
                                "Trimesh")
         .def_property_readonly("tree", &BoundaryVolumeHierarchy::get_tree,

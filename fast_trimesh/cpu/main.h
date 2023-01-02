@@ -5,6 +5,7 @@
 
 #include <vector>
 
+#include "boolean.h"
 #include "bvh.h"
 #include "geometry.h"
 #include "io.h"
