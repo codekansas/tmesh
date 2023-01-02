@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel
 """Setup script for fast-trimesh.
 
 This setup script uses CMake to build the extension. It is based on the
@@ -19,6 +20,7 @@ import sys
 import sysconfig
 from multiprocessing import cpu_count
 from pathlib import Path
+from typing import List
 
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
@@ -74,12 +76,13 @@ class CMakeBuild(build_ext):
         # Set parallel build.
         self.parallel = cpu_count()
 
-    def build_extension(self, ext: CMakeExtension) -> None:
-        # pylint: disable-next=import-outside-toplevel
-        import pybind11  # noqa: F401
+    def build_extensions(self) -> None:
+        self.check_extensions_list(self.extensions)
+        self._build_extensions_serial()
 
-        # pylint: disable-next=import-outside-toplevel
+    def build_extension(self, ext: CMakeExtension) -> None:
         import cmake  # noqa: F401
+        import pybind11  # noqa: F401
 
         cmake_path = os.path.join(cmake.CMAKE_BIN_DIR, "cmake")
         ext_fullpath = Path.cwd() / self.get_ext_fullpath(ext.name)  # type: ignore[no-untyped-call]
@@ -135,7 +138,7 @@ class CMakeBuild(build_ext):
         if not build_temp.exists():
             build_temp.mkdir(parents=True)
 
-        def show_and_run(cmd: list[str]) -> None:
+        def show_and_run(cmd: List[str]) -> None:
             print(" ".join(cmd))
             subprocess.run(cmd, cwd=build_temp, check=True)
 
