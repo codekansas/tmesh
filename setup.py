@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import sysconfig
+from multiprocessing import cpu_count
 from pathlib import Path
 
 from setuptools import Extension, find_packages, setup
@@ -70,10 +71,17 @@ class CMakeBuild(build_ext):
         # Setting the package name is required for the build to work.
         self.package = "fast_trimesh"
 
+        # Set parallel build.
+        self.parallel = cpu_count()
+
     def build_extension(self, ext: CMakeExtension) -> None:
         # pylint: disable-next=import-outside-toplevel
         import pybind11  # noqa: F401
 
+        # pylint: disable-next=import-outside-toplevel
+        import cmake  # noqa: F401
+
+        cmake_path = os.path.join(cmake.CMAKE_BIN_DIR, "cmake")
         ext_fullpath = Path.cwd() / self.get_ext_fullpath(ext.name)  # type: ignore[no-untyped-call]
         extdir = ext_fullpath.parent.resolve()
         debug = int(os.environ.get("DEBUG", 0)) if self.debug is None else self.debug
@@ -131,8 +139,8 @@ class CMakeBuild(build_ext):
             print(" ".join(cmd))
             subprocess.run(cmd, cwd=build_temp, check=True)
 
-        show_and_run(["cmake", ext.sourcedir] + cmake_args)
-        show_and_run(["cmake", "--build", "."] + build_args)
+        show_and_run([cmake_path, ext.sourcedir] + cmake_args)
+        show_and_run([cmake_path, "--build", "."] + build_args)
 
     def run(self) -> None:
         super().run()
@@ -159,8 +167,6 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="fast-trimesh",
-    packages=find_packages(exclude=[]),
-    include_package_data=True,
     url="https://github.com/codekansas/fast-trimesh",
     version=version,
     author="Ben Bolte",

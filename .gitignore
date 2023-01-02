@@ -5,6 +5,7 @@ dist/
 *.so
 *.py[cio]
 *.egg-info/
+.eggs/
 .pytest_cache/
 *.stl
 *.obj
