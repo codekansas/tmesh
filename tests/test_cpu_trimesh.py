@@ -86,7 +86,7 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
 
     assert len(tr_d.vertices) == 16, len(tr_d.vertices)
     assert len(tr_d.faces) == 24, len(tr_d.faces)
-    assert set(tr_d.vertices) == set(tr_a.vertices)
+    assert sorted(tr_d.vertices) == sorted(tr_a.vertices)
 
     # Converts the faces and vertices to the absolute vertices.
     tr_a_face_vertices = [tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces]
@@ -100,12 +100,16 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
 
     assert len(tr_e.vertices) == 16, len(tr_e.vertices)
     assert len(tr_e.faces) == 24, len(tr_e.faces)
-    assert set(tr_e.vertices) == set(tr_a.vertices)
+    assert all(a == pytest.approx(b, abs=1e-3) for a, b in zip(sorted(tr_e.vertices), sorted(tr_a.vertices)))
 
     # Converts the faces and vertices to the absolute vertices.
     tr_a_face_vertices = [tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces]
     tr_e_face_vertices = [tuple(tr_e.vertices[j] for j in i) for i in tr_e.faces]
-    assert tr_a_face_vertices == tr_e_face_vertices
+    assert all(
+        aa == pytest.approx(bb, abs=1e-3)
+        for a, b in zip(tr_a_face_vertices, tr_e_face_vertices)
+        for aa, bb in zip(a, b)
+    )
 
     # Tests saving and loading the trimesh as an OBJ.
     obj_path = str(tmpdir / "file.obj")

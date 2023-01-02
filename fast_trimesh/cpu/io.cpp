@@ -169,22 +169,33 @@ trimesh::Trimesh3D load_stl_text(const std::string &filename) {
         return vertex_map[vertex];
     };
 
-    // Read each triangle.
-    while (std::getline(f, line)) {
-        // Skip the facet normal.
+    auto read_point = [](const std::string &line) {
+        std::stringstream ss(line);
+        std::string token;
+        ss >> token;
+        float x, y, z;
+        ss >> x >> y >> z;
+        return geometry::Point3D(x, y, z);
+    };
+
+    while (true) {
+        // Checks if the next line begins with "facet", which indicates the
+        // start of a triangle.
+        std::getline(f, line);
+        if (line.find("facet") == std::string::npos) {
+            break;
+        }
+
+        // Skip "outer loop".
         std::getline(f, line);
 
         // Read the vertices.
-        geometry::Point3D v1, v2, v3;
         std::getline(f, line);
-        std::stringstream ss(line);
-        ss >> std::get<0>(v1) >> std::get<1>(v1) >> std::get<2>(v1);
+        geometry::Point3D v1 = read_point(line);
         std::getline(f, line);
-        ss = std::stringstream(line);
-        ss >> std::get<0>(v2) >> std::get<1>(v2) >> std::get<2>(v2);
+        geometry::Point3D v2 = read_point(line);
         std::getline(f, line);
-        ss = std::stringstream(line);
-        ss >> std::get<0>(v3) >> std::get<1>(v3) >> std::get<2>(v3);
+        geometry::Point3D v3 = read_point(line);
 
         // Add the vertices.
         size_t v1_index = get_vertex_index(v1), v2_index = get_vertex_index(v2),
@@ -193,7 +204,7 @@ trimesh::Trimesh3D load_stl_text(const std::string &filename) {
         // Add the triangle face.
         mesh.add_face(v1_index, v2_index, v3_index);
 
-        // Skip the endloop and endfacet.
+        // Skip "endloop" and "endfacet".
         std::getline(f, line);
         std::getline(f, line);
     }
