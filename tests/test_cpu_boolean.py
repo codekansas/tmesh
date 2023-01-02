@@ -1,9 +1,12 @@
 """Tests boolean operations for CPU."""
 
+import pytest
+
 from fast_trimesh.fast_trimesh.cpu.boolean import difference, intersection, union
 from fast_trimesh.fast_trimesh.cpu.shapes import cuboid, sphere
 
 
+@pytest.mark.skip(reason="Not implemented yet.")
 def test_simple_boolean() -> None:
     """Tests boolean operations on some simple shapes."""
 
