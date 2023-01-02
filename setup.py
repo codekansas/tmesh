@@ -20,7 +20,7 @@ import sysconfig
 from multiprocessing import cpu_count
 from pathlib import Path
 
-from setuptools import Extension, find_packages, setup
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 PLAT_TO_CMAKE = {
