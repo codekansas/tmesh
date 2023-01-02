@@ -37,8 +37,10 @@ if(CMAKE_CUDA_COMPILER)
 
   # CUDA backend files.
   file(GLOB_RECURSE SRC_CUDA_FILES cuda/*.cu)
+  file(GLOB_RECURSE SRC_CPP_FILES cuda/*.cpp)
   set_source_files_properties(${SRC_CUDA_FILES} PROPERTIES LANGUAGE CUDA)
-  set(SRC_FILES ${SRC_CPP_FILES} ${SRC_CUDA_FILES})
+  set_source_files_properties(${SRC_CPP_FILES} PROPERTIES LANGUAGE CXX)
+  set(SRC_FILES ${SRC_FILES} ${SRC_CPP_FILES} ${SRC_CUDA_FILES})
   add_definitions(-DWITH_CUDA)
 
 else()
