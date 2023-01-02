@@ -38,8 +38,6 @@ pip install git+https://github.com/codekansas/fast-trimesh.git
 
 ## Getting Started
 
-### Simple Script
-
 The following script demonstrates how to use the package to generate an
 STL or OBJ file from a simple mesh:
 

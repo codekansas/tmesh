@@ -1,5 +1,16 @@
 # Makefile
 
+define add_example
+	@echo "" >> README.md
+	@echo "## $(1)" >> README.md
+	@echo "" >> README.md
+	@echo '```stl' >> README.md
+	@python $(1).py && cat $(1).stl >> README.md
+	@echo '```' >> README.md
+endef
+
 build:
-	python simple.py
+	@rm -rf README.md
+	@echo "# Examples" >> README.md
+	$(call add_example,simple)
 .PHONY: build
