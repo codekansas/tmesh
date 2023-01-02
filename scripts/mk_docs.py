@@ -1,12 +1,10 @@
 """Script which automatically writes the documentation for the project."""
 
 import argparse
-import io
 import json
+import sys
 from types import ModuleType
-from typing import Any
-
-import yaml
+from typing import Any, TextIO
 
 from fast_trimesh import fast_trimesh
 
@@ -79,7 +77,7 @@ def get_docs_for_level(mod: ModuleType, level: int) -> dict[str, Any]:
     return docs
 
 
-def write_markdown_file(file_ptr: io.TextIOBase, docs: dict[str, Any], level: int) -> None:
+def write_markdown_file(file_ptr: TextIO, docs: dict[str, Any], level: int) -> None:
     """Recursively writes documentation to a Markdown file.
 
     Args:
@@ -92,14 +90,11 @@ def write_markdown_file(file_ptr: io.TextIOBase, docs: dict[str, Any], level: in
     if "doc" in docs:
         file_ptr.write(f"{docs['doc']}\n\n")
 
-    for key, value in docs["submodules"].items():
-        write_markdown_file(file_ptr, value, level + 1)
-
     for key, value in docs.items():
         if key in ("name", "doc", "submodules"):
             continue
 
-        file_ptr.write(f"**{value['name']}**\n\n")
+        file_ptr.write(f"{'#' * (level + 2)} {value['name']}\n\n")
         if "doc" in value:
             file_ptr.write(f"```python\n{value['doc']}\n```\n\n")
 
@@ -108,8 +103,11 @@ def write_markdown_file(file_ptr: io.TextIOBase, docs: dict[str, Any], level: in
                 file_ptr.write(f"{'#' * (level + 3)} {method['name']}\n\n")
                 file_ptr.write(f"```python\n{method['doc']}\n```\n\n")
 
+    for key, value in docs["submodules"].items():
+        write_markdown_file(file_ptr, value, level)
 
-def write_html_file(file_ptr: io.TextIOBase, docs: dict[str, Any], level: int) -> None:
+
+def write_html_file(file_ptr: TextIO, docs: dict[str, Any], level: int) -> None:
     """Recursively writes documentation to an HTML file.
 
     Args:
@@ -123,7 +121,7 @@ def write_html_file(file_ptr: io.TextIOBase, docs: dict[str, Any], level: int) -
         file_ptr.write(f"<p>{docs['doc']}</p>\n")
 
     for key, value in docs["submodules"].items():
-        write_html_file(file_ptr, value, level + 1)
+        write_html_file(file_ptr, value, level)
 
     for key, value in docs.items():
         if key in ("name", "doc", "submodules"):
@@ -150,85 +148,90 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", help="The output file to write to.")
+    parser.add_argument(
+        "-p",
+        "--print",
+        default=False,
+        action="store_true",
+        help="If set, print instead of writing to a file.",
+    )
+    parser.add_argument("-s", "--start-indent-level", default=0, type=int, help="The starting indent level.")
     args = parser.parse_args()
 
     docs = get_docs_for_level(fast_trimesh, 0)
 
-    if args.output.endswith(".json"):
-        with open(args.output, "w", encoding="utf-8") as file_ptr:
-            json.dump(docs, file_ptr, indent=4)
+    file_ptr = open(args.output, "w", encoding="utf-8") if not args.print else sys.stdout
 
-    elif args.output.endswith(".yaml"):
-        with open(args.output, "w", encoding="utf-8") as file_ptr:
-            yaml.dump(docs, file_ptr)
+    if args.output.endswith(".json"):
+        json.dump(docs, file_ptr, indent=4)
 
     elif args.output.endswith(".md"):
-        with open(args.output, "w", encoding="utf-8") as file_ptr:
-            write_markdown_file(file_ptr, docs, 0)
+        write_markdown_file(file_ptr, docs, args.start_indent_level)
 
     elif args.output.endswith(".html"):
-        with open(args.output, "w", encoding="utf-8") as file_ptr:
-            file_ptr.write("<!DOCTYPE html>\n")
-            file_ptr.write("<html>\n")
-            file_ptr.write("<head>\n")
-            file_ptr.write('<meta charset="utf-8">\n')
+        file_ptr.write("<!DOCTYPE html>\n")
+        file_ptr.write("<html>\n")
+        file_ptr.write("<head>\n")
+        file_ptr.write('<meta charset="utf-8">\n')
 
-            # Bootstrap CSS.
-            bootstrap_css = "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-            bootstrap_sha = "sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
-            parts = {"href": bootstrap_css, "integrity": bootstrap_sha, "crossorigin": "anonymous"}
-            file_ptr.write(f'<link rel="stylesheet" {" ".join(f"{key}={value}" for key, value in parts.items())}>\n')
+        # Bootstrap CSS.
+        bootstrap_css = "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+        bootstrap_sha = "sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+        parts = {"href": bootstrap_css, "integrity": bootstrap_sha, "crossorigin": "anonymous"}
+        file_ptr.write(f'<link rel="stylesheet" {" ".join(f"{key}={value}" for key, value in parts.items())}>\n')
 
-            # Miscellaneous styles.
-            file_ptr.write('<style type="text/css">\n')
-            file_ptr.write("code { white-space: normal; }\n")
-            file_ptr.write("</style>\n")
+        # Miscellaneous styles.
+        file_ptr.write('<style type="text/css">\n')
+        file_ptr.write("code { white-space: normal; }\n")
+        file_ptr.write("</style>\n")
 
-            file_ptr.write("</head>\n")
-            file_ptr.write("<body>\n")
-            file_ptr.write('<div class="container">\n')
+        file_ptr.write("</head>\n")
+        file_ptr.write("<body>\n")
+        file_ptr.write('<div class="container">\n')
 
-            # Page header.
-            file_ptr.write('<div class="page-header">\n')
-            file_ptr.write('<h1 class="display-4">Fast Trimesh</h1>\n')
-            file_ptr.write("</div>\n")
+        # Page header.
+        file_ptr.write('<div class="page-header">\n')
+        file_ptr.write('<h1 class="display-4">Fast Trimesh</h1>\n')
+        file_ptr.write("</div>\n")
 
-            # Alert box.
-            file_ptr.write('<div class="alert alert-info" role="alert">\n')
-            file_ptr.write("This documentation was generated using the <code>mk_docs.py</code> script.\n")
-            file_ptr.write("</div>\n")
+        # Alert box.
+        file_ptr.write('<div class="alert alert-info" role="alert">\n')
+        file_ptr.write("This documentation was generated using the <code>mk_docs.py</code> script.\n")
+        file_ptr.write("</div>\n")
 
-            # Writes welcome statement.
-            file_ptr.write("<h2>Welcome!</h2>\n")
-            file_ptr.write("<p>Fast Trimesh is a Python package for working with triangular meshes.</p>\n")
+        # Writes welcome statement.
+        file_ptr.write("<h2>Welcome!</h2>\n")
+        file_ptr.write("<p>Fast Trimesh is a Python package for working with triangular meshes.</p>\n")
 
-            # Writes installation instructions.
-            file_ptr.write("<h2>Installation</h2>\n")
-            # file_ptr.write("<p>Install using <code>pip</code>:</p>\n")
-            # file_ptr.write("<pre><code>pip install fast-trimesh</code></pre>\n")
+        # Writes installation instructions.
+        file_ptr.write("<h2>Installation</h2>\n")
+        # file_ptr.write("<p>Install using <code>pip</code>:</p>\n")
+        # file_ptr.write("<pre><code>pip install fast-trimesh</code></pre>\n")
 
-            file_ptr.write("<h3>Install from source</h3>\n")
-            file_ptr.write("<ol>\n")
-            file_ptr.write("<li>Clone the repository:</li>\n")
-            file_ptr.write("<pre><code>git clone https://github.com/codekansas/fast-trimesh.git</code></pre>\n")
-            file_ptr.write("<li>Install the package:</li>\n")
-            file_ptr.write("<pre><code>cd fast-trimesh</code></pre>\n")
-            file_ptr.write("<pre><code>make install-conda</code></pre>\n")
-            file_ptr.write("<pre><code>make install</code></pre>\n")
-            file_ptr.write("</ol>\n")
+        file_ptr.write("<h3>Install from source</h3>\n")
+        file_ptr.write("<ol>\n")
+        file_ptr.write("<li>Clone the repository:</li>\n")
+        file_ptr.write("<pre><code>git clone https://github.com/codekansas/fast-trimesh.git</code></pre>\n")
+        file_ptr.write("<li>Install the package:</li>\n")
+        file_ptr.write("<pre><code>cd fast-trimesh</code></pre>\n")
+        file_ptr.write("<pre><code>make install-conda</code></pre>\n")
+        file_ptr.write("<pre><code>make install</code></pre>\n")
+        file_ptr.write("</ol>\n")
 
-            file_ptr.write("<h3>Install from Github using Pip</h3>\n")
-            file_ptr.write("<pre><code>pip install git+https://github.com/codekansas/fast-trimesh.git</code></pre>\n")
+        file_ptr.write("<h3>Install from Github using Pip</h3>\n")
+        file_ptr.write("<pre><code>pip install git+https://github.com/codekansas/fast-trimesh.git</code></pre>\n")
 
-            # Writes the documentation.
-            write_html_file(file_ptr, docs, 0)
+        # Writes the documentation.
+        write_html_file(file_ptr, docs, args.start_indent_level)
 
-            file_ptr.write("</div>\n")
-            file_ptr.write("</body>\n")
-            file_ptr.write("</html>\n")
+        file_ptr.write("</div>\n")
+        file_ptr.write("</body>\n")
+        file_ptr.write("</html>\n")
 
     else:
         raise ValueError(f"Invalid output file type: {args.output}")
+
+    file_ptr.close()
 
 
 if __name__ == "__main__":

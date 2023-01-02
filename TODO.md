@@ -13,8 +13,8 @@
   - [x] Affine transformations
   - [ ] Shapes
     - [x] Cuboid
-    - [ ] Sphere
-    - [ ] Cylinder
+    - [ ] Sphere (implement as radial extrude of a circle)
+    - [ ] Cylinder (implement as linear extrude of a circle)
   - [ ] Extrude
     - [ ] Linear extrude
     - [ ] Radial extrude
@@ -24,7 +24,7 @@
       - [ ] Intersection
       - [ ] Complement
     - [ ] 3D
-      - [ ] Implement boundary volume hierarchy data structure
+      - [x] Implement boundary volume hierarchy data structure
       - [ ] Intersection
       - [ ] Complement
 - [ ] CUDA

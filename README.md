@@ -1,6 +1,6 @@
 # Fast Trimesh
 
-Fast boolean operators for triangular meshes.
+Fast operators for triangular meshes.
 
 ## Installation
 
@@ -30,8 +30,7 @@ make install        # Builds and installs package
 
 ### From Github using `pip`
 
-Alternatively, if you have `cmake` and `pybind` available, you can install
-the package directly from Github using:
+Alternatively, you can install the latest package version directly:
 
 ```bash
 pip install git+https://github.com/codekansas/fast-trimesh.git
