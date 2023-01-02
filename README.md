@@ -21,10 +21,12 @@ conda activate fast-trimesh
 
 Next, clone and install the package:
 
+```bash
 git clone https://github.com/codekansas/fast-trimesh.git
 cd fast-trimesh
 make install-conda  # Installs Conda requirements
 make install        # Builds and installs package
+```
 
 ### From Github using `pip`
 
