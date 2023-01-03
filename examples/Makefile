@@ -13,4 +13,5 @@ build:
 	@rm -rf README.md
 	@echo "# Examples" >> README.md
 	$(call add_example,simple)
+	$(call add_example,cylinder)
 .PHONY: build

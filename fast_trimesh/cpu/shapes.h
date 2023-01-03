@@ -11,9 +11,9 @@ namespace fast_trimesh {
 namespace cpu {
 namespace shapes {
 
-trimesh::Trimesh2D rectangle(float width, float height);
+geometry::Polygon2D rectangle(float width, float height);
 
-trimesh::Trimesh2D circle(float radius, int slices);
+geometry::Polygon2D regular_polygon(float radius, int n);
 
 trimesh::Trimesh3D cuboid(float width, float height, float depth);
 

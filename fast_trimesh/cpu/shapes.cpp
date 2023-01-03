@@ -6,27 +6,20 @@ namespace fast_trimesh {
 namespace cpu {
 namespace shapes {
 
-trimesh::Trimesh2D rectangle(float width, float height) {
-    trimesh::Trimesh2D mesh;
-    mesh.set_vertices({{0, 0}, {0, height}, {width, height}, {width, 0}});
-    mesh.set_faces({{0, 1, 2}, {0, 2, 3}});
-    return mesh;
+geometry::Polygon2D rectangle(float width, float height) {
+    return {{0, 0}, {width, 0}, {width, height}, {0, height}};
 }
 
-trimesh::Trimesh2D circle(float radius, int slices) {
-    if (radius < 0) throw std::runtime_error("Circle radius must be positive.");
-    if (slices < 3)
-        throw std::runtime_error("Circle must have at least 3 slices.");
-
-    // Gets circle boundary points.
+geometry::Polygon2D regular_polygon(float radius, int n) {
+    if (radius < 0)
+        throw std::runtime_error("Polygon radius must be positive.");
+    if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
     geometry::Polygon2D vertices;
-    for (int i = 0; i < slices; i++) {
-        float theta = 2 * M_PI * i / slices;
+    for (int i = 0; i < n; i++) {
+        float theta = 2 * M_PI * i / n;
         vertices.push_back({radius * cos(theta), radius * sin(theta)});
     }
-
-    // Converts boundary points to a mesh.
-    return trimesh::triangulate(vertices);
+    return vertices;
 }
 
 trimesh::Trimesh3D cuboid(float width, float height, float depth) {
@@ -64,9 +57,10 @@ void add_modules(py::module &m) {
     py::module s = m.def_submodule("shapes");
     s.doc() = "Shape constructor functions.";
 
-    s.def("rectangle", &rectangle, "Gets a 2D rectangle mesh", "width"_a,
+    s.def("rectangle", &rectangle, "Gets a 2D rectangle", "width"_a,
           "height"_a);
-    s.def("circle", &circle, "Gets a 2D circle mesh", "radius"_a, "slices"_a);
+    s.def("regular_polygon", &regular_polygon, "Gets a 2D regular polygon",
+          "radius"_a, "n"_a);
     s.def("cuboid", &cuboid, "Gets a 3D cuboid mesh", "width"_a, "height"_a,
           "depth"_a);
     s.def("sphere", &sphere, "Gets a 3D sphere mesh", "radius"_a, "slices"_a,

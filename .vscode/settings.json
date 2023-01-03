@@ -1,3 +1,4 @@
 {
-  "cmake.sourceDirectory": "${workspaceFolder}/fast_trimesh"
+  "cmake.sourceDirectory": "${workspaceFolder}/fast_trimesh",
+  "cmake.buildDirectory": "${workspaceFolder}/build"
 }
