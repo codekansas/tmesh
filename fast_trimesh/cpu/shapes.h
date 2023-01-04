@@ -11,11 +11,12 @@ namespace fast_trimesh {
 namespace cpu {
 namespace shapes {
 
-geometry::Polygon2D rectangle(float width, float height);
+types::Polygon2D rectangle(float width, float height, bool center = false);
 
-geometry::Polygon2D regular_polygon(float radius, int n);
+types::Polygon2D regular_polygon(float radius, int n);
 
-trimesh::Trimesh3D cuboid(float width, float height, float depth);
+trimesh::Trimesh3D cuboid(float width, float height, float depth,
+                          bool center = false);
 
 trimesh::Trimesh3D sphere(float radius, int slices, int stacks);
 

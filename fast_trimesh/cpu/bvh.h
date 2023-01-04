@@ -3,8 +3,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "geometry.h"
 #include "trimesh.h"
+#include "types.h"
 
 namespace py = pybind11;
 
@@ -24,7 +24,7 @@ class BoundaryVolumeHierarchy {
     // The triangle ID points to the triangle in the trimesh. If a ray
     // doesn't intersect a box, then we don't need to check any of the
     // triangles in the box.
-    std::vector<std::tuple<int, int, int, geometry::BoundingBox3D>> tree;
+    std::vector<std::tuple<int, int, int, types::BoundingBox3D>> tree;
 
    public:
     BoundaryVolumeHierarchy(trimesh::Trimesh3D &t);
@@ -34,13 +34,13 @@ class BoundaryVolumeHierarchy {
     std::shared_ptr<trimesh::Trimesh3D> get_trimesh() const {
         return this->trimesh;
     }
-    std::vector<std::tuple<int, int, int, geometry::BoundingBox3D>> get_tree()
+    std::vector<std::tuple<int, int, int, types::BoundingBox3D>> get_tree()
         const {
         return this->tree;
     }
 
     // Returns the IDs of all intersected triangles.
-    std::vector<int> intersections(const geometry::Line3D &l) const;
+    std::vector<int> intersections(const types::Line3D &l) const;
 };
 
 void add_modules(py::module &m);

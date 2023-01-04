@@ -2,16 +2,16 @@ import math
 
 from fast_trimesh.fast_trimesh.cpu.io import save_stl_text
 from fast_trimesh.fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.fast_trimesh.cpu.trimesh import AffineTransformation
+from fast_trimesh.fast_trimesh.cpu.types import Affine3D
 
 # Create some cuboids.
-a = cuboid(1.0, 1.0, 1.0)
-b = cuboid(1.0, 1.0, 1.0)
+a = cuboid(1.0, 1.0, 1.0, center=True)
+b = cuboid(1.0, 1.0, 1.0, center=True)
 
 # Move the second cuboid around.
-rot = AffineTransformation(rotation=(math.pi / 4, 0.0, 0.0))
-trans = AffineTransformation(translation=(0.0, 0.5, 0.5))
-b = b << rot << trans
+rot = Affine3D(rot=(math.pi / 4, 0.0, 0.0))
+trans = Affine3D(trans=(0.0, 0.5, 0.0))
+b <<= rot @ trans
 
 # Save the resulting cuboid.
 save_stl_text("simple.stl", a + b)

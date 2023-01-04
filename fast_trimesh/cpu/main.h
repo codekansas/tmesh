@@ -7,11 +7,11 @@
 
 #include "boolean.h"
 #include "bvh.h"
-#include "geometry.h"
 #include "io.h"
 #include "ops.h"
 #include "shapes.h"
 #include "trimesh.h"
+#include "types.h"
 
 namespace py = pybind11;
 

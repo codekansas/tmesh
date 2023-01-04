@@ -5,7 +5,8 @@ import random
 
 import pytest
 
-from fast_trimesh.fast_trimesh.cpu.trimesh import triangulate
+from fast_trimesh.fast_trimesh.cpu.trimesh import Trimesh2D
+from fast_trimesh.fast_trimesh.cpu.types import Point2D, Polygon2D
 
 
 @pytest.mark.parametrize("random_points", [True, False])
@@ -20,13 +21,14 @@ def test_simple_triangulate(random_points: bool) -> None:
     """
 
     if random_points:
-        vertices = [(random.random() - 0.5, random.random() - 0.5) for _ in range(10)]
-        vertices.sort(key=lambda v: -math.atan2(v[1], v[0]) % (2 * math.pi))
+        vertices = [Point2D(random.random() - 0.5, random.random() - 0.5) for _ in range(10)]
+        vertices.sort(key=lambda v: -math.atan2(v.y, v.x) % (2 * math.pi))
     else:
-        vertices = [(math.cos(2 * math.pi * i / 10), math.sin(2 * math.pi * i / 10)) for i in range(10)]
+        vertices = [Point2D(math.cos(2 * math.pi * i / 10), math.sin(2 * math.pi * i / 10)) for i in range(10)]
 
     # Gets the triangulation.
-    trimesh = triangulate(vertices, is_convex=False)
+    poly = Polygon2D(vertices)
+    trimesh = Trimesh2D(poly, is_convex=False)
 
     assert len(trimesh.vertices) == 10, trimesh.vertices
     assert len(trimesh.faces) == 8, trimesh.faces

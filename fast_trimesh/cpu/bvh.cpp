@@ -7,9 +7,9 @@ namespace cpu {
 namespace bvh {
 
 void sort_bounding_boxes(
-    const std::vector<geometry::BoundingBox3D> &boxes,
+    const std::vector<types::BoundingBox3D> &boxes,
     std::vector<size_t> &indices,
-    std::vector<std::tuple<int, int, int, geometry::BoundingBox3D>> &tree,
+    std::vector<std::tuple<int, int, int, types::BoundingBox3D>> &tree,
     size_t lo, size_t hi) {
     // If the number of boxes is less than 2, then there is nothing to sort.
     if (hi - lo < 2) {
@@ -25,14 +25,14 @@ void sort_bounding_boxes(
           max_y = std::numeric_limits<float>::lowest(),
           max_z = std::numeric_limits<float>::lowest();
     for (size_t i = lo; i < hi; i++) {
-        auto min = std::get<0>(boxes[indices[i]]);
-        auto max = std::get<1>(boxes[indices[i]]);
-        min_x = std::min(min_x, std::get<0>(min));
-        min_y = std::min(min_y, std::get<1>(min));
-        min_z = std::min(min_z, std::get<2>(min));
-        max_x = std::max(max_x, std::get<0>(max));
-        max_y = std::max(max_y, std::get<1>(max));
-        max_z = std::max(max_z, std::get<2>(max));
+        auto min = boxes[indices[i]].min;
+        auto max = boxes[indices[i]].max;
+        min_x = std::min(min_x, min.x);
+        min_y = std::min(min_y, min.y);
+        min_z = std::min(min_z, min.z);
+        max_x = std::max(max_x, max.x);
+        max_y = std::max(max_y, max.y);
+        max_z = std::max(max_z, max.z);
     }
 
     // Gets the longest axis.
@@ -48,19 +48,18 @@ void sort_bounding_boxes(
         axis = 2;
     }
 
-    auto get_axis_vals = [axis](const geometry::BoundingBox3D &box) {
-        auto min = std::get<0>(box);
-        auto max = std::get<1>(box);
+    auto get_axis_vals = [axis](const types::BoundingBox3D &box) {
+        auto min = box.min, max = box.max;
         std::tuple<float, float> vals;
         switch (axis) {
             case 0:
-                vals = std::make_tuple(std::get<0>(min), std::get<0>(max));
+                vals = std::make_tuple(min.x, max.x);
                 break;
             case 1:
-                vals = std::make_tuple(std::get<1>(min), std::get<1>(max));
+                vals = std::make_tuple(min.y, max.y);
                 break;
             case 2:
-                vals = std::make_tuple(std::get<2>(min), std::get<2>(max));
+                vals = std::make_tuple(min.z, max.z);
                 break;
         }
         return vals;
@@ -98,14 +97,13 @@ BoundaryVolumeHierarchy::BoundaryVolumeHierarchy(trimesh::Trimesh3D &t) {
     // First, we build a vector of boxes, where each box is represented as a
     // tuple of (min, max), where min and max are the minimum and maximum
     // coordinates of the box, respectively.
-    std::vector<geometry::BoundingBox3D> boxes;
+    std::vector<types::BoundingBox3D> boxes;
     for (int i = 0; i < t.num_faces(); i++) {
         auto face = t.get_face(i);
         auto v1 = t.get_vertex(std::get<0>(face));
         auto v2 = t.get_vertex(std::get<1>(face));
         auto v3 = t.get_vertex(std::get<2>(face));
-        auto box = geometry::bounding_box({v1, v2, v3});
-        boxes.push_back(box);
+        boxes.push_back(types::BoundingBox3D({v1, v2, v3}));
     }
 
     // Insert the boxes into the tree.
@@ -134,22 +132,22 @@ BoundaryVolumeHierarchy::BoundaryVolumeHierarchy(trimesh::Trimesh3D &t) {
 }
 
 void intersections_helper(
-    std::vector<std::tuple<int, int, int, geometry::BoundingBox3D>> tree,
+    std::vector<std::tuple<int, int, int, types::BoundingBox3D>> tree,
     const std::shared_ptr<trimesh::Trimesh3D> &trimesh, int id,
-    const geometry::Line3D &l, std::vector<int> &intersections) {
+    const types::Line3D &l, std::vector<int> &intersections) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
 
     // Gets the bounding box of the current node.
     auto box = std::get<3>(tree[id]);
 
     // Checks if the line intersects the bounding box.
-    if (!geometry::intersects(l, box)) {
+    if (!l.intersects_bounding_box(box)) {
         return;
     }
 
     // Checks if the line intersects the current triangle.
     auto face = trimesh->get_triangle(std::get<0>(tree[id]));
-    if (geometry::intersects(l, face)) {
+    if (l.intersects_triangle(face)) {
         intersections.push_back(std::get<0>(tree[id]));
     }
 
@@ -160,7 +158,7 @@ void intersections_helper(
 }
 
 std::vector<int> BoundaryVolumeHierarchy::intersections(
-    const geometry::Line3D &l) const {
+    const types::Line3D &l) const {
     std::vector<int> intersections;
     intersections_helper(tree, trimesh, 0, l, intersections);
     return intersections;

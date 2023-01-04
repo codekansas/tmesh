@@ -14,33 +14,32 @@ from fast_trimesh.fast_trimesh.cpu.io import (
     save_stl_text,
 )
 from fast_trimesh.fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.fast_trimesh.cpu.trimesh import AffineTransformation, triangulate
-
-Point2D = tuple[float, float]
+from fast_trimesh.fast_trimesh.cpu.trimesh import Trimesh2D
+from fast_trimesh.fast_trimesh.cpu.types import Affine3D, Point2D, Polygon2D
 
 
 @pytest.mark.parametrize(
-    "polygon,valid",
+    "points,valid",
     [
         ([], False),
-        ([(0.0, 0.0)], False),
-        ([(0.0, 0.0), (1.0, 0.0)], False),
-        ([(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)], True),
+        ([Point2D(0.0, 0.0)], False),
+        ([Point2D(0.0, 0.0), Point2D(1.0, 0.0)], False),
+        ([Point2D(0.0, 0.0), Point2D(1.0, 0.0), Point2D(0.0, 1.0)], True),
     ],
 )
-def test_validate_2d_trimesh(polygon: list[Point2D], valid: bool) -> None:
+def test_validate_2d_trimesh(points: list[Point2D], valid: bool) -> None:
     """Tests validating a 2D trimesh.
 
     Args:
-        polygon: The polygon to test.
+        points: The polygon to test.
         valid: Whether the polygon is valid.
     """
 
     if valid:
-        triangulate(polygon).validate()
+        Trimesh2D(Polygon2D(points)).validate()
     else:
         with pytest.raises(RuntimeError):
-            triangulate(polygon).validate()
+            Trimesh2D(Polygon2D(points)).validate()
 
 
 def test_simple_trimesh_ops(tmpdir: Path) -> None:
@@ -62,9 +61,9 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     # Applies a random transformation to the second trimesh, moving it
     # far enough away from the first trimesh that the two trimeshes
     # should not overlap.
-    tf_1 = AffineTransformation(rotation=(random.random(), random.random(), random.random()))
-    tf_2 = AffineTransformation(translation=(3.0, 3.0, 3.0))
-    tr_b = tr_b << tf_1 << tf_2
+    rot = Affine3D(rot=(random.random(), random.random(), random.random()))
+    trans = Affine3D(trans=(3.0, 3.0, 3.0))
+    tr_b = tr_b << rot @ trans
 
     # Tests adding the two trimeshes together.
     tr_c = tr_a + tr_b
@@ -100,13 +99,16 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
 
     assert len(tr_e.vertices) == 16, len(tr_e.vertices)
     assert len(tr_e.faces) == 24, len(tr_e.faces)
-    assert all(a == pytest.approx(b, abs=1e-3) for a, b in zip(sorted(tr_e.vertices), sorted(tr_a.vertices)))
+    assert all(
+        a.distance_to_point(b) == pytest.approx(0, abs=1e-3)
+        for a, b in zip(sorted(tr_e.vertices), sorted(tr_a.vertices))
+    )
 
     # Converts the faces and vertices to the absolute vertices.
     tr_a_face_vertices = [tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces]
     tr_e_face_vertices = [tuple(tr_e.vertices[j] for j in i) for i in tr_e.faces]
     assert all(
-        aa == pytest.approx(bb, abs=1e-3)
+        aa.distance_to_point(bb) == pytest.approx(0, abs=1e-3)
         for a, b in zip(tr_a_face_vertices, tr_e_face_vertices)
         for aa, bb in zip(a, b)
     )
@@ -117,5 +119,5 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     tr_f = load_obj(obj_path)
     assert len(tr_f.vertices) == 16, len(tr_f.vertices)
     assert len(tr_f.faces) == 24, len(tr_f.faces)
-    assert all(a == pytest.approx(b, abs=1e-5) for a, b in zip(tr_f.vertices, tr_a.vertices))
+    assert all(a.distance_to_point(b) == pytest.approx(0, abs=1e-5) for a, b in zip(tr_f.vertices, tr_a.vertices))
     assert tr_f.faces == tr_a.faces

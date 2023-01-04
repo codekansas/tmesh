@@ -6,33 +6,49 @@ namespace fast_trimesh {
 namespace cpu {
 namespace shapes {
 
-geometry::Polygon2D rectangle(float width, float height) {
-    return {{0, 0}, {width, 0}, {width, height}, {0, height}};
+types::Polygon2D rectangle(float width, float height, bool center) {
+    if (center) {
+        std::vector<types::Point2D> vertices = {{-width / 2, -height / 2},
+                                                {width / 2, -height / 2},
+                                                {width / 2, height / 2},
+                                                {-width / 2, height / 2}};
+        return {vertices};
+    } else {
+        std::vector<types::Point2D> vertices = {
+            {0, 0}, {width, 0}, {width, height}, {0, height}};
+        return {vertices};
+    }
 }
 
-geometry::Polygon2D regular_polygon(float radius, int n) {
+types::Polygon2D regular_polygon(float radius, int n) {
     if (radius < 0)
         throw std::runtime_error("Polygon radius must be positive.");
     if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
-    geometry::Polygon2D vertices;
+    std::vector<types::Point2D> vertices;
     for (int i = 0; i < n; i++) {
         float theta = 2 * M_PI * i / n;
         vertices.push_back({radius * cos(theta), radius * sin(theta)});
     }
-    return vertices;
+    return {vertices};
 }
 
-trimesh::Trimesh3D cuboid(float width, float height, float depth) {
+trimesh::Trimesh3D cuboid(float width, float height, float depth, bool center) {
     if (width < 0 || height < 0 || depth < 0)
         throw std::runtime_error("Cuboid dimensions must be positive.");
 
     // Gets cuboid bounding box.
-    geometry::BoundingBox3D bbox = {{0, 0, 0}, {width, height, depth}};
+    types::BoundingBox3D bbox;
+    if (center) {
+        bbox = {{-width / 2, -height / 2, -depth / 2},
+                {width / 2, height / 2, depth / 2}};
+    } else {
+        bbox = {{0, 0, 0}, {width, height, depth}};
+    }
 
     // Converts bounding box to a mesh.
     trimesh::Trimesh3D mesh;
-    mesh.set_vertices(geometry::bbox_corners(bbox));
-    mesh.set_faces(geometry::bbox_triangle_indices());
+    mesh.set_vertices(bbox.corners());
+    mesh.set_faces(bbox.triangle_indices());
 
     return mesh;
 }
@@ -57,12 +73,12 @@ void add_modules(py::module &m) {
     py::module s = m.def_submodule("shapes");
     s.doc() = "Shape constructor functions.";
 
-    s.def("rectangle", &rectangle, "Gets a 2D rectangle", "width"_a,
-          "height"_a);
+    s.def("rectangle", &rectangle, "Gets a 2D rectangle", "width"_a, "height"_a,
+          "center"_a = false);
     s.def("regular_polygon", &regular_polygon, "Gets a 2D regular polygon",
           "radius"_a, "n"_a);
     s.def("cuboid", &cuboid, "Gets a 3D cuboid mesh", "width"_a, "height"_a,
-          "depth"_a);
+          "depth"_a, "center"_a = false);
     s.def("sphere", &sphere, "Gets a 3D sphere mesh", "radius"_a, "slices"_a,
           "stacks"_a);
 }

@@ -6,20 +6,19 @@ namespace fast_trimesh {
 namespace cpu {
 namespace ops {
 
-trimesh::Trimesh3D linear_extrude(const geometry::Polygon2D &polygon,
+trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
                                   float height) {
     trimesh::Trimesh3D mesh3d;
 
     // Converts polygon to a 2D trimesh, where faces are pointing upwards
     // (counter-clockwise).
-    trimesh::Trimesh2D mesh2d = trimesh::triangulate(polygon);
+    trimesh::Trimesh2D mesh2d{polygon};
 
     // Adds bottom face.
     auto mesh2d_vertices = mesh2d.get_vertices();
     auto mesh2d_faces = mesh2d.get_faces();
     for (int i = 0; i < mesh2d.get_vertices().size(); i++) {
-        float x = std::get<0>(mesh2d_vertices[i]),
-              y = std::get<1>(mesh2d_vertices[i]);
+        float x = mesh2d_vertices[i].x, y = mesh2d_vertices[i].y;
         mesh3d.add_vertex({x, y, 0.0f});
     }
     for (int i = 0; i < mesh2d_faces.size(); i++) {
@@ -33,8 +32,7 @@ trimesh::Trimesh3D linear_extrude(const geometry::Polygon2D &polygon,
 
     // Adds top face.
     for (int i = 0; i < mesh2d_vertices.size(); i++) {
-        float x = std::get<0>(mesh2d_vertices[i]),
-              y = std::get<1>(mesh2d_vertices[i]);
+        float x = mesh2d_vertices[i].x, y = mesh2d_vertices[i].y;
         mesh3d.add_vertex({x, y, height});
     }
     for (int i = 0; i < mesh2d_faces.size(); i++) {

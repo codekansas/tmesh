@@ -1,5 +1,7 @@
 #include "trimesh.h"
 
+#include <sstream>
+
 using namespace pybind11::literals;
 
 namespace fast_trimesh {
@@ -27,29 +29,15 @@ Trimesh<T> Trimesh<T>::operator+(const Trimesh<T> &other) const {
     return result;
 }
 
-Trimesh3D &Trimesh3D::operator<<=(const AffineTransformation &tf) {
-    if (tf.rotation.has_value()) {
-        for (auto &vertex : vertices) {
-            vertex = geometry::rotate(vertex, tf.rotation.value());
-        }
-    }
-
-    if (tf.translation.has_value()) {
-        for (auto &vertex : vertices) {
-            vertex = geometry::translate(vertex, tf.translation.value());
-        }
-    }
-
-    if (tf.scale.has_value()) {
-        for (auto &vertex : vertices) {
-            vertex = geometry::scale(vertex, tf.scale.value());
-        }
+Trimesh3D &Trimesh3D::operator<<=(const types::Affine3D &tf) {
+    for (auto &vertex : vertices) {
+        vertex <<= tf;
     }
 
     return *this;
 }
 
-Trimesh3D Trimesh3D::operator<<(const AffineTransformation &tf) const {
+Trimesh3D Trimesh3D::operator<<(const types::Affine3D &tf) const {
     Trimesh3D result;
     result += *this;
     result <<= tf;
@@ -57,7 +45,7 @@ Trimesh3D Trimesh3D::operator<<(const AffineTransformation &tf) const {
 }
 
 Trimesh3D &Trimesh3D::operator+=(const Trimesh3D &other) {
-    Trimesh<geometry::Point3D>::operator+=(other);
+    Trimesh<types::Point3D>::operator+=(other);
     return *this;
 }
 
@@ -68,23 +56,89 @@ Trimesh3D Trimesh3D::operator+(const Trimesh3D &other) const {
     return result;
 }
 
-Trimesh3D AffineTransformation::operator>>(const Trimesh3D &t) {
-    return t << *this;
+std::string Trimesh3D::to_string() const {
+    std::stringstream ss;
+    ss << "Trimesh3D(" << std::endl;
+    ss << "  " << vertices.size() << " vertices = [" << std::endl;
+    size_t i = 0;
+    for (auto &vertex : vertices) {
+        ss << "    " << vertex.to_string() << "," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]," << std::endl;
+    ss << "  " << faces.size() << " faces = [" << std::endl;
+    i = 0;
+    for (auto &face : faces) {
+        ss << "    (" << std::get<0>(face) << ", " << std::get<1>(face) << ", "
+           << std::get<2>(face) << ")," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]" << std::endl;
+    ss << ")" << std::endl;
+    return ss.str();
 }
 
-bool is_ear(const geometry::Polygon2D &polygon, int vi, int vj, int vk) {
-    geometry::Point2D pi = polygon[vi], pj = polygon[vj], pk = polygon[vk];
+bool is_ear(const types::Polygon2D &polygon, int vi, int vj, int vk) {
+    types::Point2D pi = polygon.points[vi], pj = polygon.points[vj],
+                   pk = polygon.points[vk];
 
     // Checks if the triangle is convex.
-    if (!geometry::is_convex(pi, pj, pk)) return false;
+    if (!types::is_convex(pi, pj, pk)) return false;
 
     // Checks if the triangle contains any other points.
-    for (int l = 0; l < polygon.size(); l++) {
+    for (int l = 0; l < polygon.points.size(); l++) {
         if (l == vi || l == vj || l == vk) continue;
-        if (geometry::is_inside(polygon[l], {pi, pj, pk})) return false;
+        types::Triangle2D triangle = {pi, pj, pk};
+        if (polygon.points[l].is_inside_triangle(triangle)) return false;
     }
 
     return true;
+}
+
+Trimesh2D::Trimesh2D(const types::Polygon2D &polygon, bool is_convex) {
+    if (polygon.points.size() < 3) throw std::runtime_error("Invalid polygon.");
+
+    // Gets the vertex indices from 0 to n - 1.
+    std::vector<int> indices(polygon.points.size());
+    std::iota(indices.begin(), indices.end(), 0);
+
+    // Ensures that the polygon is counter-clockwise.
+    if (polygon.is_clockwise()) {
+        std::reverse(indices.begin(), indices.end());
+    }
+
+    // Add vertices to the mesh using indices.
+    for (int i = 0; i < polygon.points.size(); i++)
+        vertices.push_back(polygon.points[i]);
+
+    // Runs ear clipping algorithm.
+    while (indices.size() > 3) {
+        bool found = false;
+        int n = indices.size();
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            int k = (i + 2) % n;
+            int vi = indices[i], vj = indices[j], vk = indices[k];
+            types::Point2D pi = polygon.points[vi], pj = polygon.points[vj],
+                           pk = polygon.points[vk];
+            if (is_convex || is_ear(polygon, vi, vj, vk)) {
+                faces.push_back({vi, vj, vk});
+                indices.erase(indices.begin() + j);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw std::runtime_error("Unable to triangulate polygon.");
+        }
+    }
+    faces.push_back({indices[0], indices[1], indices[2]});
 }
 
 void Trimesh2D::validate() const {
@@ -110,7 +164,7 @@ void Trimesh2D::validate() const {
             throw std::runtime_error("Invalid face index.");
 
         // Checks that the face is counter-clockwise (points upwards).
-        if (!geometry::is_convex(vertices[i], vertices[j], vertices[k]))
+        if (!types::is_convex(vertices[i], vertices[j], vertices[k]))
             throw std::runtime_error("Face is not counter-clockwise.");
     }
 
@@ -119,7 +173,7 @@ void Trimesh2D::validate() const {
 }
 
 Trimesh2D &Trimesh2D::operator+=(const Trimesh2D &other) {
-    Trimesh<geometry::Point2D>::operator+=(other);
+    Trimesh<types::Point2D>::operator+=(other);
     return *this;
 }
 
@@ -130,7 +184,35 @@ Trimesh2D Trimesh2D::operator+(const Trimesh2D &other) const {
     return result;
 }
 
-geometry::Triangle3D Trimesh3D::get_triangle(int i) const {
+std::string Trimesh2D::to_string() const {
+    std::stringstream ss;
+    ss << "Trimesh2D(" << std::endl;
+    ss << "  " << vertices.size() << " vertices = [" << std::endl;
+    size_t i = 0;
+    for (auto &vertex : vertices) {
+        ss << "    " << vertex.to_string() << "," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]," << std::endl;
+    ss << "  " << faces.size() << " faces = [" << std::endl;
+    i = 0;
+    for (auto &face : faces) {
+        ss << "    (" << std::get<0>(face) << ", " << std::get<1>(face) << ", "
+           << std::get<2>(face) << ")," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]" << std::endl;
+    ss << ")" << std::endl;
+    return ss.str();
+}
+
+types::Triangle3D Trimesh3D::get_triangle(int i) const {
     if (i < 0 || i >= faces.size())
         throw std::runtime_error("Invalid face index.");
     int vi = std::get<0>(faces[i]), vj = std::get<1>(faces[i]),
@@ -165,49 +247,6 @@ void Trimesh3D::validate() const {
         if (!used[i]) throw std::runtime_error("Unused vertex.");
 }
 
-Trimesh2D triangulate(const geometry::Polygon2D &polygon, bool is_convex) {
-    if (polygon.size() < 3) throw std::runtime_error("Invalid polygon.");
-
-    Trimesh2D result;
-
-    // Gets the vertex indices from 0 to n - 1.
-    std::vector<int> indices(polygon.size());
-    std::iota(indices.begin(), indices.end(), 0);
-
-    // Ensures that the polygon is counter-clockwise.
-    if (geometry::is_clockwise(polygon)) {
-        std::reverse(indices.begin(), indices.end());
-    }
-
-    // Add vertices to the mesh using indices.
-    for (int i = 0; i < polygon.size(); i++) result.add_vertex(polygon[i]);
-
-    // Runs ear clipping algorithm.
-    while (indices.size() > 3) {
-        bool found = false;
-        int n = indices.size();
-        for (int i = 0; i < n; i++) {
-            int j = (i + 1) % n;
-            int k = (i + 2) % n;
-            int vi = indices[i], vj = indices[j], vk = indices[k];
-            geometry::Point2D pi = polygon[vi], pj = polygon[vj],
-                              pk = polygon[vk];
-            if (is_convex || is_ear(polygon, vi, vj, vk)) {
-                result.add_face(vi, vj, vk);
-                indices.erase(indices.begin() + j);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            throw std::runtime_error("Unable to triangulate polygon.");
-        }
-    }
-    result.add_face(indices[0], indices[1], indices[2]);
-
-    return result;
-}
-
 template <typename T>
 py::class_<T> add_trimesh_module_for(pybind11::module &m,
                                      const char *type_name) {
@@ -232,33 +271,27 @@ py::class_<T> add_trimesh_module_for(pybind11::module &m,
         .def("num_faces", &T::num_faces, "The number of faces in the mesh");
 }
 
-void add_affine_transform_module(pybind11::module &m) {
-    py::class_<AffineTransformation, std::shared_ptr<AffineTransformation>>(
-        m, "AffineTransformation", "Defines affine transformation class.")
-        .def(py::init<std::optional<geometry::Point3D>,
-                      std::optional<geometry::Point3D>, std::optional<float>>(),
-             "Creates an affine transformation", "rotation"_a = std::nullopt,
-             "translation"_a = std::nullopt, "scale"_a = std::nullopt)
-        .def("__rshift__", &AffineTransformation::operator>>,
-             "Applies affine transformation to 3D mesh", "trimesh"_a,
-             py::is_operator());
-}
-
 void add_modules(py::module &m) {
     py::module s = m.def_submodule("trimesh");
     s.doc() = "CPU trimesh implementation.";
 
     auto t2 = add_trimesh_module_for<Trimesh2D>(s, "Trimesh2D");
     auto t3 = add_trimesh_module_for<Trimesh3D>(s, "Trimesh3D");
-    add_affine_transform_module(s);
 
-    t2.def("validate", &Trimesh2D::validate, "Validates the mesh")
+    t2.def(py::init<const types::Polygon2D &, bool>(),
+           "Creates a trimesh from a polygon", "polygon"_a,
+           "is_convex"_a = false)
+        .def("__str__", &Trimesh2D::to_string, "Converts the mesh to a string")
+        .def("__repr__", &Trimesh2D::to_string, "Converts the mesh to a string")
+        .def("validate", &Trimesh2D::validate, "Validates the mesh")
         .def("__add__", &Trimesh2D::operator+, "Adds two meshes together",
              "other"_a, py::is_operator())
         .def("__iadd__", &Trimesh2D::operator+=, "Adds two meshes together",
              "other"_a, py::is_operator());
 
     t3.def("validate", &Trimesh3D::validate, "Validates the mesh")
+        .def("__str__", &Trimesh3D::to_string, "Converts the mesh to a string")
+        .def("__repr__", &Trimesh3D::to_string, "Converts the mesh to a string")
         .def("__add__", &Trimesh3D::operator+, "Adds two meshes together",
              "other"_a, py::is_operator())
         .def("__iadd__", &Trimesh3D::operator+=, "Adds two meshes together",
@@ -269,9 +302,6 @@ void add_modules(py::module &m) {
         .def("__ilshift__", &Trimesh3D::operator<<=,
              "Applies affine transformation to 3D mesh", "affine"_a,
              py::is_operator());
-
-    s.def("triangulate", &triangulate, "Converts a polygon to a 2D trimesh",
-          "polygon"_a, "is_convex"_a = false);
 }
 
 }  // namespace trimesh
