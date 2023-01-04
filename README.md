@@ -44,18 +44,18 @@ STL or OBJ file from a simple mesh:
 ```python
 import math
 
-from fast_trimesh.fast_trimesh.cpu.io import save_obj, save_stl
+from fast_trimesh.fast_trimesh.cpu.io import save_stl_text
 from fast_trimesh.fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.fast_trimesh.cpu.trimesh import Affine3D
+from fast_trimesh.fast_trimesh.cpu.types import Affine3D
 
 # Create some cuboids.
-a = cuboid(1.0, 1.0, 1.0)
-b = cuboid(1.0, 1.0, 1.0)
+a = cuboid(1.0, 1.0, 1.0, center=True)
+b = cuboid(1.0, 1.0, 1.0, center=True)
 
 # Move the second cuboid around.
 rot = Affine3D(rot=(math.pi / 4, 0.0, 0.0))
-trans = Affine3D(trans=(0.0, 0.5, 0.5))
-b = b << rot @ trans
+trans = Affine3D(trans=(0.0, 0.5, 0.0))
+b <<= rot @ trans
 
 # Save the resulting cuboid.
 save_stl("simple_example.stl", a + b)
@@ -68,170 +68,170 @@ This results in the below STL:
 solid fast_trimesh STL file
 facet normal 0 0 -1
 outer loop
-vertex 0 0 0
-vertex 1 1 0
-vertex 1 0 0
+vertex -0.5 -0.5 -0.5
+vertex 0.5 0.5 -0.5
+vertex 0.5 -0.5 -0.5
 endloop
 endfacet
 facet normal 0 0 -1
 outer loop
-vertex 0 0 0
-vertex 0 1 0
-vertex 1 1 0
+vertex -0.5 -0.5 -0.5
+vertex -0.5 0.5 -0.5
+vertex 0.5 0.5 -0.5
 endloop
 endfacet
 facet normal 0 -1 0
 outer loop
-vertex 0 0 0
-vertex 1 0 1
-vertex 0 0 1
+vertex -0.5 -0.5 -0.5
+vertex 0.5 -0.5 0.5
+vertex -0.5 -0.5 0.5
 endloop
 endfacet
 facet normal 0 -1 0
 outer loop
-vertex 0 0 0
-vertex 1 0 0
-vertex 1 0 1
+vertex -0.5 -0.5 -0.5
+vertex 0.5 -0.5 -0.5
+vertex 0.5 -0.5 0.5
 endloop
 endfacet
 facet normal 1 0 0
 outer loop
-vertex 1 0 0
-vertex 1 1 1
-vertex 1 0 1
+vertex 0.5 -0.5 -0.5
+vertex 0.5 0.5 0.5
+vertex 0.5 -0.5 0.5
 endloop
 endfacet
 facet normal 1 0 0
 outer loop
-vertex 1 0 0
-vertex 1 1 0
-vertex 1 1 1
+vertex 0.5 -0.5 -0.5
+vertex 0.5 0.5 -0.5
+vertex 0.5 0.5 0.5
 endloop
 endfacet
 facet normal 0 1 -0
 outer loop
-vertex 1 1 0
-vertex 0 1 1
-vertex 1 1 1
+vertex 0.5 0.5 -0.5
+vertex -0.5 0.5 0.5
+vertex 0.5 0.5 0.5
 endloop
 endfacet
 facet normal 0 1 0
 outer loop
-vertex 1 1 0
-vertex 0 1 0
-vertex 0 1 1
+vertex 0.5 0.5 -0.5
+vertex -0.5 0.5 -0.5
+vertex -0.5 0.5 0.5
 endloop
 endfacet
 facet normal -1 0 0
 outer loop
-vertex 0 1 0
-vertex 0 0 1
-vertex 0 1 1
+vertex -0.5 0.5 -0.5
+vertex -0.5 -0.5 0.5
+vertex -0.5 0.5 0.5
 endloop
 endfacet
 facet normal -1 0 0
 outer loop
-vertex 0 1 0
-vertex 0 0 0
-vertex 0 0 1
+vertex -0.5 0.5 -0.5
+vertex -0.5 -0.5 -0.5
+vertex -0.5 -0.5 0.5
 endloop
 endfacet
 facet normal 0 0 1
 outer loop
-vertex 0 0 1
-vertex 1 1 1
-vertex 0 1 1
+vertex -0.5 -0.5 0.5
+vertex 0.5 0.5 0.5
+vertex -0.5 0.5 0.5
 endloop
 endfacet
 facet normal 0 0 1
 outer loop
-vertex 0 0 1
-vertex 1 0 1
-vertex 1 1 1
+vertex -0.5 -0.5 0.5
+vertex 0.5 -0.5 0.5
+vertex 0.5 0.5 0.5
 endloop
 endfacet
 facet normal 0 0.707107 -0.707107
 outer loop
-vertex 0 0.5 0.5
-vertex 1 1.20711 1.20711
-vertex 1 0.5 0.5
+vertex -0.5 0.5 -0.707107
+vertex 0.5 1.20711 0
+vertex 0.5 0.5 -0.707107
 endloop
 endfacet
 facet normal 0 0.707107 -0.707107
 outer loop
-vertex 0 0.5 0.5
-vertex 0 1.20711 1.20711
-vertex 1 1.20711 1.20711
+vertex -0.5 0.5 -0.707107
+vertex -0.5 1.20711 0
+vertex 0.5 1.20711 0
 endloop
 endfacet
 facet normal 0 -0.707107 -0.707107
 outer loop
-vertex 0 0.5 0.5
-vertex 1 -0.207107 1.20711
-vertex 0 -0.207107 1.20711
+vertex -0.5 0.5 -0.707107
+vertex 0.5 -0.207107 0
+vertex -0.5 -0.207107 0
 endloop
 endfacet
 facet normal 0 -0.707107 -0.707107
 outer loop
-vertex 0 0.5 0.5
-vertex 1 0.5 0.5
-vertex 1 -0.207107 1.20711
+vertex -0.5 0.5 -0.707107
+vertex 0.5 0.5 -0.707107
+vertex 0.5 -0.207107 0
 endloop
 endfacet
 facet normal 1 0 -0
 outer loop
-vertex 1 0.5 0.5
-vertex 1 0.5 1.91421
-vertex 1 -0.207107 1.20711
+vertex 0.5 0.5 -0.707107
+vertex 0.5 0.5 0.707107
+vertex 0.5 -0.207107 0
 endloop
 endfacet
 facet normal 1 0 0
 outer loop
-vertex 1 0.5 0.5
-vertex 1 1.20711 1.20711
-vertex 1 0.5 1.91421
+vertex 0.5 0.5 -0.707107
+vertex 0.5 1.20711 0
+vertex 0.5 0.5 0.707107
 endloop
 endfacet
 facet normal 0 0.707107 0.707107
 outer loop
-vertex 1 1.20711 1.20711
-vertex 0 0.5 1.91421
-vertex 1 0.5 1.91421
+vertex 0.5 1.20711 0
+vertex -0.5 0.5 0.707107
+vertex 0.5 0.5 0.707107
 endloop
 endfacet
 facet normal 0 0.707107 0.707107
 outer loop
-vertex 1 1.20711 1.20711
-vertex 0 1.20711 1.20711
-vertex 0 0.5 1.91421
+vertex 0.5 1.20711 0
+vertex -0.5 1.20711 0
+vertex -0.5 0.5 0.707107
 endloop
 endfacet
 facet normal -1 0 0
 outer loop
-vertex 0 1.20711 1.20711
-vertex 0 -0.207107 1.20711
-vertex 0 0.5 1.91421
+vertex -0.5 1.20711 0
+vertex -0.5 -0.207107 0
+vertex -0.5 0.5 0.707107
 endloop
 endfacet
 facet normal -1 -0 0
 outer loop
-vertex 0 1.20711 1.20711
-vertex 0 0.5 0.5
-vertex 0 -0.207107 1.20711
+vertex -0.5 1.20711 0
+vertex -0.5 0.5 -0.707107
+vertex -0.5 -0.207107 0
 endloop
 endfacet
 facet normal 0 -0.707107 0.707107
 outer loop
-vertex 0 -0.207107 1.20711
-vertex 1 0.5 1.91421
-vertex 0 0.5 1.91421
+vertex -0.5 -0.207107 0
+vertex 0.5 0.5 0.707107
+vertex -0.5 0.5 0.707107
 endloop
 endfacet
 facet normal 0 -0.707107 0.707107
 outer loop
-vertex 0 -0.207107 1.20711
-vertex 1 -0.207107 1.20711
-vertex 1 0.5 1.91421
+vertex -0.5 -0.207107 0
+vertex 0.5 -0.207107 0
+vertex 0.5 0.5 0.707107
 endloop
 endfacet
 endsolid fast_trimesh STL file
