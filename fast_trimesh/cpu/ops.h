@@ -14,6 +14,8 @@ namespace ops {
 
 trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
                                   float height);
+trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height,
+                                  float twist);
 
 trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
                                   int n, int axis = 0);

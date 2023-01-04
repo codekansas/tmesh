@@ -56,6 +56,31 @@ Trimesh3D Trimesh3D::operator+(const Trimesh3D &other) const {
     return result;
 }
 
+types::Triangle3D Trimesh3D::get_triangle(int i) const {
+    if (i < 0 || i >= faces.size())
+        throw std::runtime_error("Invalid face index.");
+    int vi = std::get<0>(faces[i]), vj = std::get<1>(faces[i]),
+        vk = std::get<2>(faces[i]);
+    return {vertices[vi], vertices[vj], vertices[vk]};
+}
+
+float Trimesh3D::signed_volume() const {
+    types::Point3D center = {0, 0, 0};
+    float volume = 0;
+    for (int i = 0; i < faces.size(); i++) {
+        auto triangle = get_triangle(i);
+        volume +=
+            types::signed_volume(center, triangle.p1, triangle.p2, triangle.p3);
+    }
+    return volume;
+}
+
+void Trimesh3D::flip_inside_out() {
+    for (auto &face : faces) {
+        std::swap(std::get<0>(face), std::get<1>(face));
+    }
+}
+
 std::string Trimesh3D::to_string() const {
     std::stringstream ss;
     ss << "Trimesh3D(" << std::endl;
@@ -184,6 +209,14 @@ Trimesh2D Trimesh2D::operator+(const Trimesh2D &other) const {
     return result;
 }
 
+types::Triangle2D Trimesh2D::get_triangle(int i) const {
+    if (i < 0 || i >= faces.size())
+        throw std::runtime_error("Invalid face index.");
+    int vi = std::get<0>(faces[i]), vj = std::get<1>(faces[i]),
+        vk = std::get<2>(faces[i]);
+    return {vertices[vi], vertices[vj], vertices[vk]};
+}
+
 std::string Trimesh2D::to_string() const {
     std::stringstream ss;
     ss << "Trimesh2D(" << std::endl;
@@ -210,14 +243,6 @@ std::string Trimesh2D::to_string() const {
     ss << "  ]" << std::endl;
     ss << ")" << std::endl;
     return ss.str();
-}
-
-types::Triangle3D Trimesh3D::get_triangle(int i) const {
-    if (i < 0 || i >= faces.size())
-        throw std::runtime_error("Invalid face index.");
-    int vi = std::get<0>(faces[i]), vj = std::get<1>(faces[i]),
-        vk = std::get<2>(faces[i]);
-    return {vertices[vi], vertices[vj], vertices[vk]};
 }
 
 void Trimesh3D::validate() const {

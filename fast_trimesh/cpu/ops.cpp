@@ -8,6 +8,11 @@ namespace ops {
 
 trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
                                   float height) {
+    // Checks that `height` is positive.
+    if (height <= 0.0f) {
+        throw std::invalid_argument("Height must be positive.");
+    }
+
     trimesh::Trimesh3D mesh3d;
 
     // Ensure that polygon is counter-clockwise.
@@ -122,6 +127,11 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
         mesh3d.add_face(v0, v1, v2);
     }
 
+    // Flips inside out if necessary.
+    if (mesh3d.signed_volume() < 0) {
+        mesh3d.flip_inside_out();
+    }
+
     return mesh3d;
 }
 
@@ -188,6 +198,11 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
         mesh3d.add_face(v1, v3, v2);
     }
 
+    // Flips inside out if necessary.
+    if (mesh3d.signed_volume() < 0) {
+        mesh3d.flip_inside_out();
+    }
+
     return mesh3d;
 }
 
@@ -195,8 +210,9 @@ void add_modules(py::module &m) {
     py::module o = m.def_submodule("ops");
     o.doc() = "Mesh operations.";
 
-    o.def("linear_extrude", &linear_extrude, "Linearly extrudes a 2D mesh",
-          "mesh"_a, "height"_a);
+    o.def("linear_extrude",
+          py::overload_cast<const types::Polygon2D &, float>(&linear_extrude),
+          "Linearly extrudes a 2D mesh", "mesh"_a, "height"_a);
 
     o.def("rotate_extrude",
           py::overload_cast<const types::Polygon2D &, float, int, int>(
