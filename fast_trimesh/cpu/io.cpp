@@ -263,6 +263,76 @@ trimesh::Trimesh3D load_obj(const std::string &filename) {
     return mesh;
 }
 
+void save_ply(const std::string &filename, const trimesh::Trimesh3D &mesh) {
+    std::ofstream f;
+    f.open(filename, std::ios::out);
+
+    // Write the header.
+    f << "ply" << std::endl;
+    f << "format ascii 1.0" << std::endl;
+    f << "element vertex " << mesh.num_vertices() << std::endl;
+    f << "property float x" << std::endl;
+    f << "property float y" << std::endl;
+    f << "property float z" << std::endl;
+    f << "element face " << mesh.num_faces() << std::endl;
+    f << "property list uchar int vertex_index" << std::endl;
+    f << "end_header" << std::endl;
+
+    // Write the vertices.
+    for (size_t i = 0; i < mesh.num_vertices(); i++) {
+        types::Point3D vertex = mesh.get_vertex(i);
+        f << vertex.x << " " << vertex.y << " " << vertex.z << std::endl;
+    }
+
+    // Write the faces.
+    for (size_t i = 0; i < mesh.num_faces(); i++) {
+        std::tuple<int, int, int> face = mesh.get_face(i);
+        f << "3 " << std::get<0>(face) << " " << std::get<1>(face) << " "
+          << std::get<2>(face) << std::endl;
+    }
+
+    f.close();
+}
+
+trimesh::Trimesh3D load_ply(const std::string &filename) {
+    std::ifstream f;
+    f.open(filename, std::ios::in);
+
+    // Skip the header.
+    std::string line;
+    while (std::getline(f, line)) {
+        if (line == "end_header") {
+            break;
+        }
+    }
+
+    trimesh::Trimesh3D mesh;
+
+    while (std::getline(f, line)) {
+        std::istringstream ss(line);
+
+        // If there are 2 spaces in the line, it's a vertex. Otherwise if
+        // there are 3 spaces in the line and it starts with "3 " then it's a
+        // face. Otherwise ignore.
+        int num_spaces = std::count(line.begin(), line.end(), ' ');
+        if (num_spaces == 2) {
+            // Vertex.
+            float x, y, z;
+            ss >> x >> y >> z;
+            mesh.add_vertex({x, y, z});
+        } else if (num_spaces == 3 && line.substr(0, 2) == "3 ") {
+            // Face.
+            int start, v1, v2, v3;
+            ss >> start >> v1 >> v2 >> v3;
+            mesh.add_face(v1, v2, v3);
+        }
+    }
+
+    f.close();
+
+    return mesh;
+}
+
 void add_modules(py::module &m) {
     py::module s = m.def_submodule("io");
     s.doc() = "CPU IO implementation.";
@@ -279,6 +349,10 @@ void add_modules(py::module &m) {
     s.def("save_obj", &save_obj, "Saves a mesh to an OBJ file", "filename"_a,
           "mesh"_a);
     s.def("load_obj", &load_obj, "Loads a mesh from an OBJ file", "filename"_a);
+
+    s.def("save_ply", &save_ply, "Saves a mesh to a PLY file", "filename"_a,
+          "mesh"_a);
+    s.def("load_ply", &load_ply, "Loads a mesh from a PLY file", "filename"_a);
 }
 
 }  // namespace io
