@@ -16,8 +16,9 @@ trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
                                   float height);
 
 trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
-                                  int n);
-trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n);
+                                  int n, int axis = 0);
+trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
+                                  int axis = 0);
 
 void add_modules(py::module &m);
 

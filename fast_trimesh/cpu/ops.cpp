@@ -49,7 +49,7 @@ trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
 }
 
 trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
-                                  int n) {
+                                  int n, int axis) {
     // Checks that `angle` is less than a full circle.
     if (angle < 0 || angle > 2 * M_PI - 1e-6) {
         throw std::invalid_argument(
@@ -60,6 +60,11 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
     // Checks that `n` is valid.
     if (n < 1) {
         throw std::invalid_argument("`n` must be at least 1.");
+    }
+
+    // Checks that `axis` is valid.
+    if (axis < 0 || axis > 2) {
+        throw std::invalid_argument("`axis` must be 0, 1, or 2.");
     }
 
     trimesh::Trimesh3D mesh3d;
@@ -87,7 +92,9 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
     int offset = 0;
     for (int i = 0; i < n; i++) {
         float angle_i = (i + 1) * angle / n;
-        std::tuple<float, float, float> rot{angle_i, 0.0f, 0.0f};
+        std::tuple<float, float, float> rot{axis == 0 ? angle_i : 0.0,
+                                            axis == 1 ? angle_i : 0.0f,
+                                            axis == 2 ? angle_i : 0.0f};
         types::Affine3D tf{rot};
         int offset_next = offset + p;
 
@@ -118,10 +125,16 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
     return mesh3d;
 }
 
-trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n) {
+trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
+                                  int axis) {
     // Checks that `n` is valid.
     if (n < 1) {
         throw std::invalid_argument("`n` must be at least 1.");
+    }
+
+    // Checks that `axis` is valid.
+    if (axis < 0 || axis > 2) {
+        throw std::invalid_argument("`axis` must be 0, 1, or 2.");
     }
 
     trimesh::Trimesh3D mesh3d;
@@ -143,7 +156,9 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n) {
     int offset = 0;
     for (int i = 0; i < n; i++) {
         float angle_i = (i + 1) * 2 * M_PI / n;
-        std::tuple<float, float, float> rot{angle_i, 0.0f, 0.0f};
+        std::tuple<float, float, float> rot{axis == 0 ? angle_i : 0.0,
+                                            axis == 1 ? angle_i : 0.0f,
+                                            axis == 2 ? angle_i : 0.0f};
         types::Affine3D tf{rot};
         int offset_next = offset + p;
 
@@ -184,12 +199,13 @@ void add_modules(py::module &m) {
           "mesh"_a, "height"_a);
 
     o.def("rotate_extrude",
-          py::overload_cast<const types::Polygon2D &, float, int>(
+          py::overload_cast<const types::Polygon2D &, float, int, int>(
               &rotate_extrude),
-          "Rotates a 2D mesh", "mesh"_a, "angle"_a, "n"_a);
-    o.def("rotate_extrude",
-          py::overload_cast<const types::Polygon2D &, int>(&rotate_extrude),
-          "Rotates a 2D mesh", "mesh"_a, "n"_a);
+          "Rotates a 2D mesh", "mesh"_a, "angle"_a, "n"_a, "axis"_a = 0);
+    o.def(
+        "rotate_extrude",
+        py::overload_cast<const types::Polygon2D &, int, int>(&rotate_extrude),
+        "Rotates a 2D mesh", "mesh"_a, "n"_a, "axis"_a = 0);
 }
 
 }  // namespace ops
