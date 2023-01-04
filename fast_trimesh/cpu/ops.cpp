@@ -10,53 +10,167 @@ trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
                                   float height) {
     trimesh::Trimesh3D mesh3d;
 
-    // Converts polygon to a 2D trimesh, where faces are pointing upwards
-    // (counter-clockwise).
-    trimesh::Trimesh2D mesh2d{polygon};
+    // Ensure that polygon is counter-clockwise.
+    types::Polygon2D poly = polygon;
+    if (poly.is_clockwise()) {
+        poly.reverse();
+    }
+
+    int p = poly.points.size();
 
     // Adds bottom face.
-    auto mesh2d_vertices = mesh2d.get_vertices();
-    auto mesh2d_faces = mesh2d.get_faces();
-    for (int i = 0; i < mesh2d.get_vertices().size(); i++) {
-        float x = mesh2d_vertices[i].x, y = mesh2d_vertices[i].y;
-        mesh3d.add_vertex({x, y, 0.0f});
+    for (int i = 0; i < p; i++) {
+        mesh3d.add_vertex({poly.points[i].x, poly.points[i].y, 0.0f});
     }
-    for (int i = 0; i < mesh2d_faces.size(); i++) {
-        int v0 = std::get<0>(mesh2d_faces[i]),
-            v1 = std::get<1>(mesh2d_faces[i]),
-            v2 = std::get<2>(mesh2d_faces[i]);
-        // Note that the order of vertices is reversed, because the face is
-        // pointing downwards.
-        mesh3d.add_face(v2, v1, v0);
+    for (int i = 0; i < p - 1; i++) {
+        int v0 = i, v1 = i + 1, v2 = 0;
+        // Note that the order of the vertices is reversed, because the
+        // bottom is face-down.
+        mesh3d.add_face(v0, v2, v1);
     }
 
-    // Adds top face.
-    for (int i = 0; i < mesh2d_vertices.size(); i++) {
-        float x = mesh2d_vertices[i].x, y = mesh2d_vertices[i].y;
-        mesh3d.add_vertex({x, y, height});
+    // Adds top faces.
+    for (int i = 0; i < p; i++) {
+        mesh3d.add_vertex({poly.points[i].x, poly.points[i].y, height});
     }
-    for (int i = 0; i < mesh2d_faces.size(); i++) {
-        int v0 = std::get<0>(mesh2d_faces[i]) + mesh2d_vertices.size(),
-            v1 = std::get<1>(mesh2d_faces[i]) + mesh2d_vertices.size(),
-            v2 = std::get<2>(mesh2d_faces[i]) + mesh2d_vertices.size();
+    for (int i = 0; i < p - 1; i++) {
+        int v0 = i + p, v1 = i + 1 + p, v2 = p;
         mesh3d.add_face(v0, v1, v2);
     }
 
-    // Adds side faces. Each side face is a quad, meaning that it has 4 vertices
-    // and 2 triangles.
-    for (int i = 0; i < mesh2d_faces.size(); i++) {
-        int v0 = std::get<0>(mesh2d_faces[i]),
-            v1 = std::get<1>(mesh2d_faces[i]),
-            v2 = std::get<2>(mesh2d_faces[i]);
-        mesh3d.add_face(v0, v1, v1 + mesh2d_vertices.size());
-        mesh3d.add_face(v0, v1 + mesh2d_vertices.size(),
-                        v0 + mesh2d_vertices.size());
-        mesh3d.add_face(v1, v2, v2 + mesh2d_vertices.size());
-        mesh3d.add_face(v1, v2 + mesh2d_vertices.size(),
-                        v1 + mesh2d_vertices.size());
-        mesh3d.add_face(v2, v0, v0 + mesh2d_vertices.size());
-        mesh3d.add_face(v2, v0 + mesh2d_vertices.size(),
-                        v2 + mesh2d_vertices.size());
+    // Adds side faces. Each side face is made up of two triangles.
+    for (int i = 0; i < p; i++) {
+        int v0 = i, v1 = (i + 1) % p, v2 = i + p, v3 = (i + 1) % p + p;
+        mesh3d.add_face(v0, v1, v2);
+        mesh3d.add_face(v1, v3, v2);
+    }
+
+    return mesh3d;
+}
+
+trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
+                                  int n) {
+    // Checks that `angle` is less than a full circle.
+    if (angle < 0 || angle > 2 * M_PI - 1e-6) {
+        throw std::invalid_argument(
+            "`angle` must be between 0 and 2 * pi. To extrude a full circle, "
+            "use `rotate_extrude` without providing an `angle` argument.");
+    }
+
+    // Checks that `n` is valid.
+    if (n < 1) {
+        throw std::invalid_argument("`n` must be at least 1.");
+    }
+
+    trimesh::Trimesh3D mesh3d;
+
+    // Ensure that polygon is counter-clockwise.
+    types::Polygon2D poly = polygon;
+    if (poly.is_clockwise()) {
+        poly.reverse();
+    }
+
+    int p = poly.points.size();
+
+    // Adds bottom face.
+    for (int i = 0; i < n; i++) {
+        mesh3d.add_vertex({poly.points[i].x, poly.points[i].y, 0.0f});
+    }
+    for (int i = 1; i < n - 1; i++) {
+        int v0 = i, v1 = i + 1, v2 = 0;
+        // Note that the order of the vertices is reversed, because the
+        // bottom is face-down.
+        mesh3d.add_face(v0, v2, v1);
+    }
+
+    // Adds side faces. Each side face is made up of two triangles.
+    int offset = 0;
+    for (int i = 0; i < n; i++) {
+        float angle_i = (i + 1) * angle / n;
+        std::tuple<float, float, float> rot{angle_i, 0.0f, 0.0f};
+        types::Affine3D tf{rot};
+        int offset_next = offset + p;
+
+        // Adds next layer of vertices.
+        for (int j = 0; j < p; j++) {
+            types::Point3D v{poly.points[j].x, poly.points[j].y, 0.0f};
+            v <<= tf;
+            mesh3d.add_vertex(v);
+        }
+
+        // Adds side faces between adjacent layers of vertices.
+        for (int j = 0; j < p; j++) {
+            int v0 = j + offset, v1 = (j + 1) % p + offset,
+                v2 = j + offset_next, v3 = (j + 1) % p + offset_next;
+            mesh3d.add_face(v0, v1, v2);
+            mesh3d.add_face(v1, v3, v2);
+        }
+
+        offset = offset_next;
+    }
+
+    // Adds top face.
+    for (int j = 1; j < p; j++) {
+        int v0 = j + offset, v1 = (j + 1) % p + offset, v2 = offset;
+        mesh3d.add_face(v0, v1, v2);
+    }
+
+    return mesh3d;
+}
+
+trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n) {
+    // Checks that `n` is valid.
+    if (n < 1) {
+        throw std::invalid_argument("`n` must be at least 1.");
+    }
+
+    trimesh::Trimesh3D mesh3d;
+
+    // Ensure that polygon is counter-clockwise.
+    types::Polygon2D poly = polygon;
+    if (poly.is_clockwise()) {
+        poly.reverse();
+    }
+
+    int p = poly.points.size();
+
+    // Adds initial layer of vertices.
+    for (int i = 0; i < p; i++) {
+        mesh3d.add_vertex({poly.points[i].x, poly.points[i].y, 0.0f});
+    }
+
+    // Adds side faces. Each side face is made up of two triangles.
+    int offset = 0;
+    for (int i = 0; i < n; i++) {
+        float angle_i = (i + 1) * 2 * M_PI / n;
+        std::tuple<float, float, float> rot{angle_i, 0.0f, 0.0f};
+        types::Affine3D tf{rot};
+        int offset_next = offset + p;
+
+        // Adds next layer of vertices.
+        for (int j = 0; j < p; j++) {
+            types::Point3D v{poly.points[j].x, poly.points[j].y, 0.0f};
+            v <<= tf;
+            mesh3d.add_vertex(v);
+        }
+
+        // Adds side faces between adjacent layers of vertices.
+        for (int j = 0; j < p; j++) {
+            int v0 = j + offset, v1 = (j + 1) % p + offset,
+                v2 = j + offset_next, v3 = (j + 1) % p + offset_next;
+            mesh3d.add_face(v0, v1, v2);
+            mesh3d.add_face(v1, v3, v2);
+        }
+
+        offset = offset_next;
+    }
+
+    // Adds final faces connecting last layer of vertices to first layer.
+    for (int j = 0; j < p; j++) {
+        int v0 = j + offset, v1 = (j + 1) % p + offset, v2 = j,
+            v3 = (j + 1) % p;
+        mesh3d.add_face(v0, v1, v2);
+        mesh3d.add_face(v1, v3, v2);
     }
 
     return mesh3d;
@@ -68,6 +182,14 @@ void add_modules(py::module &m) {
 
     o.def("linear_extrude", &linear_extrude, "Linearly extrudes a 2D mesh",
           "mesh"_a, "height"_a);
+
+    o.def("rotate_extrude",
+          py::overload_cast<const types::Polygon2D &, float, int>(
+              &rotate_extrude),
+          "Rotates a 2D mesh", "mesh"_a, "angle"_a, "n"_a);
+    o.def("rotate_extrude",
+          py::overload_cast<const types::Polygon2D &, int>(&rotate_extrude),
+          "Rotates a 2D mesh", "mesh"_a, "n"_a);
 }
 
 }  // namespace ops

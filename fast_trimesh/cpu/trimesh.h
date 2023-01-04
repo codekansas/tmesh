@@ -18,6 +18,9 @@ namespace trimesh {
 template <typename T>
 class Trimesh;
 
+class Trimesh2D;
+class Trimesh3D;
+
 template <typename T>
 class Trimesh {
    protected:
