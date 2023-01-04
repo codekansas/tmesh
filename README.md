@@ -237,7 +237,7 @@ endfacet
 endsolid fast_trimesh STL file
 ```
 
-For more examples, see the `examples` directory.
+For more examples, see the [examples](examples).
 
 ### Unit Tests
 
