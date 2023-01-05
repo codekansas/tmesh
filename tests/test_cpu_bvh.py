@@ -1,8 +1,8 @@
 """Tests boundary volume hierarchy (BVH) acceleration structure for CPU."""
 
-from fast_trimesh.fast_trimesh.cpu.bvh import BoundaryVolumeHierarchy
-from fast_trimesh.fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.fast_trimesh.cpu.types import BoundingBox3D, Line3D, Point3D
+from fast_trimesh.cpu.bvh import BoundaryVolumeHierarchy
+from fast_trimesh.cpu.shapes import cuboid
+from fast_trimesh.cpu.types import BoundingBox3D, Line3D, Point3D
 
 
 def test_simple_bvh() -> None:

@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from fast_trimesh.fast_trimesh.cpu.types import (
+from fast_trimesh.cpu.types import (
     Affine3D,
     Angle,
     BoundingBox2D,

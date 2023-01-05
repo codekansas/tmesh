@@ -4,8 +4,8 @@ import random
 
 import pytest
 
-from fast_trimesh.fast_trimesh.cpu.boolean import triangulation
-from fast_trimesh.fast_trimesh.cpu.types import Point3D, Triangle3D
+from fast_trimesh.cpu.boolean import triangulation
+from fast_trimesh.cpu.types import Point3D, Triangle3D
 
 
 def test_triangulation() -> None:

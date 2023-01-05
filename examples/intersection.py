@@ -1,8 +1,8 @@
 import math
 
-from fast_trimesh.fast_trimesh.cpu.io import save_stl_text
-from fast_trimesh.fast_trimesh.cpu.shapes import tetrahedron
-from fast_trimesh.fast_trimesh.cpu.types import Affine3D
+from fast_trimesh.cpu.io import save_stl_text
+from fast_trimesh.cpu.shapes import tetrahedron
+from fast_trimesh.cpu.types import Affine3D
 
 tetr = tetrahedron(radius=1.0)
 

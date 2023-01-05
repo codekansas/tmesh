@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from fast_trimesh.fast_trimesh.cpu.io import (
+from fast_trimesh.cpu.io import (
     load_obj,
     load_ply,
     load_stl,
@@ -15,9 +15,9 @@ from fast_trimesh.fast_trimesh.cpu.io import (
     save_stl,
     save_stl_text,
 )
-from fast_trimesh.fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.fast_trimesh.cpu.trimesh import Trimesh2D
-from fast_trimesh.fast_trimesh.cpu.types import Affine3D, Point2D, Polygon2D
+from fast_trimesh.cpu.shapes import cuboid
+from fast_trimesh.cpu.trimesh import Trimesh2D
+from fast_trimesh.cpu.types import Affine3D, Point2D, Polygon2D
 
 
 @pytest.mark.parametrize(
