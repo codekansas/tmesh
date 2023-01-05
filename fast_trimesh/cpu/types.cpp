@@ -1,9 +1,12 @@
 #include "types.h"
 
+#include <iostream>
 #include <numeric>
 #include <sstream>
 
 using namespace pybind11::literals;
+
+#define TOLERANCE 1e-6
 
 namespace fast_trimesh {
 namespace cpu {
@@ -50,7 +53,7 @@ Point2D Point2D::operator/=(float s) {
 }
 
 bool Point2D::operator==(const Point2D &p) const {
-    return std::abs(x - p.x) < 1e-6 && std::abs(y - p.y) < 1e-6;
+    return std::abs(x - p.x) < TOLERANCE && std::abs(y - p.y) < TOLERANCE;
 }
 
 bool Point2D::operator!=(const Point2D &p) const { return !(*this == p); }
@@ -91,7 +94,8 @@ float Point2D::cross(const Point2D &other) const {
     return x * other.y - y * other.x;
 }
 
-Point3D Point2D::barycentric_coordinates(const Triangle2D &t) const {
+BarycentricCoordinates Point2D::barycentric_coordinates(
+    const Triangle2D &t) const {
     Point2D v0 = t.p2 - t.p1;
     Point2D v1 = t.p3 - t.p1;
     Point2D v2 = *this - t.p1;
@@ -111,8 +115,8 @@ Point3D Point2D::barycentric_coordinates(const Triangle2D &t) const {
 }
 
 bool Point2D::is_inside_triangle(const Triangle2D &t) const {
-    Point3D bary = barycentric_coordinates(t);
-    return bary.x >= 0.0f && bary.y >= 0.0f && bary.z >= 0.0f;
+    BarycentricCoordinates bary = barycentric_coordinates(t);
+    return bary.u >= 0.0f && bary.v >= 0.0f && bary.w >= 0.0f;
 }
 
 bool Point2D::is_inside_bounding_box(const BoundingBox2D &bb) const {
@@ -211,7 +215,7 @@ std::optional<Point2D> Line2D::intersection(const Line2D &l) const {
     Point2D s = l.p2 - l.p1;
 
     float rxs = r.cross(s);
-    if (std::abs(rxs) < 1e-6) return std::nullopt;
+    if (std::abs(rxs) < TOLERANCE) return std::nullopt;
 
     Point2D qmp1 = l.p1 - p1;
     float t = qmp1.cross(s) / rxs;
@@ -555,19 +559,6 @@ Polygon2D Polygon2D::convex_hull() const {
     return {stack};
 }
 
-bool Polygon3D::operator==(const Polygon3D &p) const {
-    return points == p.points;
-}
-
-bool Polygon3D::operator!=(const Polygon3D &p) const {
-    return points != p.points;
-}
-
-Polygon3D Polygon3D::operator<<=(const Affine3D &a) {
-    for (auto &p : points) p <<= a;
-    return *this;
-}
-
 BoundingBox2D Polygon2D::bounding_box() const {
     float min_x = points[0].x, min_y = points[0].y;
     float max_x = points[0].x, max_y = points[0].y;
@@ -758,8 +749,8 @@ Point3D Point3D::operator/=(float s) {
 }
 
 bool Point3D::operator==(const Point3D &p) const {
-    return std::abs(x - p.x) < 1e-6 && std::abs(y - p.y) < 1e-6 &&
-           std::abs(z - p.z) < 1e-6;
+    return std::abs(x - p.x) < TOLERANCE && std::abs(y - p.y) < TOLERANCE &&
+           std::abs(z - p.z) < TOLERANCE;
 }
 
 bool Point3D::operator!=(const Point3D &p) const { return !(*this == p); }
@@ -799,6 +790,23 @@ Point3D Point3D::cross(const Point3D &other) const {
             x * other.y - y * other.x};
 }
 
+BarycentricCoordinates Point3D::barycentric_coordinates(
+    const Triangle3D &t) const {
+    Point3D v0 = t.p2 - t.p1;
+    Point3D v1 = t.p3 - t.p1;
+    Point3D v2 = *this - t.p1;
+    float d00 = v0.dot(v0);
+    float d01 = v0.dot(v1);
+    float d11 = v1.dot(v1);
+    float d20 = v2.dot(v0);
+    float d21 = v2.dot(v1);
+    float denom = d00 * d11 - d01 * d01;
+    float v = (d11 * d20 - d01 * d21) / denom;
+    float w = (d00 * d21 - d01 * d20) / denom;
+    float u = 1.0f - v - w;
+    return {u, v, w};
+}
+
 bool Point3D::is_inside_bounding_box(const BoundingBox3D &bb) const {
     return x >= bb.min.x && x <= bb.max.x && y >= bb.min.y && y <= bb.max.y &&
            z >= bb.min.z && z <= bb.max.z;
@@ -818,6 +826,11 @@ float Point3D::distance_to_triangle(const Triangle3D &t) const {
     return t.distance_to_point(*this);
 }
 
+bool Point3D::is_coplanar(const Triangle3D &t) const {
+    return std::abs((*this - t.p1).dot((t.p2 - t.p1).cross(t.p3 - t.p1))) <
+           TOLERANCE;
+}
+
 std::optional<Point3D> Point3D::project_to_line(const Line3D &l) const {
     float dx = l.p2.x - l.p1.x, dy = l.p2.y - l.p1.y, dz = l.p2.z - l.p1.z;
     float t = ((x - l.p1.x) * dx + (y - l.p1.y) * dy + (z - l.p1.z) * dz) /
@@ -827,21 +840,13 @@ std::optional<Point3D> Point3D::project_to_line(const Line3D &l) const {
 }
 
 std::optional<Point3D> Point3D::project_to_triangle(const Triangle3D &t) const {
-    Point3D v0 = t.p2 - t.p1;
-    Point3D v1 = t.p3 - t.p1;
-    Point3D v2 = *this - t.p1;
-    float d00 = v0.dot(v0);
-    float d01 = v0.dot(v1);
-    float d11 = v1.dot(v1);
-    float d20 = v2.dot(v0);
-    float d21 = v2.dot(v1);
-    float denom = d00 * d11 - d01 * d01;
-    if (denom == 0) return std::nullopt;
-    float v = (d11 * d20 - d01 * d21) / denom;
-    float w = (d00 * d21 - d01 * d20) / denom;
-    float u = 1.0f - v - w;
-    if (u < 0 || v < 0 || w < 0) return std::nullopt;
-    return t.p1 * u + t.p2 * v + t.p3 * w;
+    BarycentricCoordinates bc = barycentric_coordinates(t);
+    if (bc.u < 0 || bc.v < 0 || bc.w < 0) return std::nullopt;
+    return bc.get_point_3d(t);
+}
+
+bool Point3D::projects_to_triangle(const Triangle3D &t) const {
+    return project_to_triangle(t).has_value();
 }
 
 std::string Point3D::to_string() const {
@@ -905,7 +910,7 @@ std::optional<std::tuple<Point3D, Point3D>> Line3D::closest_points(
     Point3D n = d1.cross(d2);
     Point3D n1 = d1.cross(n), n2 = d2.cross(n);
     float d2n1 = d2.dot(n1), d1n2 = d1.dot(n2);
-    if (std::abs(d2n1) < 1e-6 && std::abs(d1n2) < 1e-6) {
+    if (std::abs(d2n1) < TOLERANCE && std::abs(d1n2) < TOLERANCE) {
         return std::nullopt;
     }
     Point3D c1 = p1 + d1 * (n2.dot(l.p1 - p1) / d1n2),
@@ -919,7 +924,7 @@ std::optional<Point3D> Line3D::line_intersection(const Line3D &l) const {
         return std::nullopt;
     }
     auto a = std::get<0>(*p), b = std::get<1>(*p);
-    if (a.distance_to_point(b) > 1e-6) {
+    if (a.distance_to_point(b) > TOLERANCE) {
         return std::nullopt;
     }
     return a;
@@ -937,26 +942,27 @@ bool Line3D::intersects_triangle(const Triangle3D &t) const {
 
 std::optional<Point3D> Line3D::triangle_intersection(
     const Triangle3D &t) const {
-    Point3D e1 = t.p2 - t.p1, e2 = t.p3 - t.p1;
+    Point3D e1 = t.p2 - t.p1, e2 = t.p3 - t.p1, d21 = p2 - p1;
     Point3D n = e1.cross(e2);
-    float det = -n.dot(p2 - p1);
+    float det = -n.dot(d21);
 
-    if (std::abs(det) < 1e-6) {
+    // Lines are parallel.
+    if (std::abs(det) < TOLERANCE) {
         return std::nullopt;
     }
 
     Point3D ao = p1 - t.p1;
-    Point3D dao = ao.cross(p2 - p1);
+    Point3D dao = ao.cross(d21);
 
     float u = e2.dot(dao) / det;
     float v = -e1.dot(dao) / det;
     float w = ao.dot(n) / det;
 
-    if (w < 0.0 || u < 0.0 || v < 0.0 || (u + v) > 1.0) {
+    if (w < 0.0 || u < 0.0 || v < 0.0 || (u + v) > 1.0 || w > 1.0) {
         return std::nullopt;
     }
 
-    return p1 + (p2 - p1) * w;
+    return p1 + d21 * w;
 }
 
 bool Line3D::intersects_bounding_box(const BoundingBox3D &b) const {
@@ -998,6 +1004,28 @@ std::string Line3D::to_string() const {
     return ss.str();
 }
 
+/* -------------- *
+ * Circumcircle3D *
+ * -------------- */
+
+bool Circumcircle3D::operator==(const Circumcircle3D &c) const {
+    return center == c.center && std::abs(radius - c.radius) < TOLERANCE;
+}
+
+bool Circumcircle3D::operator!=(const Circumcircle3D &c) const {
+    return !(*this == c);
+}
+
+bool Circumcircle3D::contains_point(const Point3D &p) const {
+    return center.distance_to_point(p) < radius + TOLERANCE;
+}
+
+std::string Circumcircle3D::to_string() const {
+    std::ostringstream ss;
+    ss << "Circumcircle3D(" << center.to_string() << ", " << radius << ")";
+    return ss.str();
+}
+
 /* ---------- *
  * Triangle3D *
  * ---------- */
@@ -1031,6 +1059,12 @@ Point3D Triangle3D::normal() const {
     return v1.cross(v2).normalize();
 }
 
+std::vector<Point3D> Triangle3D::vertices() const { return {p1, p2, p3}; }
+
+std::vector<Line3D> Triangle3D::edges() const {
+    return {{p1, p2}, {p2, p3}, {p3, p1}};
+}
+
 float Triangle3D::distance_to_point(const Point3D &p) const {
     std::optional<Point3D> tp = p.project_to_triangle(*this);
     if (tp) {
@@ -1038,6 +1072,33 @@ float Triangle3D::distance_to_point(const Point3D &p) const {
     }
     return std::min({p.distance_to_line({p1, p2}), p.distance_to_line({p2, p3}),
                      p.distance_to_line({p3, p1})});
+}
+
+Circumcircle3D Triangle3D::circumcircle() const {
+    Point3D v1 = p2 - p1;
+    Point3D v2 = p3 - p1;
+    Point3D v3 = p3 - p2;
+    float a = v1.length();
+    float b = v2.length();
+    float c = v3.length();
+    float s = 0.5f * (a + b + c);
+    float area = std::sqrt(s * (s - a) * (s - b) * (s - c));
+    float r = a * b * c / (4.0f * area);
+    Point3D center = (p1 * a + p2 * b + p3 * c) / (a + b + c);
+    return {center, r};
+}
+
+bool Triangle3D::contains(const Point3D &p) const {
+    std::optional<Point3D> tp = p.project_to_triangle(*this);
+    if (!tp) return false;
+    return p.distance_to_point(*tp) < TOLERANCE;
+}
+
+bool Triangle3D::is_coplanar(const Triangle3D &t) const {
+    Point3D n = normal();
+    return std::abs(n.dot(t.p1 - p1)) < TOLERANCE &&
+           std::abs(n.dot(t.p2 - p1)) < TOLERANCE &&
+           std::abs(n.dot(t.p3 - p1)) < TOLERANCE;
 }
 
 std::string Triangle3D::to_string() const {
@@ -1212,6 +1273,64 @@ std::string BoundingBox3D::to_string() const {
 /* --------- *
  * Polygon3D *
  * --------- */
+
+Polygon3D::Polygon3D(const std::vector<Point3D> &points) : points(points) {}
+
+bool Polygon3D::operator==(const Polygon3D &p) const {
+    return points == p.points;
+}
+
+bool Polygon3D::operator!=(const Polygon3D &p) const { return !(*this == p); }
+
+Polygon3D Polygon3D::operator<<=(const Affine3D &a) {
+    for (auto &p : points) p <<= a;
+    return *this;
+}
+
+float Polygon3D::area() const {
+    if (points.size() < 3) return 0.0f;
+    float area = 0.0f;
+    Point3D p1 = points[0];
+    for (size_t i = 1; i < points.size(); ++i) {
+        size_t j = (i + 1) % points.size();
+        Point3D v1 = points[i] - p1;
+        Point3D v2 = points[j] - p1;
+        area += v1.cross(v2).length();
+    }
+    return std::abs(area) / 2.0f;
+}
+
+Point3D Polygon3D::center() const {
+    if (points.empty()) throw std::runtime_error("Empty polygon");
+    Point3D center;
+    for (auto &p : points) center += p;
+    return center / points.size();
+}
+
+Point3D Polygon3D::normal() const {
+    if (points.size() < 3) throw std::runtime_error("Not enough points");
+    Point3D v1 = points[1] - points[0];
+    Point3D v2 = points[2] - points[0];
+    return v1.cross(v2).normalize();
+}
+
+BoundingBox3D Polygon3D::bounding_box() const {
+    if (points.empty()) throw std::runtime_error("Empty polygon");
+
+    float min_x = points[0].x, min_y = points[0].y, min_z = points[0].z;
+    float max_x = points[0].x, max_y = points[0].y, max_z = points[0].z;
+
+    for (size_t i = 0; i < points.size(); ++i) {
+        min_x = std::min(min_x, points[i].x);
+        min_y = std::min(min_y, points[i].y);
+        min_z = std::min(min_z, points[i].z);
+        max_x = std::max(max_x, points[i].x);
+        max_y = std::max(max_y, points[i].y);
+        max_z = std::max(max_z, points[i].z);
+    }
+
+    return BoundingBox3D({min_x, min_y, min_z}, {max_x, max_y, max_z});
+}
 
 std::string Polygon3D::to_string() const {
     std::ostringstream ss;
@@ -1486,6 +1605,36 @@ Angle operator/(float s, const Angle &a) { return {s / a.value}; }
 
 Angle operator/(const Angle &a, float s) { return {a.value / s}; }
 
+/* ---------------------- *
+ * BarycentricCoordinates *
+ * ---------------------- */
+
+BarycentricCoordinates::BarycentricCoordinates(float u, float v, float w)
+    : u(u), v(v), w(w) {}
+
+bool BarycentricCoordinates::operator==(const BarycentricCoordinates &b) const {
+    return std::abs(u - b.u) < TOLERANCE && std::abs(v - b.v) < TOLERANCE &&
+           std::abs(w - b.w) < TOLERANCE;
+}
+
+bool BarycentricCoordinates::operator!=(const BarycentricCoordinates &b) const {
+    return !(*this == b);
+}
+
+Point2D BarycentricCoordinates::get_point_2d(const Triangle2D &t) const {
+    return u * t.p1 + v * t.p2 + w * t.p3;
+}
+
+Point3D BarycentricCoordinates::get_point_3d(const Triangle3D &t) const {
+    return u * t.p1 + v * t.p2 + w * t.p3;
+}
+
+std::string BarycentricCoordinates::to_string() const {
+    std::ostringstream ss;
+    ss << "BarycentricCoordinates(" << u << ", " << v << ", " << w << ")";
+    return ss.str();
+}
+
 void add_modules(py::module &m) {
     py::module s = m.def_submodule("types");
     s.doc() = "Types";
@@ -1499,11 +1648,14 @@ void add_modules(py::module &m) {
     auto affine2d = py::class_<Affine2D>(s, "Affine2D");
     auto point3d = py::class_<Point3D>(s, "Point3D");
     auto line3d = py::class_<Line3D>(s, "Line3D");
+    auto circumcircle3d = py::class_<Circumcircle3D>(s, "Circumcircle3D");
     auto triangle3d = py::class_<Triangle3D>(s, "Triangle3D");
     auto bbox3d = py::class_<BoundingBox3D>(s, "BoundingBox3D");
     auto polygon3d = py::class_<Polygon3D>(s, "Polygon3D");
     auto affine3d = py::class_<Affine3D>(s, "Affine3D");
     auto angle = py::class_<Angle>(s, "Angle");
+    auto barycentric_coordinates =
+        py::class_<BarycentricCoordinates>(s, "BarycentricCoordinates");
 
     // Defines Point2D methods.
     point2d.def(py::init<float, float>(), "A point in 2D space", "x"_a, "y"_a)
@@ -1832,12 +1984,19 @@ void add_modules(py::module &m) {
         .def("dot", &Point3D::dot, "The dot product of the point", "other"_a)
         .def("cross", &Point3D::cross, "The cross product of the point",
              "other"_a)
+        .def("barycentric_coordinates", &Point3D::barycentric_coordinates,
+             "The barycentric coordinates of the point relative to a triangle",
+             "t"_a)
+        .def("is_inside_bounding_box", &Point3D::is_inside_bounding_box,
+             "Checks if the point is inside a bounding box", "bb"_a)
         .def("distance_to_point", &Point3D::distance_to_point,
              "The distance to another point", "other"_a)
         .def("distance_to_line", &Point3D::distance_to_line,
              "The distance to a line", "line"_a)
         .def("distance_to_triangle", &Point3D::distance_to_triangle,
              "The distance to a triangle", "triangle"_a)
+        .def("is_coplanar", &Point3D::is_coplanar,
+             "Checks if the point is coplanar with a triangle", "t"_a)
         .def("project_to_line", &Point3D::project_to_line,
              "Projects the point onto a line", "l"_a)
         .def("project_to_triangle", &Point3D::project_to_triangle,
@@ -1883,6 +2042,26 @@ void add_modules(py::module &m) {
         .def("intersects_bounding_box", &Line3D::intersects_bounding_box,
              "Checks if the line intersects a bounding box", "bb"_a);
 
+    // Defines Circumcircle3D methods.
+    circumcircle3d
+        .def(py::init<const Point3D &, float>(),
+             "A circumcircle with a given center and radius", "center"_a,
+             "radius"_a)
+        .def_readwrite("center", &Circumcircle3D::center,
+                       "The circumcircle's center")
+        .def_readwrite("radius", &Circumcircle3D::radius,
+                       "The circumcircle's radius")
+        .def("__str__", &Circumcircle3D::to_string, py::is_operator())
+        .def("__repr__", &Circumcircle3D::to_string, py::is_operator())
+        .def("__eq__", &Circumcircle3D::operator==,
+             "Checks if two circumcircles are equal", "other"_a,
+             py::is_operator())
+        .def("__ne__", &Circumcircle3D::operator!=,
+             "Checks if two circumcircles are not equal", "other"_a,
+             py::is_operator())
+        .def("contains_point", &Circumcircle3D::contains_point,
+             "Checks if the circumcircle contains a point", "p"_a);
+
     // Defines Triangle3D methods.
     triangle3d
         .def(py::init<const Point3D &, const Point3D &, const Point3D &>(),
@@ -1907,7 +2086,16 @@ void add_modules(py::module &m) {
              py::is_operator())
         .def("area", &Triangle3D::area, "The triangle's area")
         .def("normal", &Triangle3D::normal, "The triangle's normal")
-        .def("center", &Triangle3D::center, "The triangle's center");
+        .def("center", &Triangle3D::center, "The triangle's center")
+        .def("vertices", &Triangle3D::vertices, "The triangle's vertices")
+        .def("edges", &Triangle3D::edges, "The triangle's edges")
+        .def("distance_to_point", &Triangle3D::distance_to_point,
+             "The distance to another point", "other"_a)
+        .def("is_coplanar", &Triangle3D::is_coplanar,
+             "Checks if the triangle is coplanar with another triangle",
+             "other"_a)
+        .def("circumcircle", &Triangle3D::circumcircle,
+             "The triangle's circumcircle");
 
     // Defines BoundingBox3D methods.
     bbox3d
@@ -1948,6 +2136,32 @@ void add_modules(py::module &m) {
              "The bounding box's triangles")
         .def("center", &BoundingBox3D::center, "The bounding box's center")
         .def("volume", &BoundingBox3D::volume, "The bounding box's volume");
+
+    // Defines Polygon3D methods.
+    polygon3d
+        .def(py::init<const std::vector<Point3D> &>(),
+             "Creates a polygon from a set of points", "points"_a)
+        .def_readwrite("points", &Polygon3D::points, "The polygon's points")
+        .def("__str__", &Polygon3D::to_string, py::is_operator())
+        .def("__repr__", &Polygon3D::to_string, py::is_operator())
+        .def("__eq__", &Polygon3D::operator==,
+             "Checks if two polygons are equal", "other"_a, py::is_operator())
+        .def("__ne__", &Polygon3D::operator!=,
+             "Checks if two polygons are not equal", "other"_a,
+             py::is_operator())
+        .def(
+            "__lshift__",
+            py::overload_cast<const Polygon3D &, const Affine3D &>(&operator<<),
+            "Applies a affine transformation to the polygon", "other"_a,
+            py::is_operator())
+        .def("__ilshift__", &Polygon3D::operator<<=,
+             "Applies a affine transformation to the polygon", "other"_a,
+             py::is_operator())
+        .def("area", &Polygon3D::area, "The polygon's area")
+        .def("normal", &Polygon3D::normal, "The polygon's normal")
+        .def("center", &Polygon3D::center, "The polygon's center")
+        .def("bounding_box", &Polygon3D::bounding_box,
+             "The polygon's bounding box");
 
     // Defines Affine3D methods.
     affine3d
@@ -2008,6 +2222,33 @@ void add_modules(py::module &m) {
         .def("asin", &Angle::asin, "The angle's arc sine")
         .def("atan", &Angle::atan, "The angle's arc tangent")
         .def("to_degress", &Angle::to_degrees, "The angle's value in degrees");
+
+    // Defines BarycentricCoordinates methods.
+    barycentric_coordinates
+        .def(py::init<float, float, float>(), "Barycentric coordinates", "u"_a,
+             "v"_a, "w"_a)
+        .def_readwrite("u", &BarycentricCoordinates::u,
+                       "The first barycentric coordinate")
+        .def_readwrite("v", &BarycentricCoordinates::v,
+                       "The second barycentric coordinate")
+        .def_readwrite("w", &BarycentricCoordinates::w,
+                       "The third barycentric coordinate")
+        .def("__str__", &BarycentricCoordinates::to_string, py::is_operator())
+        .def("__repr__", &BarycentricCoordinates::to_string, py::is_operator())
+        .def("__eq__", &BarycentricCoordinates::operator==,
+             "Checks if two barycentric coordinates are equal", "other"_a,
+             py::is_operator())
+        .def("__ne__", &BarycentricCoordinates::operator!=,
+             "Checks if two barycentric coordinates are not equal", "other"_a,
+             py::is_operator())
+        .def("get_point_2d", &BarycentricCoordinates::get_point_2d,
+             "The point corresponding to the barycentric coordinates within a "
+             "2D triangle",
+             "t"_a)
+        .def("get_point_3d", &BarycentricCoordinates::get_point_3d,
+             "The point corresponding to the barycentric coordinates within a "
+             "3D triangle",
+             "t"_a);
 }
 
 }  // namespace types

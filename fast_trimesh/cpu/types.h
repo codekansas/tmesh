@@ -12,6 +12,7 @@ namespace cpu {
 namespace types {
 
 struct Angle;
+struct BarycentricCoordinates;
 struct Point2D;
 struct Line2D;
 struct Triangle2D;
@@ -20,6 +21,7 @@ struct Polygon2D;
 struct Affine2D;
 struct Point3D;
 struct Line3D;
+struct Circumcircle3D;
 struct Triangle3D;
 struct BoundingBox3D;
 struct Polygon3D;
@@ -46,7 +48,7 @@ struct Point2D {
     float dot(const Point2D &other) const;
     float cross(const Point2D &other) const;
 
-    Point3D barycentric_coordinates(const Triangle2D &t) const;
+    BarycentricCoordinates barycentric_coordinates(const Triangle2D &t) const;
     bool is_inside_triangle(const Triangle2D &t) const;
     bool is_inside_bounding_box(const BoundingBox2D &bb) const;
 
@@ -199,14 +201,17 @@ struct Point3D {
     float dot(const Point3D &other) const;
     Point3D cross(const Point3D &other) const;
 
+    BarycentricCoordinates barycentric_coordinates(const Triangle3D &t) const;
     bool is_inside_bounding_box(const BoundingBox3D &bb) const;
 
     float distance_to_point(const Point3D &other) const;
     float distance_to_line(const Line3D &l) const;
     float distance_to_triangle(const Triangle3D &t) const;
+    bool is_coplanar(const Triangle3D &t) const;
 
     std::optional<Point3D> project_to_line(const Line3D &l) const;
     std::optional<Point3D> project_to_triangle(const Triangle3D &t) const;
+    bool projects_to_triangle(const Triangle3D &t) const;
 
     std::string to_string() const;
 };
@@ -243,6 +248,18 @@ struct Line3D {
     std::string to_string() const;
 };
 
+struct Circumcircle3D {
+    Point3D center;
+    float radius;
+
+    bool operator==(const Circumcircle3D &c) const;
+    bool operator!=(const Circumcircle3D &c) const;
+
+    bool contains_point(const Point3D &p) const;
+
+    std::string to_string() const;
+};
+
 struct Triangle3D {
     Point3D p1, p2, p3;
 
@@ -253,8 +270,13 @@ struct Triangle3D {
     float area() const;
     Point3D center() const;
     Point3D normal() const;
+    std::vector<Point3D> vertices() const;
+    std::vector<Line3D> edges() const;
 
     float distance_to_point(const Point3D &p) const;
+    bool contains(const Point3D &p) const;
+    bool is_coplanar(const Triangle3D &t) const;
+    Circumcircle3D circumcircle() const;
 
     std::string to_string() const;
 };
@@ -286,10 +308,15 @@ struct BoundingBox3D {
 struct Polygon3D {
     std::vector<Point3D> points;
 
+    Polygon3D(const std::vector<Point3D> &points);
+
     bool operator==(const Polygon3D &p) const;
     bool operator!=(const Polygon3D &p) const;
     Polygon3D operator<<=(const Affine3D &q);
 
+    float area() const;
+    Point3D normal() const;
+    Point3D center() const;
     BoundingBox3D bounding_box() const;
 
     std::string to_string() const;
@@ -363,6 +390,20 @@ Angle operator*(float s, const Angle &a);
 Angle operator*(const Angle &a, float s);
 Angle operator/(const Angle &a1, const Angle &a2);
 Angle operator/(const Angle &a, float s);
+
+struct BarycentricCoordinates {
+    float u, v, w;
+
+    BarycentricCoordinates(float u, float v, float w);
+
+    bool operator==(const BarycentricCoordinates &bc) const;
+    bool operator!=(const BarycentricCoordinates &bc) const;
+
+    Point2D get_point_2d(const Triangle2D &t) const;
+    Point3D get_point_3d(const Triangle3D &t) const;
+
+    std::string to_string() const;
+};
 
 void add_modules(py::module &m);
 

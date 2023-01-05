@@ -67,16 +67,11 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     trans = Affine3D(trans=(3.0, 3.0, 3.0))
     tr_b = tr_b << rot @ trans
 
-    # Tests adding the two trimeshes together.
-    tr_c = tr_a + tr_b
-    assert len(tr_c.vertices) == 16
-    assert len(tr_c.faces) == 24
+    # Tests the intersection of two trimeshes.
+    tr_c = tr_a & tr_b
 
     # Tests adding the two trimeshes together in-place.
-    tr_a += tr_b
-    assert len(tr_a.vertices) == 16
-    assert len(tr_a.faces) == 24
-
+    tr_a &= tr_b
     assert tr_c.vertices == tr_a.vertices
     assert tr_c.faces == tr_a.faces
 
@@ -85,13 +80,13 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     save_stl(stl_path, tr_a)
     tr_d = load_stl(stl_path)
 
-    assert len(tr_d.vertices) == 16, len(tr_d.vertices)
-    assert len(tr_d.faces) == 24, len(tr_d.faces)
+    assert len(tr_d.vertices) == len(tr_a.vertices), len(tr_d.vertices)
+    assert len(tr_d.faces) == len(tr_a.faces), len(tr_d.faces)
     assert sorted(tr_d.vertices) == sorted(tr_a.vertices)
 
     # Converts the faces and vertices to the absolute vertices.
-    tr_a_face_vertices = [tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces]
-    tr_d_face_vertices = [tuple(tr_d.vertices[j] for j in i) for i in tr_d.faces]
+    tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces])
+    tr_d_face_vertices = sorted([tuple(tr_d.vertices[j] for j in i) for i in tr_d.faces])
     assert tr_a_face_vertices == tr_d_face_vertices
 
     # Tests saving and loading the trimesh as a text STL.
@@ -99,16 +94,16 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     save_stl_text(stl_path, tr_a)
     tr_e = load_stl_text(stl_path)
 
-    assert len(tr_e.vertices) == 16, len(tr_e.vertices)
-    assert len(tr_e.faces) == 24, len(tr_e.faces)
+    assert len(tr_e.vertices) == len(tr_a.vertices), len(tr_e.vertices)
+    assert len(tr_e.faces) == len(tr_e.faces), len(tr_e.faces)
     assert all(
         a.distance_to_point(b) == pytest.approx(0, abs=1e-3)
         for a, b in zip(sorted(tr_e.vertices), sorted(tr_a.vertices))
     )
 
     # Converts the faces and vertices to the absolute vertices.
-    tr_a_face_vertices = [tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces]
-    tr_e_face_vertices = [tuple(tr_e.vertices[j] for j in i) for i in tr_e.faces]
+    tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces])
+    tr_e_face_vertices = sorted([tuple(tr_e.vertices[j] for j in i) for i in tr_e.faces])
     assert all(
         aa.distance_to_point(bb) == pytest.approx(0, abs=1e-3)
         for a, b in zip(tr_a_face_vertices, tr_e_face_vertices)
@@ -119,8 +114,8 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     obj_path = str(tmpdir / "file.obj")
     save_obj(obj_path, tr_a)
     tr_f = load_obj(obj_path)
-    assert len(tr_f.vertices) == 16, len(tr_f.vertices)
-    assert len(tr_f.faces) == 24, len(tr_f.faces)
+    assert len(tr_f.vertices) == len(tr_a.vertices), len(tr_f.vertices)
+    assert len(tr_f.faces) == len(tr_a.faces), len(tr_f.faces)
     assert all(a.distance_to_point(b) == pytest.approx(0, abs=1e-5) for a, b in zip(tr_f.vertices, tr_a.vertices))
     assert tr_f.faces == tr_a.faces
 

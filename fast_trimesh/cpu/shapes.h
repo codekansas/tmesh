@@ -18,7 +18,7 @@ types::Polygon2D regular_polygon(float radius, int n);
 trimesh::Trimesh3D cuboid(float width, float height, float depth,
                           bool center = false);
 
-trimesh::Trimesh3D sphere(float radius, int slices, int stacks);
+trimesh::Trimesh3D tetrahedron(float radius);
 
 void add_modules(py::module &m);
 

@@ -14,4 +14,4 @@ trans = Affine3D(trans=(0.0, 0.5, 0.0))
 b <<= rot @ trans
 
 # Save the resulting cuboid.
-save_stl_text("simple.stl", a + b)
+save_stl_text("simple.stl", a | b)

@@ -15,4 +15,4 @@ circ <<= Affine2D(trans=(-5.0, 0.0))
 torus_b = rotate_extrude(circ, n=20, axis=1)
 
 # Save the result.
-save_stl_text("torus.stl", torus_a + torus_b)
+save_stl_text("torus.stl", torus_a | torus_b)

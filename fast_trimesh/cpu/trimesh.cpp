@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include "boolean.h"
+
 using namespace pybind11::literals;
 
 namespace fast_trimesh {
@@ -153,7 +155,7 @@ Trimesh2D::Trimesh2D(const types::Polygon2D &polygon, bool is_convex) {
             types::Point2D pi = polygon.points[vi], pj = polygon.points[vj],
                            pk = polygon.points[vk];
             if (is_convex || is_ear(polygon, vi, vj, vk)) {
-                faces.push_back({vi, vj, vk});
+                faces.insert({vi, vj, vk});
                 indices.erase(indices.begin() + j);
                 found = true;
                 break;
@@ -163,7 +165,23 @@ Trimesh2D::Trimesh2D(const types::Polygon2D &polygon, bool is_convex) {
             throw std::runtime_error("Unable to triangulate polygon.");
         }
     }
-    faces.push_back({indices[0], indices[1], indices[2]});
+    faces.insert({indices[0], indices[1], indices[2]});
+}
+
+Trimesh2D &Trimesh2D::operator<<=(const types::Affine2D &tf) {
+    for (auto &vertex : vertices) {
+        vertex <<= tf;
+    }
+
+    return *this;
+}
+
+Trimesh2D Trimesh2D::operator<<(const types::Affine2D &tf) const {
+    Trimesh2D result;
+    result.vertices = vertices;
+    result.faces = faces;
+    result <<= tf;
+    return result;
 }
 
 void Trimesh2D::validate() const {
@@ -245,10 +263,21 @@ std::string Trimesh2D::to_string() const {
     return ss.str();
 }
 
+types::Triangle3D Trimesh3D::get_triangle(
+    return {vertices[vi], vertices[vj], vertices[vk]};
+}
+
+std::vector<types::Triangle3D> Trimesh3D::get_triangles() const {
+    std::vector<types::Triangle3D> result;
+    for (auto &face : faces) {
+        result.push_back(get_triangle(face));
+    }
+    return result;
+}
+
 void Trimesh3D::validate() const {
     // Checks that there are at least 3 vertices.
-    if (vertices.size() < 3)
-        throw std::runtime_error("Trimesh3D should have at least 3 vertices.");
+    throw std::runtime_error("Trimesh3D should have at least 3 vertices.");
 
     // Checks that all vertices point to a valid vertex index.
     for (auto &face : faces) {
@@ -272,6 +301,83 @@ void Trimesh3D::validate() const {
         if (!used[i]) throw std::runtime_error("Unused vertex.");
 }
 
+Trimesh3D &Trimesh3D::operator<<=(const types::Affine3D &tf) {
+    for (auto &vertex : vertices) {
+        vertex <<= tf;
+    }
+
+    return *this;
+}
+
+Trimesh3D Trimesh3D::operator<<(const types::Affine3D &tf) const {
+    Trimesh3D result;
+    result.set_vertices(vertices);
+    result.faces = faces;
+    result <<= tf;
+    return result;
+}
+
+Trimesh3D &Trimesh3D::operator|=(const Trimesh3D &other) {
+    boolean::mesh_intersection(*this, {other});
+    return *this;
+}
+
+Trimesh3D Trimesh3D::operator|(const Trimesh3D &other) const {
+    Trimesh3D result = *this;
+    result |= other;
+    return result;
+}
+
+Trimesh3D &Trimesh3D::operator&=(const Trimesh3D &other) {
+    boolean::mesh_union(*this, {other});
+    return *this;
+}
+
+Trimesh3D Trimesh3D::operator&(const Trimesh3D &other) const {
+    Trimesh3D result = *this;
+    result &= other;
+    return result;
+}
+
+Trimesh3D &Trimesh3D::operator-=(const Trimesh3D &other) {
+    boolean::mesh_difference(*this, {other});
+    return *this;
+}
+
+Trimesh3D Trimesh3D::operator-(const Trimesh3D &other) const {
+    Trimesh3D result = *this;
+    result -= other;
+    return result;
+}
+
+std::string Trimesh3D::to_string() const {
+    std::stringstream ss;
+    ss << "Trimesh3D(" << std::endl;
+    ss << "  " << vertices.size() << " vertices = [" << std::endl;
+    size_t i = 0;
+    for (auto &vertex : vertices) {
+        ss << "    " << vertex.to_string() << "," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]," << std::endl;
+    ss << "  " << faces.size() << " faces = [" << std::endl;
+    i = 0;
+    for (auto &face : faces) {
+        ss << "    (" << std::get<0>(face) << ", " << std::get<1>(face) << ", "
+           << std::get<2>(face) << ")," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]" << std::endl;
+    ss << ")" << std::endl;
+    return ss.str();
+}
+
 template <typename T>
 py::class_<T> add_trimesh_module_for(pybind11::module &m,
                                      const char *type_name) {
@@ -287,7 +393,6 @@ py::class_<T> add_trimesh_module_for(pybind11::module &m,
         .def("set_faces", &T::set_faces, "Sets the mesh faces", "faces"_a)
         .def("get_vertex", &T::get_vertex, "Gets a mesh vertex from it's ID",
              "i"_a)
-        .def("get_face", &T::get_face, "Gets a mesh face from it's ID", "i"_a)
         .def_property_readonly("vertices", &T::get_vertices,
                                "The mesh vertices")
         .def_property_readonly("faces", &T::get_faces, "The mesh faces")
@@ -308,19 +413,35 @@ void add_modules(py::module &m) {
            "is_convex"_a = false)
         .def("__str__", &Trimesh2D::to_string, "Converts the mesh to a string")
         .def("__repr__", &Trimesh2D::to_string, "Converts the mesh to a string")
-        .def("validate", &Trimesh2D::validate, "Validates the mesh")
-        .def("__add__", &Trimesh2D::operator+, "Adds two meshes together",
-             "other"_a, py::is_operator())
-        .def("__iadd__", &Trimesh2D::operator+=, "Adds two meshes together",
-             "other"_a, py::is_operator());
+        .def("validate", &Trimesh2D::validate, "Validates the mesh");
 
-    t3.def("validate", &Trimesh3D::validate, "Validates the mesh")
+    t3.def("get_triangle", &Trimesh3D::get_triangle,
+           "Gets a mesh triangle from a face", "face"_a)
+        .def("get_triangles", &Trimesh3D::get_triangles,
+             "Gets all mesh triangles")
+        .def("validate", &Trimesh3D::validate, "Validates the mesh")
         .def("__str__", &Trimesh3D::to_string, "Converts the mesh to a string")
         .def("__repr__", &Trimesh3D::to_string, "Converts the mesh to a string")
-        .def("__add__", &Trimesh3D::operator+, "Adds two meshes together",
+        .def("__or__", &Trimesh3D::operator|,
+             "Computes the union of two 3D meshes", "other"_a,
+             py::is_operator())
+        .def("__ior__", &Trimesh3D::operator|=,
+             "Computes the union of two 3D meshes", "other"_a,
+             py::is_operator())
+        .def("__and__", &Trimesh3D::operator&,
+             "Computes the intersection of two "
+             "3D meshes",
              "other"_a, py::is_operator())
-        .def("__iadd__", &Trimesh3D::operator+=, "Adds two meshes together",
+        .def("__iand__", &Trimesh3D::operator&=,
+             "Computes the intersection of two "
+             "3D meshes",
              "other"_a, py::is_operator())
+        .def("__sub__", &Trimesh3D::operator-,
+             "Computes the difference of two 3D meshes", "other"_a,
+             py::is_operator())
+        .def("__isub__", &Trimesh3D::operator-=,
+             "Computes the difference of two 3D meshes", "other"_a,
+             py::is_operator())
         .def("__lshift__", &Trimesh3D::operator<<,
              "Applies affine transformation to 3D mesh", "affine"_a,
              py::is_operator())
