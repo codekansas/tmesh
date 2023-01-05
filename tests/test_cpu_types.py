@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from fast_trimesh.fast_trimesh.cpu.types import (
+from fast_trimesh.cpu.types import (
     Affine3D,
     Angle,
     BoundingBox2D,
@@ -337,6 +337,11 @@ def test_line_line_nearest_points_3d(lhs: Line3D, rhs: Line3D, expected: tuple[P
             Triangle3D(Point3D(0, 0, 1), Point3D(0, 1, 1), Point3D(1, 0, 0)),
             Point3D(0.5, 0.5, 0.5),
         ),
+        (
+            Line3D(Point3D(-1, -1, -1.1), Point3D(1, 1, 0.9)),
+            Triangle3D(Point3D(0, -0.5, 0.5), Point3D(0, 0.5, 0), Point3D(0, -0.5, -0.5)),
+            Point3D(0, 0, -0.1),
+        ),
     ],
 )
 def test_line_triangle_intersection_3d(lhs: Line3D, rhs: Triangle3D, expected: Point3D | None) -> None:
@@ -640,3 +645,55 @@ def test_point_to_triangle_3d_min_distance(lhs: Point3D, rhs: Triangle3D, expect
     assert lhs.distance_to_triangle(rhs) == pytest.approx(expected)
     assert lhs.distance_to_triangle(Triangle3D(rhs.p2, rhs.p1, rhs.p3)) == pytest.approx(expected)
     assert lhs.distance_to_triangle(Triangle3D(rhs.p3, rhs.p1, rhs.p2)) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "lhs,rhs",
+    [
+        (Point2D(0, 0), Triangle2D(Point2D(0, 0), Point2D(1, 0), Point2D(0, 1))),
+        (Point2D(0, 0), Triangle2D(Point2D(0, 0), Point2D(1, 0), Point2D(0, 1))),
+        (Point2D(0, 0), Triangle2D(Point2D(0, 0), Point2D(1, 0), Point2D(0, 1))),
+        (Point2D(0, 0), Triangle2D(Point2D(0, 0), Point2D(1, 0), Point2D(0, 1))),
+    ],
+)
+def test_barycentric_coordinates_2d(lhs: Point2D, rhs: Triangle2D) -> None:
+    """Tests 2D barycentric coordinate conversion.
+
+    Args:
+        lhs: The point.
+        rhs: The triangle.
+    """
+
+    bary = lhs.barycentric_coordinates(rhs)
+    assert bary.u >= 0
+    assert bary.v >= 0
+    assert bary.w >= 0
+    assert bary.u + bary.v + bary.w == pytest.approx(1)
+    assert bary.get_point_2d(rhs) == lhs
+
+
+@pytest.mark.parametrize(
+    "lhs,rhs",
+    [
+        (Point3D(0, 0, 0), Triangle3D(Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0))),
+        (Point3D(0, 0, 0), Triangle3D(Point3D(0, 0, 1), Point3D(1, 0, 1), Point3D(0, 1, 1))),
+        (Point3D(0, 2, 0), Triangle3D(Point3D(0, 0, -1), Point3D(1, 0, -1), Point3D(0, 0, 1))),
+    ],
+)
+def test_barycentric_coordinates_3d(lhs: Point3D, rhs: Triangle3D) -> None:
+    """Tests 2D barycentric coordinate conversion.
+
+    Args:
+        lhs: The point.
+        rhs: The triangle.
+    """
+
+    bary = lhs.barycentric_coordinates(rhs)
+    assert bary.u >= 0
+    assert bary.v >= 0
+    assert bary.w >= 0
+    assert bary.u + bary.v + bary.w == pytest.approx(1)
+    if lhs.is_coplanar(rhs):
+        assert bary.get_point_3d(rhs) == lhs
+    else:
+        assert bary.get_point_3d(rhs) != lhs

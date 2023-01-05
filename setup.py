@@ -50,7 +50,7 @@ class CMakeExtension(Extension):
     def __init__(self, name: str) -> None:
         super().__init__(name, sources=[])
 
-        self.sourcedir = os.fspath(Path(__file__).parent.resolve() / name)
+        self.sourcedir = os.fspath(Path(__file__).parent.resolve() / "src")
 
 
 class CMakeBuild(build_ext):
@@ -71,7 +71,7 @@ class CMakeBuild(build_ext):
         super().initialize_options()
 
         # Setting the package name is required for the build to work.
-        self.package = "fast_trimesh"
+        # self.package = "fast_trimesh"
 
         # Set parallel build.
         self.parallel = cpu_count()
@@ -149,7 +149,7 @@ class CMakeBuild(build_ext):
         super().run()
 
         def gen_stubs(ext: Extension) -> None:
-            cmd = ["stubgen", "-p", f"{ext.name}.{ext.name}", "-o", "."]
+            cmd = ["stubgen", "-p", f"{ext.name}", "-o", "."]
             print(" ".join(cmd))
             subprocess.run(cmd, check=True)
 
@@ -158,7 +158,7 @@ class CMakeBuild(build_ext):
                 gen_stubs(ext)
 
 
-with open("fast_trimesh/__version__.txt", "r", encoding="utf-8") as fh:
+with open("src/__version__.txt", "r", encoding="utf-8") as fh:
     version = fh.read().strip()
 
 

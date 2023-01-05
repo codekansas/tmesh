@@ -22,9 +22,8 @@ void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     f.write(reinterpret_cast<char *>(&num_triangles), sizeof(uint32_t));
 
     // Write each triangle.
-    for (size_t i = 0; i < num_triangles; i++) {
+    for (auto &face : mesh.get_face_set()) {
         // Normal.
-        std::tuple<int, int, int> face = mesh.get_face(i);
         types::Triangle3D triangle{mesh.get_vertex(std::get<0>(face)),
                                    mesh.get_vertex(std::get<1>(face)),
                                    mesh.get_vertex(std::get<2>(face))};
@@ -113,9 +112,8 @@ void save_stl_text(const std::string &filename,
     f << "solid fast_trimesh STL file" << std::endl;
 
     // Write each triangle.
-    for (size_t i = 0; i < mesh.num_faces(); i++) {
+    for (auto &face : mesh.get_face_set()) {
         // Normal.
-        std::tuple<int, int, int> face = mesh.get_face(i);
         types::Triangle3D triangle{mesh.get_vertex(std::get<0>(face)),
                                    mesh.get_vertex(std::get<1>(face)),
                                    mesh.get_vertex(std::get<2>(face))};
@@ -221,8 +219,7 @@ void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     }
 
     // Write the faces.
-    for (size_t i = 0; i < mesh.num_faces(); i++) {
-        std::tuple<int, int, int> face = mesh.get_face(i);
+    for (auto &face : mesh.get_face_set()) {
         f << "f " << std::get<0>(face) + 1 << " " << std::get<1>(face) + 1
           << " " << std::get<2>(face) + 1 << std::endl;
     }
@@ -285,8 +282,7 @@ void save_ply(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     }
 
     // Write the faces.
-    for (size_t i = 0; i < mesh.num_faces(); i++) {
-        std::tuple<int, int, int> face = mesh.get_face(i);
+    for (auto &face : mesh.get_face_set()) {
         f << "3 " << std::get<0>(face) << " " << std::get<1>(face) << " "
           << std::get<2>(face) << std::endl;
     }

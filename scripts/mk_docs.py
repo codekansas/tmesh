@@ -6,7 +6,7 @@ import sys
 from types import ModuleType
 from typing import Any, TextIO
 
-from fast_trimesh import fast_trimesh
+import fast_trimesh
 
 
 def get_docs_for_level(mod: ModuleType, level: int) -> dict[str, Any]:

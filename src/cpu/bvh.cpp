@@ -6,14 +6,13 @@ namespace fast_trimesh {
 namespace cpu {
 namespace bvh {
 
-void sort_bounding_boxes(
-    const std::vector<types::BoundingBox3D> &boxes,
-    std::vector<size_t> &indices,
-    std::vector<std::tuple<int, int, int, types::BoundingBox3D>> &tree,
-    size_t lo, size_t hi) {
+void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
+                         const std::vector<std::tuple<int, int, int>> &faces,
+                         std::vector<size_t> &indices, tree_t &tree, size_t lo,
+                         size_t hi) {
     // If the number of boxes is less than 2, then there is nothing to sort.
     if (hi - lo < 2) {
-        tree[lo] = {indices[lo], -1, -1, boxes[indices[lo]]};
+        tree[lo] = {faces[indices[lo]], -1, -1, boxes[indices[lo]]};
         return;
     }
 
@@ -79,31 +78,25 @@ void sort_bounding_boxes(
     // Gets the middle element, which will be the root of the subtree.
     size_t mid = (hi - lo + 1) / 2;
     std::swap(indices[lo], indices[lo + mid]);
-    tree[lo] = {indices[lo],
+    tree[lo] = {faces[indices[lo]],
                 mid == 1 ? -1 : lo + 1,
                 mid == (hi - lo) ? -1 : lo + mid,
                 {{min_x, min_y, min_z}, {max_x, max_y, max_z}}};
 
     // Recursively sorts the left and right halves.
-    sort_bounding_boxes(boxes, indices, tree, lo + 1, lo + mid);
-    sort_bounding_boxes(boxes, indices, tree, lo + mid, hi);
+    sort_bounding_boxes(boxes, faces, indices, tree, lo + 1, lo + mid);
+    sort_bounding_boxes(boxes, faces, indices, tree, lo + mid, hi);
 }
 
-BoundaryVolumeHierarchy::BoundaryVolumeHierarchy(trimesh::Trimesh3D &t) {
-    // Sets shared pointer to the trimesh.
-    trimesh = std::make_shared<trimesh::Trimesh3D>(t);
-
+BoundaryVolumeHierarchy::BoundaryVolumeHierarchy(const trimesh::Trimesh3D &t)
+    : trimesh(std::make_shared<trimesh::Trimesh3D>(t)) {
     // Builds the boundaary volume hierachy tree.
     // First, we build a vector of boxes, where each box is represented as a
     // tuple of (min, max), where min and max are the minimum and maximum
     // coordinates of the box, respectively.
     std::vector<types::BoundingBox3D> boxes;
-    for (int i = 0; i < t.num_faces(); i++) {
-        auto face = t.get_face(i);
-        auto v1 = t.get_vertex(std::get<0>(face));
-        auto v2 = t.get_vertex(std::get<1>(face));
-        auto v3 = t.get_vertex(std::get<2>(face));
-        boxes.push_back(types::BoundingBox3D({v1, v2, v3}));
+    for (auto &triangle : t.get_triangles()) {
+        boxes.push_back(types::BoundingBox3D({triangle}));
     }
 
     // Insert the boxes into the tree.
@@ -128,13 +121,13 @@ BoundaryVolumeHierarchy::BoundaryVolumeHierarchy(trimesh::Trimesh3D &t) {
     std::vector<size_t> indices(boxes.size());
     std::iota(indices.begin(), indices.end(), 0);
     tree.resize(boxes.size());
-    sort_bounding_boxes(boxes, indices, tree, 0, boxes.size());
+    sort_bounding_boxes(boxes, t.get_faces(), indices, tree, 0, boxes.size());
 }
 
 void intersections_helper(
-    std::vector<std::tuple<int, int, int, types::BoundingBox3D>> tree,
-    const std::shared_ptr<trimesh::Trimesh3D> &trimesh, int id,
-    const types::Line3D &l, std::vector<int> &intersections) {
+    tree_t tree, const std::vector<types::Point3D> &vertices, int id,
+    const types::Line3D &l,
+    std::vector<std::tuple<face_t, types::Point3D>> &intersections) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
 
     // Gets the bounding box of the current node.
@@ -146,21 +139,24 @@ void intersections_helper(
     }
 
     // Checks if the line intersects the current triangle.
-    auto face = trimesh->get_triangle(std::get<0>(tree[id]));
-    if (l.intersects_triangle(face)) {
-        intersections.push_back(std::get<0>(tree[id]));
+    auto face_indices = std::get<0>(tree[id]);
+    types::Triangle3D face = {vertices[std::get<0>(face_indices)],
+                              vertices[std::get<1>(face_indices)],
+                              vertices[std::get<2>(face_indices)]};
+    if (auto intr = l.triangle_intersection(face)) {
+        intersections.push_back({face_indices, *intr});
     }
 
     // Recursively checks the left and right subtrees.
     auto lhs = std::get<1>(tree[id]), rhs = std::get<2>(tree[id]);
-    if (lhs != -1) intersections_helper(tree, trimesh, lhs, l, intersections);
-    if (rhs != -1) intersections_helper(tree, trimesh, rhs, l, intersections);
+    if (lhs != -1) intersections_helper(tree, vertices, lhs, l, intersections);
+    if (rhs != -1) intersections_helper(tree, vertices, rhs, l, intersections);
 }
 
-std::vector<int> BoundaryVolumeHierarchy::intersections(
-    const types::Line3D &l) const {
-    std::vector<int> intersections;
-    intersections_helper(tree, trimesh, 0, l, intersections);
+std::vector<std::tuple<face_t, types::Point3D>>
+BoundaryVolumeHierarchy::intersections(const types::Line3D &l) const {
+    std::vector<std::tuple<face_t, types::Point3D>> intersections;
+    intersections_helper(tree, trimesh->get_vertices(), 0, l, intersections);
     return intersections;
 }
 

@@ -1,0 +1,30 @@
+solid fast_trimesh STL file
+facet normal 0.471405 0.816497 0.333333
+outer loop
+vertex 0.942809 0 -0.333333
+vertex -0.471405 0.816497 -0.333333
+vertex 0 0 1
+endloop
+endfacet
+facet normal -0 0 -1
+outer loop
+vertex 0.942809 0 -0.333333
+vertex -0.471405 -0.816497 -0.333333
+vertex -0.471405 0.816497 -0.333333
+endloop
+endfacet
+facet normal -0.942809 0 0.333333
+outer loop
+vertex -0.471405 0.816497 -0.333333
+vertex -0.471405 -0.816497 -0.333333
+vertex 0 0 1
+endloop
+endfacet
+facet normal 0.471405 -0.816497 0.333333
+outer loop
+vertex -0.471405 -0.816497 -0.333333
+vertex 0.942809 0 -0.333333
+vertex 0 0 1
+endloop
+endfacet
+endsolid fast_trimesh STL file
