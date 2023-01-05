@@ -1,1 +1,2 @@
-recursive-include fast_trimesh/ *.txt *.cpp *.h *.cu *.cuh MANIFEST.in
+recursive-include src/ *.txt *.cpp *.h *.cu *.cuh MANIFEST.in
+recursive-include fast_trimesh/ *.pyi
