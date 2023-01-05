@@ -67,7 +67,7 @@ class Trimesh2D : public Trimesh<types::Point2D> {
     Trimesh2D &operator<<=(const types::Affine2D &tf);
     Trimesh2D operator<<(const types::Affine2D &tf) const;
 
-    types::Triangle2D get_triangle(int i) const;
+    types::Triangle2D get_triangle(const std::tuple<int, int, int> &face) const;
 
     std::string to_string() const;
 };
@@ -79,7 +79,6 @@ class Trimesh3D : public Trimesh<types::Point3D> {
 
     types::Triangle3D get_triangle(const std::tuple<int, int, int> &face) const;
     std::vector<types::Triangle3D> get_triangles() const;
-    trimesh::Trimesh3D triangulation(const std::vector<types::Point3D> &points);
     void validate() const;
     Trimesh3D &operator<<=(const types::Affine3D &tf);
     Trimesh3D operator<<(const types::Affine3D &tf) const;
@@ -90,7 +89,6 @@ class Trimesh3D : public Trimesh<types::Point3D> {
     Trimesh3D &operator-=(const Trimesh3D &other);
     Trimesh3D operator-(const Trimesh3D &other) const;
 
-    types::Triangle3D get_triangle(int i) const;
     float signed_volume() const;
     void flip_inside_out();
 

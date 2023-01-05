@@ -123,7 +123,7 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     ply_path = str(tmpdir / "file.ply")
     save_ply(ply_path, tr_a)
     tr_g = load_ply(ply_path)
-    assert len(tr_g.vertices) == 16, len(tr_g.vertices)
-    assert len(tr_g.faces) == 24, len(tr_g.faces)
+    assert len(tr_g.vertices) == len(tr_a.vertices), len(tr_g.vertices)
+    assert len(tr_g.faces) == len(tr_a.faces), len(tr_g.faces)
     assert all(a.distance_to_point(b) == pytest.approx(0, abs=1e-5) for a, b in zip(tr_g.vertices, tr_a.vertices))
     assert tr_g.faces == tr_a.faces
