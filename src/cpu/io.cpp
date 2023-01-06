@@ -10,8 +10,8 @@ namespace fast_trimesh {
 namespace cpu {
 namespace io {
 
-std::vector<types::face_t> get_sorted_faces(const types::face_set_t &faces) {
-    std::vector<types::face_t> sorted_faces(faces.begin(), faces.end());
+types::face_list_t get_sorted_faces(const types::face_list_t &faces) {
+    types::face_list_t sorted_faces(faces.begin(), faces.end());
     std::sort(sorted_faces.begin(), sorted_faces.end());
     return sorted_faces;
 }

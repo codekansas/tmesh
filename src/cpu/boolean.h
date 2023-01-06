@@ -14,6 +14,14 @@ namespace boolean {
 types::Trimesh3D triangulation(const types::Triangle3D &triangle,
                                const std::vector<types::Point3D> &points);
 
+struct TrimeshAdjacency {
+    std::vector<std::vector<size_t>> vertex_to_faces;
+    std::vector<std::vector<size_t>> face_to_vertices;
+    std::vector<std::vector<size_t>> face_to_faces;
+};
+
+TrimeshAdjacency compute_adjacency(const types::Trimesh3D &mesh);
+
 types::Trimesh3D mesh_union(const types::Trimesh3D &a,
                             const types::Trimesh3D &b);
 

@@ -29,7 +29,7 @@ struct Polygon3D;
 struct Affine3D;
 struct Trimesh3D;
 
-typedef std::tuple<int, int, int> face_t;
+typedef std::tuple<size_t, size_t, size_t> face_t;
 
 struct __face_hash_fn {
     std::size_t operator()(const face_t &f) const {
@@ -39,6 +39,7 @@ struct __face_hash_fn {
 
 typedef std::vector<types::Point2D> vertices2d_t;
 typedef std::vector<types::Point3D> vertices3d_t;
+typedef std::vector<face_t> face_list_t;
 typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
 
 struct Point2D {
@@ -199,14 +200,15 @@ Polygon2D operator<<(const Polygon2D &p, const Affine2D &a);
 
 class Trimesh2D {
    private:
-    vertices2d_t _vertices;
-    face_set_t _faces;
+    const vertices2d_t _vertices;
+    const face_list_t _faces;
 
    public:
-    Trimesh2D(vertices2d_t &vertices, face_set_t &faces);
+    Trimesh2D(const vertices2d_t &vertices, const face_set_t &faces);
+    Trimesh2D(const vertices2d_t &vertices, const face_list_t &faces);
 
     const vertices2d_t &vertices() const;
-    const face_set_t &faces() const;
+    const face_list_t &faces() const;
     const types::Triangle2D get_triangle(
         const std::tuple<int, int, int> &face) const;
     const std::vector<types::Triangle2D> get_triangles() const;
@@ -393,14 +395,15 @@ Polygon3D operator<<(const Polygon3D &p, const Affine3D &a);
 
 struct Trimesh3D {
    private:
-    vertices3d_t _vertices;
-    face_set_t _faces;
+    const vertices3d_t _vertices;
+    const face_list_t _faces;
 
    public:
-    Trimesh3D(vertices3d_t &vertices, face_set_t &faces);
+    Trimesh3D(const vertices3d_t &vertices, const face_set_t &faces);
+    Trimesh3D(const vertices3d_t &vertices, const face_list_t &faces);
 
     const vertices3d_t &vertices() const;
-    const face_set_t &faces() const;
+    const face_list_t &faces() const;
     types::Triangle3D get_triangle(const std::tuple<int, int, int> &face) const;
     std::vector<types::Triangle3D> get_triangles() const;
     float signed_volume() const;

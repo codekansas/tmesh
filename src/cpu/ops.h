@@ -12,8 +12,6 @@ namespace cpu {
 namespace ops {
 
 types::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height);
-types::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height,
-                                float twist);
 
 types::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
                                 int n, int axis = 0);

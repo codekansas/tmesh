@@ -20,6 +20,10 @@ types::Trimesh3D cuboid(float width, float height, float depth,
 
 types::Trimesh3D tetrahedron(float radius);
 
+types::Trimesh3D icosphere(float radius, int n);
+
+types::Trimesh3D uv_sphere(float radius, int n, int m);
+
 void add_modules(py::module &m);
 
 }  // namespace shapes

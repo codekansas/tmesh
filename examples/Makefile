@@ -16,4 +16,5 @@ build:
 	$(call add_example,cylinder)
 	$(call add_example,torus)
 	$(call add_example,intersection)
+	$(call add_example,sphere)
 .PHONY: build

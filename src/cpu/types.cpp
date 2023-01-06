@@ -609,7 +609,7 @@ types::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
     }
 
     types::vertices2d_t vertices(points);
-    types::face_set_t faces;
+    types::face_list_t faces;
 
     // Runs ear clipping algorithm.
     while (indices.size() > 3) {
@@ -621,7 +621,7 @@ types::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
             int vi = indices[i], vj = indices[j], vk = indices[k];
             types::Point2D pi = points[vi], pj = points[vj], pk = points[vk];
             if (is_convex || is_ear(vi, vj, vk)) {
-                faces.insert({vi, vj, vk});
+                faces.push_back({vi, vj, vk});
                 indices.erase(indices.begin() + j);
                 found = true;
                 break;
@@ -631,7 +631,7 @@ types::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
             throw std::runtime_error("Unable to triangulate polygon.");
         }
     }
-    faces.insert({indices[0], indices[1], indices[2]});
+    faces.push_back({indices[0], indices[1], indices[2]});
 
     return {vertices, faces};
 }
@@ -764,12 +764,15 @@ Polygon2D operator<<(const Polygon2D &p, const Affine2D &a) { return a >> p; }
  * Trimesh2D *
  * --------- */
 
-Trimesh2D::Trimesh2D(vertices2d_t &vertices, face_set_t &faces)
+Trimesh2D::Trimesh2D(const vertices2d_t &vertices, const face_set_t &faces)
+    : _vertices(vertices), _faces(faces.begin(), faces.end()) {}
+
+Trimesh2D::Trimesh2D(const vertices2d_t &vertices, const face_list_t &faces)
     : _vertices(vertices), _faces(faces) {}
 
 const vertices2d_t &Trimesh2D::vertices() const { return _vertices; }
 
-const face_set_t &Trimesh2D::faces() const { return _faces; }
+const face_list_t &Trimesh2D::faces() const { return _faces; }
 
 const types::Triangle2D Trimesh2D::get_triangle(
     const std::tuple<int, int, int> &face) const {
@@ -815,7 +818,7 @@ std::string Trimesh2D::to_string() const {
 
 Trimesh2D Trimesh2D::operator<<(const types::Affine2D &tf) const {
     vertices2d_t vertices;
-    face_set_t faces = this->_faces;
+    face_list_t faces = this->_faces;
     std::transform(
         this->_vertices.begin(), this->_vertices.end(),
         std::back_inserter(vertices),
@@ -870,8 +873,7 @@ Point3D Point3D::operator/=(float s) {
 }
 
 bool Point3D::operator==(const Point3D &p) const {
-    return std::abs(x - p.x) < TOLERANCE && std::abs(y - p.y) < TOLERANCE &&
-           std::abs(z - p.z) < TOLERANCE;
+    return distance_to_point(p) < TOLERANCE;
 }
 
 bool Point3D::operator!=(const Point3D &p) const { return !(*this == p); }
@@ -1643,12 +1645,15 @@ Polygon3D operator<<(const Polygon3D &p, const Affine3D &a) { return a >> p; }
  * Trimesh3D *
  * --------- */
 
-Trimesh3D::Trimesh3D(vertices3d_t &vertices, face_set_t &faces)
+Trimesh3D::Trimesh3D(const vertices3d_t &vertices, const face_set_t &faces)
+    : _vertices(vertices), _faces(faces.begin(), faces.end()) {}
+
+Trimesh3D::Trimesh3D(const vertices3d_t &vertices, const face_list_t &faces)
     : _vertices(vertices), _faces(faces) {}
 
 const vertices3d_t &Trimesh3D::vertices() const { return _vertices; }
 
-const face_set_t &Trimesh3D::faces() const { return _faces; }
+const face_list_t &Trimesh3D::faces() const { return _faces; }
 
 types::Triangle3D Trimesh3D::get_triangle(
     const std::tuple<int, int, int> &face) const {
@@ -1676,7 +1681,7 @@ float Trimesh3D::signed_volume() const {
 
 Trimesh3D Trimesh3D::flip_inside_out() const {
     vertices3d_t vertices = this->_vertices;
-    face_set_t faces;
+    face_list_t faces;
     std::transform(this->_faces.begin(), this->_faces.end(),
                    std::inserter(faces, faces.begin()),
                    [](const std::tuple<int, int, int> &face) {
@@ -1717,7 +1722,7 @@ std::string Trimesh3D::to_string() const {
 
 Trimesh3D Trimesh3D::operator<<(const types::Affine3D &tf) const {
     vertices3d_t vertices;
-    face_set_t faces = this->_faces;
+    face_list_t faces = this->_faces;
     std::transform(
         this->_vertices.begin(), this->_vertices.end(),
         std::back_inserter(vertices),
@@ -2154,9 +2159,9 @@ void add_modules(py::module &m) {
 
     // Defines Trimesh2D methods.
     trimesh2d
-        .def(py::init<vertices2d_t &, face_set_t &>(),
-             "Creates a trimesh from vertices and faces", "vertices"_a,
-             "faces"_a)
+        // .def(py::init<vertices2d_t &, face_set_t &>(),
+        //      "Creates a trimesh from vertices and faces", "vertices"_a,
+        //      "faces"_a)
         .def_property_readonly("vertices", &Trimesh2D::vertices,
                                "The mesh vertices")
         .def_property_readonly("faces", &Trimesh2D::faces, "The mesh faces")
@@ -2455,9 +2460,9 @@ void add_modules(py::module &m) {
 
     // Defines Trimesh3D methods.
     trimesh3d
-        .def(py::init<vertices3d_t &, face_set_t &>(),
-             "Creates a trimesh from vertices and faces", "vertices"_a,
-             "faces"_a)
+        // .def(py::init<vertices3d_t &, face_set_t &>(),
+        //      "Creates a trimesh from vertices and faces", "vertices"_a,
+        //      "faces"_a)
         .def_property_readonly("vertices", &Trimesh3D::vertices,
                                "The mesh vertices")
         .def_property_readonly("faces", &Trimesh3D::faces, "The mesh faces")

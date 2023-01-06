@@ -57,6 +57,38 @@ types::Trimesh3D triangulation(const types::Triangle3D &triangle,
     return {vertices, faces};
 }
 
+TrimeshAdjacency compute_adjacency(const types::Trimesh3D &mesh) {
+    TrimeshAdjacency adjacency;
+
+    // Initializes adjacency lists.
+    adjacency.vertex_to_faces.resize(mesh.vertices().size());
+    adjacency.face_to_vertices.resize(mesh.faces().size());
+    adjacency.face_to_faces.resize(mesh.faces().size());
+
+    // Populates adjacency lists.
+    for (size_t i = 0; i < mesh.faces().size(); i++) {
+        auto &[a, b, c] = mesh.faces()[i];
+        adjacency.vertex_to_faces[a].push_back(i);
+        adjacency.vertex_to_faces[b].push_back(i);
+        adjacency.vertex_to_faces[c].push_back(i);
+        adjacency.face_to_vertices[i] = {a, b, c};
+    }
+
+    // Populates face-to-face adjacency list.
+    for (size_t i = 0; i < mesh.faces().size(); i++) {
+        auto &[a, b, c] = mesh.faces()[i];
+        for (auto &j : adjacency.vertex_to_faces[a]) {
+            if (j == i) continue;
+            auto &[d, e, f] = mesh.faces()[j];
+            if (b == d || b == e || b == f || c == d || c == e || c == f) {
+                adjacency.face_to_faces[i].push_back(j);
+            }
+        }
+    }
+
+    return adjacency;
+}
+
 enum boolean_op { UNION, INTERSECTION, DIFFERENCE };
 
 types::Trimesh3D mesh_op(const types::Trimesh3D &a, const types::Trimesh3D &b,

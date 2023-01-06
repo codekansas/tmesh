@@ -116,7 +116,7 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     assert len(tr_f.vertices) == len(tr_a.vertices), len(tr_f.vertices)
     assert len(tr_f.faces) == len(tr_a.faces), len(tr_f.faces)
     assert all(a.distance_to_point(b) == pytest.approx(0, abs=1e-5) for a, b in zip(tr_f.vertices, tr_a.vertices))
-    assert tr_f.faces == tr_a.faces
+    assert sorted(tr_f.faces) == sorted(tr_a.faces)
 
     # Tests saving and loading the trimesh as a PLY.
     ply_path = str(tmpdir / "file.ply")
@@ -125,4 +125,4 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     assert len(tr_g.vertices) == len(tr_a.vertices), len(tr_g.vertices)
     assert len(tr_g.faces) == len(tr_a.faces), len(tr_g.faces)
     assert all(a.distance_to_point(b) == pytest.approx(0, abs=1e-5) for a, b in zip(tr_g.vertices, tr_a.vertices))
-    assert tr_g.faces == tr_a.faces
+    assert sorted(tr_g.faces) == sorted(tr_a.faces)
