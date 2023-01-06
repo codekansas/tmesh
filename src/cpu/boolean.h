@@ -22,6 +22,9 @@ struct TrimeshAdjacency {
 
 TrimeshAdjacency compute_adjacency(const types::Trimesh3D &mesh);
 
+types::Trimesh3D split_intersecting_faces(const types::Trimesh3D &a,
+                                          const types::Trimesh3D &b);
+
 types::Trimesh3D mesh_union(const types::Trimesh3D &a,
                             const types::Trimesh3D &b);
 
