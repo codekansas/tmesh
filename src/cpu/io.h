@@ -5,7 +5,7 @@
 
 #include <string>
 
-#include "trimesh.h"
+#include "types.h"
 
 namespace py = pybind11;
 
@@ -14,20 +14,20 @@ namespace cpu {
 namespace io {
 
 // Functions for saving and loading STLs.
-void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh);
-trimesh::Trimesh3D load_stl(const std::string &filename);
+void save_stl(const std::string &filename, const types::Trimesh3D &mesh);
+types::Trimesh3D load_stl(const std::string &filename);
 
 // Functions for saving and loading STLs as text.
-void save_stl_text(const std::string &filename, const trimesh::Trimesh3D &mesh);
-trimesh::Trimesh3D load_stl_text(const std::string &filename);
+void save_stl_text(const std::string &filename, const types::Trimesh3D &mesh);
+types::Trimesh3D load_stl_text(const std::string &filename);
 
 // Functions for saving and loading OBJs.
-void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh);
-trimesh::Trimesh3D load_obj(const std::string &filename);
+void save_obj(const std::string &filename, const types::Trimesh3D &mesh);
+types::Trimesh3D load_obj(const std::string &filename);
 
 // Functions for saving and loading PLYs.
-void save_ply(const std::string &filename, const trimesh::Trimesh3D &mesh);
-trimesh::Trimesh3D load_ply(const std::string &filename);
+void save_ply(const std::string &filename, const types::Trimesh3D &mesh);
+types::Trimesh3D load_ply(const std::string &filename);
 
 void add_modules(py::module &m);
 

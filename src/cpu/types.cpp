@@ -4,6 +4,8 @@
 #include <numeric>
 #include <sstream>
 
+#include "boolean.h"
+
 using namespace pybind11::literals;
 
 #define TOLERANCE 1e-6
@@ -594,7 +596,7 @@ bool Polygon2D::is_ear(int vi, int vj, int vk) const {
     return true;
 }
 
-trimesh::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
+types::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
     if (points.size() < 3) throw std::runtime_error("Invalid polygon.");
 
     // Gets the vertex indices from 0 to n - 1.
@@ -606,8 +608,8 @@ trimesh::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
         std::reverse(indices.begin(), indices.end());
     }
 
-    trimesh::vertices2d_t vertices(points);
-    trimesh::face_set_t faces;
+    types::vertices2d_t vertices(points);
+    types::face_set_t faces;
 
     // Runs ear clipping algorithm.
     while (indices.size() > 3) {
@@ -757,6 +759,69 @@ Polygon2D operator>>(const Affine2D &a, const Polygon2D &p) {
 }
 
 Polygon2D operator<<(const Polygon2D &p, const Affine2D &a) { return a >> p; }
+
+/* --------- *
+ * Trimesh2D *
+ * --------- */
+
+Trimesh2D::Trimesh2D(vertices2d_t &vertices, face_set_t &faces)
+    : _vertices(vertices), _faces(faces) {}
+
+const vertices2d_t &Trimesh2D::vertices() const { return _vertices; }
+
+const face_set_t &Trimesh2D::faces() const { return _faces; }
+
+const types::Triangle2D Trimesh2D::get_triangle(
+    const std::tuple<int, int, int> &face) const {
+    auto &[vi, vj, vk] = face;
+    return {_vertices[vi], _vertices[vj], _vertices[vk]};
+}
+
+const std::vector<types::Triangle2D> Trimesh2D::get_triangles() const {
+    std::vector<types::Triangle2D> result;
+    for (auto &face : _faces) {
+        result.push_back(get_triangle(face));
+    }
+    return result;
+}
+
+std::string Trimesh2D::to_string() const {
+    std::stringstream ss;
+    ss << "Trimesh2D(" << std::endl;
+    ss << "  " << _vertices.size() << " vertices = [" << std::endl;
+    size_t i = 0;
+    for (auto &vertex : _vertices) {
+        ss << "    " << vertex.to_string() << "," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]," << std::endl;
+    ss << "  " << _faces.size() << " faces = [" << std::endl;
+    i = 0;
+    for (auto &face : _faces) {
+        ss << "    (" << std::get<0>(face) << ", " << std::get<1>(face) << ", "
+           << std::get<2>(face) << ")," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]" << std::endl;
+    ss << ")" << std::endl;
+    return ss.str();
+}
+
+Trimesh2D Trimesh2D::operator<<(const types::Affine2D &tf) const {
+    vertices2d_t vertices;
+    face_set_t faces = this->_faces;
+    std::transform(
+        this->_vertices.begin(), this->_vertices.end(),
+        std::back_inserter(vertices),
+        [&tf](const types::Point2D &vertex) { return vertex << tf; });
+    return {vertices, faces};
+}
 
 /* ------- *
  * Point3D *
@@ -1574,6 +1639,104 @@ Polygon3D operator>>(const Affine3D &a, const Polygon3D &p) {
 
 Polygon3D operator<<(const Polygon3D &p, const Affine3D &a) { return a >> p; }
 
+/* --------- *
+ * Trimesh3D *
+ * --------- */
+
+Trimesh3D::Trimesh3D(vertices3d_t &vertices, face_set_t &faces)
+    : _vertices(vertices), _faces(faces) {}
+
+const vertices3d_t &Trimesh3D::vertices() const { return _vertices; }
+
+const face_set_t &Trimesh3D::faces() const { return _faces; }
+
+types::Triangle3D Trimesh3D::get_triangle(
+    const std::tuple<int, int, int> &face) const {
+    auto &[vi, vj, vk] = face;
+    return {_vertices[vi], _vertices[vj], _vertices[vk]};
+}
+
+std::vector<types::Triangle3D> Trimesh3D::get_triangles() const {
+    std::vector<types::Triangle3D> result;
+    for (auto &face : _faces) {
+        result.push_back(get_triangle(face));
+    }
+    return result;
+}
+
+float Trimesh3D::signed_volume() const {
+    types::Point3D center = {0, 0, 0};
+    float volume = 0;
+    for (auto &triangle : get_triangles()) {
+        volume +=
+            types::signed_volume(center, triangle.p1, triangle.p2, triangle.p3);
+    }
+    return volume;
+}
+
+Trimesh3D Trimesh3D::flip_inside_out() const {
+    vertices3d_t vertices = this->_vertices;
+    face_set_t faces;
+    std::transform(this->_faces.begin(), this->_faces.end(),
+                   std::inserter(faces, faces.begin()),
+                   [](const std::tuple<int, int, int> &face) {
+                       return std::make_tuple(std::get<0>(face),
+                                              std::get<2>(face),
+                                              std::get<1>(face));
+                   });
+    return {vertices, faces};
+}
+
+std::string Trimesh3D::to_string() const {
+    std::stringstream ss;
+    ss << "Trimesh3D(" << std::endl;
+    ss << "  " << _vertices.size() << " vertices = [" << std::endl;
+    size_t i = 0;
+    for (auto &vertex : _vertices) {
+        ss << "    " << vertex.to_string() << "," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]," << std::endl;
+    ss << "  " << _faces.size() << " faces = [" << std::endl;
+    i = 0;
+    for (auto &face : _faces) {
+        ss << "    (" << std::get<0>(face) << ", " << std::get<1>(face) << ", "
+           << std::get<2>(face) << ")," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]" << std::endl;
+    ss << ")" << std::endl;
+    return ss.str();
+}
+
+Trimesh3D Trimesh3D::operator<<(const types::Affine3D &tf) const {
+    vertices3d_t vertices;
+    face_set_t faces = this->_faces;
+    std::transform(
+        this->_vertices.begin(), this->_vertices.end(),
+        std::back_inserter(vertices),
+        [&tf](const types::Point3D &vertex) { return vertex << tf; });
+    return {vertices, faces};
+}
+
+Trimesh3D Trimesh3D::operator|(const Trimesh3D &other) const {
+    return boolean::mesh_intersection(*this, other);
+}
+
+Trimesh3D Trimesh3D::operator&(const Trimesh3D &other) const {
+    return boolean::mesh_union(*this, other);
+}
+
+Trimesh3D Trimesh3D::operator-(const Trimesh3D &other) const {
+    return boolean::mesh_difference(*this, other);
+}
+
 /* ----- *
  * Angle *
  * ----- */
@@ -1703,6 +1866,8 @@ void add_modules(py::module &m) {
     auto bbox2d = py::class_<BoundingBox2D>(s, "BoundingBox2D");
     auto polygon2d = py::class_<Polygon2D>(s, "Polygon2D");
     auto affine2d = py::class_<Affine2D>(s, "Affine2D");
+    auto trimesh2d =
+        py::class_<Trimesh2D, std::shared_ptr<Trimesh2D>>(s, "Trimesh2D");
     auto point3d = py::class_<Point3D>(s, "Point3D");
     auto line3d = py::class_<Line3D>(s, "Line3D");
     auto circumcircle3d = py::class_<Circumcircle3D>(s, "Circumcircle3D");
@@ -1710,6 +1875,8 @@ void add_modules(py::module &m) {
     auto bbox3d = py::class_<BoundingBox3D>(s, "BoundingBox3D");
     auto polygon3d = py::class_<Polygon3D>(s, "Polygon3D");
     auto affine3d = py::class_<Affine3D>(s, "Affine3D");
+    auto trimesh3d =
+        py::class_<Trimesh3D, std::shared_ptr<Trimesh3D>>(m, "Trimesh3D");
     auto angle = py::class_<Angle>(s, "Angle");
     auto barycentric_coordinates =
         py::class_<BarycentricCoordinates>(s, "BarycentricCoordinates");
@@ -1984,6 +2151,22 @@ void add_modules(py::module &m) {
             py::is_operator())
         .def("inverse", &Affine2D::inverse,
              "The inverse of the affine transformation");
+
+    // Defines Trimesh2D methods.
+    trimesh2d
+        .def(py::init<vertices2d_t &, face_set_t &>(),
+             "Creates a trimesh from vertices and faces", "vertices"_a,
+             "faces"_a)
+        .def_property_readonly("vertices", &Trimesh2D::vertices,
+                               "The mesh vertices")
+        .def_property_readonly("faces", &Trimesh2D::faces, "The mesh faces")
+        .def("__str__", &Trimesh2D::to_string, "Converts the mesh to a string",
+             py::is_operator())
+        .def("__repr__", &Trimesh2D::to_string, "Converts the mesh to a string",
+             py::is_operator())
+        .def("__lshift__", &Trimesh2D::operator<<,
+             "Applies affine transformation to the mesh", "affine"_a,
+             py::is_operator());
 
     // Defines Point3D methods.
     point3d
@@ -2269,6 +2452,38 @@ void add_modules(py::module &m) {
             py::is_operator())
         .def("inverse", &Affine3D::inverse,
              "The inverse of the affine transformation");
+
+    // Defines Trimesh3D methods.
+    trimesh3d
+        .def(py::init<vertices3d_t &, face_set_t &>(),
+             "Creates a trimesh from vertices and faces", "vertices"_a,
+             "faces"_a)
+        .def_property_readonly("vertices", &Trimesh3D::vertices,
+                               "The mesh vertices")
+        .def_property_readonly("faces", &Trimesh3D::faces, "The mesh faces")
+        .def("get_triangle", &Trimesh3D::get_triangle,
+             "Gets a mesh triangle from a face", "face"_a)
+        .def("get_triangles", &Trimesh3D::get_triangles,
+             "Gets all mesh triangles")
+        .def("signed_volume", &Trimesh3D::signed_volume,
+             "Computes the signed volume of the mesh")
+        .def("flip_inside_out", &Trimesh3D::flip_inside_out,
+             "Flips the mesh inside out")
+        .def("__str__", &Trimesh3D::to_string, "Converts the mesh to a string")
+        .def("__repr__", &Trimesh3D::to_string, "Converts the mesh to a string")
+        .def("__or__", &Trimesh3D::operator|,
+             "Computes the union of two 3D meshes", "other"_a,
+             py::is_operator())
+        .def("__and__", &Trimesh3D::operator&,
+             "Computes the intersection of two "
+             "3D meshes",
+             "other"_a, py::is_operator())
+        .def("__sub__", &Trimesh3D::operator-,
+             "Computes the difference of two 3D meshes", "other"_a,
+             py::is_operator())
+        .def("__lshift__", &Trimesh3D::operator<<,
+             "Applies affine transformation to 3D mesh", "affine"_a,
+             py::is_operator());
 
     // Defines Angle methods.
     angle.def(py::init<float>(), "An angle in 2D space", "value"_a)

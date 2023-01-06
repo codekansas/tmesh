@@ -1,5 +1,7 @@
 #include "aabb_tree.h"
 
+#include <numeric>
+
 using namespace pybind11::literals;
 
 namespace fast_trimesh {
@@ -7,7 +9,7 @@ namespace cpu {
 namespace aabb_tree {
 
 void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
-                         const std::vector<trimesh::face_t> &faces,
+                         const std::vector<types::face_t> &faces,
                          std::vector<size_t> &indices, tree_t &tree, size_t lo,
                          size_t hi) {
     // If the number of boxes is less than 2, then there is nothing to sort.
@@ -88,9 +90,9 @@ void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
     sort_bounding_boxes(boxes, faces, indices, tree, lo + mid, hi);
 }
 
-AABBTree3D::AABBTree3D(const trimesh::Trimesh3D &t)
-    : trimesh(std::make_shared<trimesh::Trimesh3D>(t)) {
-    std::vector<trimesh::face_t> faces;
+AABBTree3D::AABBTree3D(const types::Trimesh3D &t)
+    : trimesh(std::make_shared<types::Trimesh3D>(t)) {
+    std::vector<types::face_t> faces;
     for (auto &face : t.faces()) faces.push_back(face);
 
     // Builds the boundaary volume hierachy tree.
@@ -167,7 +169,7 @@ void add_modules(py::module &m) {
     s.doc() = "Bounding volume hierarchy module";
 
     py::class_<AABBTree3D, std::shared_ptr<AABBTree3D>>(s, "AABBTree3D")
-        .def(py::init<trimesh::Trimesh3D &>(), "Boundary volume hierarchy",
+        .def(py::init<types::Trimesh3D &>(), "Boundary volume hierarchy",
              "trimesh"_a)
         .def("intersections", &AABBTree3D::intersections, "Intersections",
              "line"_a)

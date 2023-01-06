@@ -10,10 +10,10 @@ namespace fast_trimesh {
 namespace cpu {
 namespace boolean {
 
-trimesh::Trimesh3D triangulation(const types::Triangle3D &triangle,
-                                 const std::vector<types::Point3D> &points) {
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+types::Trimesh3D triangulation(const types::Triangle3D &triangle,
+                               const std::vector<types::Point3D> &points) {
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     // Checks that all points are inside the triangle.
     for (auto &point : points) {
@@ -28,7 +28,7 @@ trimesh::Trimesh3D triangulation(const types::Triangle3D &triangle,
     for (auto &point : points) vertices.push_back(point);
 
     // Adds super triangle to mesh.
-    faces.insert(trimesh::face_t(0, 1, 2));
+    faces.insert(types::face_t(0, 1, 2));
 
     for (size_t i = 0; i < points.size(); i++) {
         auto &point = points[i];
@@ -39,9 +39,9 @@ trimesh::Trimesh3D triangulation(const types::Triangle3D &triangle,
             auto &[a, b, c] = face;
             types::Triangle3D triangle{vertices[a], vertices[b], vertices[c]};
             if (point.projects_to_triangle(triangle)) {
-                faces.insert(trimesh::face_t(a, b, i + 3));
-                faces.insert(trimesh::face_t(b, c, i + 3));
-                faces.insert(trimesh::face_t(c, a, i + 3));
+                faces.insert(types::face_t(a, b, i + 3));
+                faces.insert(types::face_t(b, c, i + 3));
+                faces.insert(types::face_t(c, a, i + 3));
                 faces.erase(face);
                 found_triangle = true;
                 break;
@@ -59,12 +59,12 @@ trimesh::Trimesh3D triangulation(const types::Triangle3D &triangle,
 
 enum boolean_op { UNION, INTERSECTION, DIFFERENCE };
 
-trimesh::Trimesh3D mesh_op(const trimesh::Trimesh3D &a,
-                           const trimesh::Trimesh3D &b, boolean_op op) {
+types::Trimesh3D mesh_op(const types::Trimesh3D &a, const types::Trimesh3D &b,
+                         boolean_op op) {
     const size_t n = a.vertices().size();
 
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     // Adds all vertices to the output mesh.
     vertices.insert(vertices.end(), a.vertices().begin(), a.vertices().end());
@@ -73,30 +73,30 @@ trimesh::Trimesh3D mesh_op(const trimesh::Trimesh3D &a,
     // Adds first mesh's faces to the output mesh.
     for (auto &face : a.faces()) {
         auto &[a, b, c] = face;
-        faces.insert(trimesh::face_t(a, b, c));
+        faces.insert(types::face_t(a, b, c));
     }
 
     // Adds second mesh's faces to the output mesh, offset by n.
     for (auto &face : b.faces()) {
         auto &[a, b, c] = face;
-        faces.insert(trimesh::face_t(a + n, b + n, c + n));
+        faces.insert(types::face_t(a + n, b + n, c + n));
     }
 
     return {vertices, faces};
 }
 
-trimesh::Trimesh3D mesh_union(const trimesh::Trimesh3D &a,
-                              const trimesh::Trimesh3D &b) {
+types::Trimesh3D mesh_union(const types::Trimesh3D &a,
+                            const types::Trimesh3D &b) {
     return mesh_op(a, b, UNION);
 }
 
-trimesh::Trimesh3D mesh_intersection(const trimesh::Trimesh3D &a,
-                                     const trimesh::Trimesh3D &b) {
+types::Trimesh3D mesh_intersection(const types::Trimesh3D &a,
+                                   const types::Trimesh3D &b) {
     return mesh_op(a, b, INTERSECTION);
 }
 
-trimesh::Trimesh3D mesh_difference(const trimesh::Trimesh3D &a,
-                                   const trimesh::Trimesh3D &b) {
+types::Trimesh3D mesh_difference(const types::Trimesh3D &a,
+                                 const types::Trimesh3D &b) {
     return mesh_op(a, b, DIFFERENCE);
 }
 

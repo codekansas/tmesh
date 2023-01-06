@@ -5,7 +5,6 @@ import random
 
 import pytest
 
-from fast_trimesh.cpu.trimesh import Trimesh2D
 from fast_trimesh.cpu.types import Point2D, Polygon2D
 
 
@@ -28,7 +27,7 @@ def test_simple_triangulate(random_points: bool) -> None:
 
     # Gets the triangulation.
     poly = Polygon2D(vertices)
-    trimesh = Trimesh2D(poly, is_convex=False)
+    trimesh = poly.get_trimesh(is_convex=False)
 
     assert len(trimesh.vertices) == 10, trimesh.vertices
     assert len(trimesh.faces) == 8, trimesh.faces

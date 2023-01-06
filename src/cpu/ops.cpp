@@ -6,15 +6,14 @@ namespace fast_trimesh {
 namespace cpu {
 namespace ops {
 
-trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
-                                  float height) {
+types::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height) {
     // Checks that `height` is positive.
     if (height <= 0.0f) {
         throw std::invalid_argument("Height must be positive.");
     }
 
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
     types::Polygon2D poly = polygon;
@@ -32,7 +31,7 @@ trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
         int v0 = i, v1 = i + 1, v2 = 0;
         // Note that the order of the vertices is reversed, because the
         // bottom is face-down.
-        faces.insert(trimesh::face_t(v0, v2, v1));
+        faces.insert(types::face_t(v0, v2, v1));
     }
 
     // Adds top faces.
@@ -41,21 +40,21 @@ trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
     }
     for (int i = 0; i < p - 1; i++) {
         int v0 = i + p, v1 = i + 1 + p, v2 = p;
-        faces.insert(trimesh::face_t(v0, v2, v1));
+        faces.insert(types::face_t(v0, v1, v2));
     }
 
     // Adds side faces. Each side face is made up of two triangles.
     for (int i = 0; i < p; i++) {
         int v0 = i, v1 = (i + 1) % p, v2 = i + p, v3 = (i + 1) % p + p;
-        faces.insert(trimesh::face_t(v0, v1, v2));
-        faces.insert(trimesh::face_t(v1, v3, v2));
+        faces.insert(types::face_t(v0, v1, v2));
+        faces.insert(types::face_t(v1, v3, v2));
     }
 
     return {vertices, faces};
 }
 
-trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
-                                  int n, int axis) {
+types::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
+                                int n, int axis) {
     // Checks that `angle` is less than a full circle.
     if (angle < 0 || angle > 2 * M_PI - 1e-6) {
         throw std::invalid_argument(
@@ -73,8 +72,8 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
         throw std::invalid_argument("`axis` must be 0, 1, or 2.");
     }
 
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
     types::Polygon2D poly = polygon;
@@ -92,7 +91,7 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
         int v0 = i, v1 = i + 1, v2 = 0;
         // Note that the order of the vertices is reversed, because the
         // bottom is face-down.
-        faces.insert(trimesh::face_t(v0, v2, v1));
+        faces.insert(types::face_t(v0, v2, v1));
     }
 
     // Adds side faces. Each side face is made up of two triangles.
@@ -116,8 +115,8 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
         for (int j = 0; j < p; j++) {
             int v0 = j + offset, v1 = (j + 1) % p + offset,
                 v2 = j + offset_next, v3 = (j + 1) % p + offset_next;
-            faces.insert(trimesh::face_t(v0, v1, v2));
-            faces.insert(trimesh::face_t(v1, v3, v2));
+            faces.insert(types::face_t(v0, v1, v2));
+            faces.insert(types::face_t(v1, v3, v2));
         }
 
         offset = offset_next;
@@ -126,10 +125,10 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
     // Adds top face.
     for (int j = 1; j < p; j++) {
         int v0 = j + offset, v1 = (j + 1) % p + offset, v2 = offset;
-        faces.insert(trimesh::face_t(v0, v1, v2));
+        faces.insert(types::face_t(v0, v1, v2));
     }
 
-    trimesh::Trimesh3D mesh3d{vertices, faces};
+    types::Trimesh3D mesh3d{vertices, faces};
 
     // Flips inside out if necessary.
     if (mesh3d.signed_volume() < 0) {
@@ -139,8 +138,8 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
     return mesh3d;
 }
 
-trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
-                                  int axis) {
+types::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
+                                int axis) {
     // Checks that `n` is valid.
     if (n < 1) {
         throw std::invalid_argument("`n` must be at least 1.");
@@ -151,8 +150,8 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
         throw std::invalid_argument("`axis` must be 0, 1, or 2.");
     }
 
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
     types::Polygon2D poly = polygon;
@@ -188,8 +187,8 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
         for (int j = 0; j < p; j++) {
             int v0 = j + offset, v1 = (j + 1) % p + offset,
                 v2 = j + offset_next, v3 = (j + 1) % p + offset_next;
-            faces.insert(trimesh::face_t(v0, v1, v2));
-            faces.insert(trimesh::face_t(v1, v3, v2));
+            faces.insert(types::face_t(v0, v1, v2));
+            faces.insert(types::face_t(v1, v3, v2));
         }
 
         offset = offset_next;
@@ -199,11 +198,11 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
     for (int j = 0; j < p; j++) {
         int v0 = j + offset, v1 = (j + 1) % p + offset, v2 = j,
             v3 = (j + 1) % p;
-        faces.insert(trimesh::face_t(v0, v1, v2));
-        faces.insert(trimesh::face_t(v1, v3, v2));
+        faces.insert(types::face_t(v0, v1, v2));
+        faces.insert(types::face_t(v1, v3, v2));
     }
 
-    trimesh::Trimesh3D mesh3d{vertices, faces};
+    types::Trimesh3D mesh3d{vertices, faces};
 
     // Flips inside out if necessary.
     if (mesh3d.signed_volume() < 0) {

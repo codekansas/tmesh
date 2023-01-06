@@ -10,7 +10,13 @@ namespace fast_trimesh {
 namespace cpu {
 namespace io {
 
-void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh) {
+std::vector<types::face_t> get_sorted_faces(const types::face_set_t &faces) {
+    std::vector<types::face_t> sorted_faces(faces.begin(), faces.end());
+    std::sort(sorted_faces.begin(), sorted_faces.end());
+    return sorted_faces;
+}
+
+void save_stl(const std::string &filename, const types::Trimesh3D &mesh) {
     std::ofstream f;
     f.open(filename, std::ios::out | std::ios::binary);
 
@@ -22,7 +28,7 @@ void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     f.write(reinterpret_cast<char *>(&num_triangles), sizeof(uint32_t));
 
     // Write each triangle.
-    for (auto &face : mesh.faces()) {
+    for (auto &face : get_sorted_faces(mesh.faces())) {
         // Normal.
         types::Triangle3D triangle{mesh.vertices()[std::get<0>(face)],
                                    mesh.vertices()[std::get<1>(face)],
@@ -47,7 +53,7 @@ void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     f.close();
 }
 
-trimesh::Trimesh3D load_stl(const std::string &filename) {
+types::Trimesh3D load_stl(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in | std::ios::binary);
 
@@ -59,8 +65,8 @@ trimesh::Trimesh3D load_stl(const std::string &filename) {
     uint32_t num_triangles;
     f.read(reinterpret_cast<char *>(&num_triangles), sizeof(uint32_t));
 
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     // Keeps track of the unique vertices.
     std::map<types::Point3D, size_t> vertex_map;
@@ -106,8 +112,7 @@ trimesh::Trimesh3D load_stl(const std::string &filename) {
     return {vertices, faces};
 }
 
-void save_stl_text(const std::string &filename,
-                   const trimesh::Trimesh3D &mesh) {
+void save_stl_text(const std::string &filename, const types::Trimesh3D &mesh) {
     std::ofstream f;
     f.open(filename, std::ios::out);
 
@@ -115,7 +120,7 @@ void save_stl_text(const std::string &filename,
     f << "solid fast_trimesh STL file" << std::endl;
 
     // Write each triangle.
-    for (auto &face : mesh.faces()) {
+    for (auto &face : get_sorted_faces(mesh.faces())) {
         // Normal.
         types::Triangle3D triangle{mesh.vertices()[std::get<0>(face)],
                                    mesh.vertices()[std::get<1>(face)],
@@ -143,7 +148,7 @@ void save_stl_text(const std::string &filename,
     f.close();
 }
 
-trimesh::Trimesh3D load_stl_text(const std::string &filename) {
+types::Trimesh3D load_stl_text(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
 
@@ -151,8 +156,8 @@ trimesh::Trimesh3D load_stl_text(const std::string &filename) {
     std::string line;
     std::getline(f, line);
 
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     // Keeps track of the unique vertices.
     std::map<types::Point3D, size_t> vertex_map;
@@ -213,7 +218,7 @@ trimesh::Trimesh3D load_stl_text(const std::string &filename) {
     return {vertices, faces};
 }
 
-void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh) {
+void save_obj(const std::string &filename, const types::Trimesh3D &mesh) {
     std::ofstream f;
     f.open(filename, std::ios::out);
 
@@ -224,7 +229,7 @@ void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     }
 
     // Write the faces.
-    for (auto &face : mesh.faces()) {
+    for (auto &face : get_sorted_faces(mesh.faces())) {
         f << "f " << std::get<0>(face) + 1 << " " << std::get<1>(face) + 1
           << " " << std::get<2>(face) + 1 << std::endl;
     }
@@ -232,12 +237,12 @@ void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     f.close();
 }
 
-trimesh::Trimesh3D load_obj(const std::string &filename) {
+types::Trimesh3D load_obj(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
 
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     // Keeps track of the unique vertices.
     std::map<types::Point3D, size_t> vertex_map;
@@ -266,7 +271,7 @@ trimesh::Trimesh3D load_obj(const std::string &filename) {
     return {vertices, faces};
 }
 
-void save_ply(const std::string &filename, const trimesh::Trimesh3D &mesh) {
+void save_ply(const std::string &filename, const types::Trimesh3D &mesh) {
     std::ofstream f;
     f.open(filename, std::ios::out);
 
@@ -287,7 +292,7 @@ void save_ply(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     }
 
     // Write the faces.
-    for (auto &face : mesh.faces()) {
+    for (auto &face : get_sorted_faces(mesh.faces())) {
         f << "3 " << std::get<0>(face) << " " << std::get<1>(face) << " "
           << std::get<2>(face) << std::endl;
     }
@@ -295,7 +300,7 @@ void save_ply(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     f.close();
 }
 
-trimesh::Trimesh3D load_ply(const std::string &filename) {
+types::Trimesh3D load_ply(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
 
@@ -307,8 +312,8 @@ trimesh::Trimesh3D load_ply(const std::string &filename) {
         }
     }
 
-    trimesh::vertices3d_t vertices;
-    trimesh::face_set_t faces;
+    types::vertices3d_t vertices;
+    types::face_set_t faces;
 
     while (std::getline(f, line)) {
         std::istringstream ss(line);

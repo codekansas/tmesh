@@ -3,7 +3,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "trimesh.h"
+#include "types.h"
 
 namespace py = pybind11;
 
@@ -15,10 +15,10 @@ types::Polygon2D rectangle(float width, float height, bool center = false);
 
 types::Polygon2D regular_polygon(float radius, int n);
 
-trimesh::Trimesh3D cuboid(float width, float height, float depth,
-                          bool center = false);
+types::Trimesh3D cuboid(float width, float height, float depth,
+                        bool center = false);
 
-trimesh::Trimesh3D tetrahedron(float radius);
+types::Trimesh3D tetrahedron(float radius);
 
 void add_modules(py::module &m);
 

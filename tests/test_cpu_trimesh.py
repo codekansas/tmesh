@@ -16,8 +16,7 @@ from fast_trimesh.cpu.io import (
     save_stl_text,
 )
 from fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.cpu.trimesh import Trimesh2D
-from fast_trimesh.cpu.types import Affine3D, Point2D, Polygon2D
+from fast_trimesh.cpu.types import Affine3D, Point2D, Polygon2D, Trimesh2D
 
 
 @pytest.mark.parametrize(
@@ -38,10 +37,10 @@ def test_validate_2d_trimesh(points: list[Point2D], valid: bool) -> None:
     """
 
     if valid:
-        Trimesh2D(Polygon2D(points)).validate()
+        Polygon2D(points).get_trimesh()
     else:
         with pytest.raises(RuntimeError):
-            Trimesh2D(Polygon2D(points)).validate()
+            Polygon2D(points).get_trimesh()
 
 
 def test_simple_trimesh_ops(tmpdir: Path) -> None:

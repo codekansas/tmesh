@@ -8,7 +8,6 @@ void add_modules(py::module &m) {
     s.doc() = "CPU backend";
 
     types::add_modules(s);
-    trimesh::add_modules(s);
     io::add_modules(s);
     shapes::add_modules(s);
     aabb_tree::add_modules(s);

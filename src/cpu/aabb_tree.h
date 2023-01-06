@@ -3,7 +3,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "trimesh.h"
 #include "types.h"
 
 namespace py = pybind11;
@@ -24,14 +23,14 @@ typedef std::tuple<int, int, int> face_t;
 typedef std::vector<std::tuple<face_t, int, int, types::BoundingBox3D>> tree_t;
 
 struct AABBTree3D {
-    const std::shared_ptr<trimesh::Trimesh3D> trimesh;
+    const std::shared_ptr<types::Trimesh3D> trimesh;
     tree_t tree;
 
-    AABBTree3D(const trimesh::Trimesh3D &t);
+    AABBTree3D(const types::Trimesh3D &t);
     ~AABBTree3D() = default;
 
     // Accessors.
-    const std::shared_ptr<trimesh::Trimesh3D> get_trimesh() const {
+    const std::shared_ptr<types::Trimesh3D> get_trimesh() const {
         return this->trimesh;
     }
     tree_t get_tree() const { return this->tree; }

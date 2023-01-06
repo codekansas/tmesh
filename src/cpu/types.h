@@ -5,20 +5,10 @@
 
 #include <string>
 
-#include "trimesh.h"
-
 namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
-
-namespace trimesh {
-
-struct Trimesh2D;
-struct Trimesh3D;
-
-}  // namespace trimesh
-
 namespace types {
 
 struct Angle;
@@ -29,6 +19,7 @@ struct Triangle2D;
 struct BoundingBox2D;
 struct Polygon2D;
 struct Affine2D;
+struct Trimesh2D;
 struct Point3D;
 struct Line3D;
 struct Circumcircle3D;
@@ -36,6 +27,19 @@ struct Triangle3D;
 struct BoundingBox3D;
 struct Polygon3D;
 struct Affine3D;
+struct Trimesh3D;
+
+typedef std::tuple<int, int, int> face_t;
+
+struct __face_hash_fn {
+    std::size_t operator()(const face_t &f) const {
+        return std::get<0>(f) ^ std::get<1>(f) ^ std::get<2>(f);
+    }
+};
+
+typedef std::vector<types::Point2D> vertices2d_t;
+typedef std::vector<types::Point3D> vertices3d_t;
+typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
 
 struct Point2D {
     float x, y;
@@ -156,7 +160,7 @@ struct Polygon2D {
     BoundingBox2D bounding_box() const;
     Point2D center() const;
     bool is_ear(int vi, int vj, int vk) const;
-    trimesh::Trimesh2D get_trimesh(bool is_convex = false) const;
+    types::Trimesh2D get_trimesh(bool is_convex = false) const;
 
     std::string to_string() const;
 };
@@ -192,6 +196,24 @@ BoundingBox2D operator>>(const Affine2D &a, const BoundingBox2D &bb);
 BoundingBox2D operator<<(const BoundingBox2D &bb, const Affine2D &a);
 Polygon2D operator>>(const Affine2D &a, const Polygon2D &p);
 Polygon2D operator<<(const Polygon2D &p, const Affine2D &a);
+
+class Trimesh2D {
+   private:
+    vertices2d_t _vertices;
+    face_set_t _faces;
+
+   public:
+    Trimesh2D(vertices2d_t &vertices, face_set_t &faces);
+
+    const vertices2d_t &vertices() const;
+    const face_set_t &faces() const;
+    const types::Triangle2D get_triangle(
+        const std::tuple<int, int, int> &face) const;
+    const std::vector<types::Triangle2D> get_triangles() const;
+    std::string to_string() const;
+
+    Trimesh2D operator<<(const types::Affine2D &tf) const;
+};
 
 struct Point3D {
     float x, y, z;
@@ -368,6 +390,28 @@ BoundingBox3D operator>>(const Affine3D &a, const BoundingBox3D &bb);
 BoundingBox3D operator<<(const BoundingBox3D &bb, const Affine3D &a);
 Polygon3D operator>>(const Affine3D &a, const Polygon3D &p);
 Polygon3D operator<<(const Polygon3D &p, const Affine3D &a);
+
+struct Trimesh3D {
+   private:
+    vertices3d_t _vertices;
+    face_set_t _faces;
+
+   public:
+    Trimesh3D(vertices3d_t &vertices, face_set_t &faces);
+
+    const vertices3d_t &vertices() const;
+    const face_set_t &faces() const;
+    types::Triangle3D get_triangle(const std::tuple<int, int, int> &face) const;
+    std::vector<types::Triangle3D> get_triangles() const;
+    float signed_volume() const;
+    Trimesh3D flip_inside_out() const;
+    std::string to_string() const;
+
+    Trimesh3D operator<<(const types::Affine3D &tf) const;
+    Trimesh3D operator|(const Trimesh3D &other) const;
+    Trimesh3D operator&(const Trimesh3D &other) const;
+    Trimesh3D operator-(const Trimesh3D &other) const;
+};
 
 struct Angle {
     float value;
