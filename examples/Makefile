@@ -16,4 +16,5 @@ build:
 	$(call add_example,torus)
 	$(call add_example,intersection)
 	$(call add_example,sphere)
+	$(call add_example,convex_hull)
 .PHONY: build

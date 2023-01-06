@@ -2,7 +2,7 @@
 
 Fast operators for triangular meshes.
 
-## Installation
+## Getting Started
 
 Fast Trimesh is available on PyPI:
 
@@ -10,33 +10,7 @@ Fast Trimesh is available on PyPI:
 pip install fast-trimesh
 ```
 
-### From source
-
-To install from source, first create a Conda environment:
-
-```bash
-conda create -n fast-trimesh python=3.10
-conda activate fast-trimesh
-```
-
-Next, clone and install the package:
-
-```bash
-git clone https://github.com/codekansas/fast-trimesh.git
-cd fast-trimesh
-make install-conda  # Installs Conda requirements
-make install        # Builds and installs package
-```
-
-### From Github using `pip`
-
-Alternatively, you can install the latest package version directly:
-
-```bash
-pip install git+https://github.com/codekansas/fast-trimesh.git
-```
-
-## Getting Started
+See the [examples](examples) directory to see how to use the package.
 
 The following script demonstrates how to use the package to generate an
 STL or OBJ file from a simple mesh:
@@ -64,13 +38,9 @@ save_obj("simple_example.obj", a + b)
 save_ply("simple_example.ply", a + b)
 ```
 
-See the [examples](examples) directory for more.
+## Motivation
 
-### Unit Tests
+At various times I have wished there were something like [OpenSCAD][openscad] for Python. Packages like [trimesh][trimesh] exist, but they come with a number of clunky dependencies (including, interestingly enough, OpenSCAD itself). This package is a standalone implementation of the core functionality of OpenSCAD, but with a Pythonic API, making it easy to integrate into existing Python code. It is also written in pure C++, so it's hopefully relatively fast.
 
-To see examples of different parts of the API, it is helpful to try running
-the tests. To do so, after cloning the repository, run:
-
-```bash
-pytest .
-```
+[trimesh]: https://trimsh.org/trimesh.html
+[openscad]: https://www.openscad.org/

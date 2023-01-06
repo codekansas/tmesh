@@ -501,6 +501,17 @@ Polygon2D Polygon2D::operator<<=(const Affine2D &a) {
     return *this;
 }
 
+Polygon2D Polygon2D::operator+(const Polygon2D &p) const {
+    Polygon2D result = *this;
+    result += p;
+    return result;
+}
+
+Polygon2D Polygon2D::operator+=(const Polygon2D &p) {
+    points.insert(points.end(), p.points.begin(), p.points.end());
+    return *this;
+}
+
 float Polygon2D::signed_area() const {
     float area = 0.0f;
     for (size_t i = 0; i < points.size(); ++i) {
@@ -530,32 +541,36 @@ Polygon2D Polygon2D::convex_hull() const {
         if (y < y0 || (y == y0 && x < x0)) P0 = i;
     }
 
-    // Sort points by polar angle with P0, if several points have the same
-    // polar angle then put the closer one first.
+    // Sort points by polar angle with P0, in clockwise order.
     std::vector<int> hull_points(n);
     std::iota(hull_points.begin(), hull_points.end(), 0);
     std::sort(hull_points.begin(), hull_points.end(), [&](int i, int j) {
-        if (i == P0) return false;
+        if (i == P0) return true;  // First element.
         float det =
             (points[i] - points[P0]).determinant(points[j] - points[P0]);
         if (det == 0)
             return points[i].distance_to_point(points[P0]) <
                    points[j].distance_to_point(points[P0]);
-        return det < 0;
+        return det > 0;
     });
 
     // Traverses the points, keeping points which are convex.
     std::vector<Point2D> stack;
-    stack.push_back(points[P0]);
-    stack.push_back(points[hull_points[1]]);
-    for (int i = 2; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         int point = hull_points[i];
         while (stack.size() > 1 &&
-               (stack[stack.size() - 2] - points[point])
-                       .determinant(stack.back() - points[point]) >= 0) {
+               (stack[stack.size() - 2] - stack.back())
+                       .determinant(points[point] - stack.back()) >= 0) {
             stack.pop_back();
         }
         stack.push_back(points[point]);
+    }
+
+    // Ensures that the last point is also convex.
+    while (stack.size() > 2 &&
+           (stack[stack.size() - 2] - stack.back())
+                   .determinant(stack[0] - stack.back()) >= 0) {
+        stack.pop_back();
     }
 
     return {stack};
@@ -2096,6 +2111,10 @@ void add_modules(py::module &m) {
         .def("__ilshift__", &Polygon2D::operator<<=,
              "Applies a affine transformation to the polygon", "other"_a,
              py::is_operator())
+        .def("__add__", &Polygon2D::operator+, "Concatenates two polygons",
+             "other"_a, py::is_operator())
+        .def("__iadd__", &Polygon2D::operator+=, "Concatenates two polygons",
+             "other"_a, py::is_operator())
         .def("signed_area", &Polygon2D::signed_area,
              "The polygon's signed area (positive if counterclockwise)")
         .def("is_clockwise", &Polygon2D::is_clockwise,

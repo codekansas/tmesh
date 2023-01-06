@@ -1,7 +1,6 @@
 """Adds a section to the README with the contents of the STL."""
 
 import argparse
-from pathlib import Path
 
 
 def main() -> None:
@@ -14,7 +13,7 @@ def main() -> None:
     with open(args.path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    if len(lines) < 10_000:
+    if len(lines) < 1_000:
         print("```stl")
         print("\n".join(line.strip() for line in lines))
         print("```")

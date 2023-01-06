@@ -463,9 +463,11 @@ def test_convex_hull(vertices: list[Point2D], hull: list[Point2D]) -> None:
     """
 
     poly = Polygon2D(vertices)
+    poly_hull = poly.convex_hull()
+    assert not poly_hull.is_clockwise()
 
     # Checks the convex hull function.
-    pred_hull = [(i.x, i.y) for i in poly.convex_hull().points]
+    pred_hull = [(i.x, i.y) for i in poly_hull.points]
     pred_hull.sort()
     hull_xy = [(i.x, i.y) for i in hull]
     hull_xy.sort()

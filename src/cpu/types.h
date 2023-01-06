@@ -153,6 +153,8 @@ struct Polygon2D {
     bool operator==(const Polygon2D &p) const;
     bool operator!=(const Polygon2D &p) const;
     Polygon2D operator<<=(const Affine2D &a);
+    Polygon2D operator+(const Polygon2D &p) const;
+    Polygon2D operator+=(const Polygon2D &p);
 
     float signed_area() const;
     bool is_clockwise() const;

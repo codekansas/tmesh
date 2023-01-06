@@ -89,51 +89,51 @@ TrimeshAdjacency compute_adjacency(const types::Trimesh3D &mesh) {
     return adjacency;
 }
 
-types::Trimesh3D split_intersecting_faces(const types::Trimesh3D &a,
-                                          const types::Trimesh3D &b) {
-    // This function first builds a AABB tree of the second mesh. Then, for
-    // each triangle in the first mesh, it checks if it intersects with any
-    // triangle in the second mesh. If it does, it splits the triangle into
-    // multiple triangles, until none of them intersect with the second mesh.
-    // The resulting triangles are then added to the output mesh.
+// types::Trimesh3D split_intersecting_faces(const types::Trimesh3D &a,
+//                                           const types::Trimesh3D &b) {
+//     // This function first builds a AABB tree of the second mesh. Then, for
+//     // each triangle in the first mesh, it checks if it intersects with any
+//     // triangle in the second mesh. If it does, it splits the triangle into
+//     // multiple triangles, until none of them intersect with the second mesh.
+//     // The resulting triangles are then added to the output mesh.
 
-    types::vertices3d_t vertices;
-    types::face_set_t faces;
+//     types::vertices3d_t vertices;
+//     types::face_set_t faces;
 
-    // Builds AABB tree of second mesh.
-    aabb_tree::AABBTree3D tree{b};
+//     // Builds AABB tree of second mesh.
+//     aabb_tree::AABBTree3D tree{b};
 
-    // Adds all vertices of the first mesh to the output mesh.
-    vertices.insert(vertices.end(), a.vertices().begin(), a.vertices().end());
+//     // Adds all vertices of the first mesh to the output mesh.
+//     vertices.insert(vertices.end(), a.vertices().begin(), a.vertices().end());
 
-    // Iterates over all faces of the first mesh.
-    for (auto &face : a.faces()) {
-        auto &[a, b, c] = face;
+//     // Iterates over all faces of the first mesh.
+//     for (auto &face : a.faces()) {
+//         auto &[a, b, c] = face;
 
-        // Checks if the face intersects with the second mesh.
-        types::Triangle3D triangle{a, b, c};
-        if (tree.intersects(triangle)) {
-            // Splits the face into multiple triangles.
-            std::vector<types::Point3D> points;
-            for (auto &point : b.vertices()) {
-                if (tree.intersects(point)) points.push_back(point);
-            }
-            auto mesh = triangulation(triangle, points);
+//         // Checks if the face intersects with the second mesh.
+//         types::Triangle3D triangle{a, b, c};
+//         if (tree.intersects(triangle)) {
+//             // Splits the face into multiple triangles.
+//             std::vector<types::Point3D> points;
+//             for (auto &point : b.vertices()) {
+//                 if (tree.intersects(point)) points.push_back(point);
+//             }
+//             auto mesh = triangulation(triangle, points);
 
-            // Adds the new triangles to the output mesh.
-            size_t n = vertices.size();
-            vertices.insert(vertices.end(), mesh.vertices().begin(),
-                            mesh.vertices().end());
-            for (auto &face : mesh.faces()) {
-                auto &[a, b, c] = face;
-                faces.insert(types::face_t(a + n, b + n, c + n));
-            }
-        } else {
-            // Adds the face to the output mesh.
-            faces.insert(types::face_t(a, b, c));
-        }
-    }
-}
+//             // Adds the new triangles to the output mesh.
+//             size_t n = vertices.size();
+//             vertices.insert(vertices.end(), mesh.vertices().begin(),
+//                             mesh.vertices().end());
+//             for (auto &face : mesh.faces()) {
+//                 auto &[a, b, c] = face;
+//                 faces.insert(types::face_t(a + n, b + n, c + n));
+//             }
+//         } else {
+//             // Adds the face to the output mesh.
+//             faces.insert(types::face_t(a, b, c));
+//         }
+//     }
+// }
 
 types::Trimesh3D mesh_union_no_intersections(const types::Trimesh3D &a,
                                              const types::Trimesh3D &b) {
@@ -166,12 +166,14 @@ enum boolean_op { UNION, INTERSECTION, DIFFERENCE };
 types::Trimesh3D mesh_op(const types::Trimesh3D &a, const types::Trimesh3D &b,
                          boolean_op op) {
     // Gets two new meshes, where all intersecting faces have been split.
-    const types::Trimesh3D a_prime = split_intersecting_faces(a, b),
-                           b_prime = split_intersecting_faces(b, a);
+    // const types::Trimesh3D a_prime = split_intersecting_faces(a, b),
+    //                        b_prime = split_intersecting_faces(b, a);
 
     // TODO: When splitting the faces above, we will add duplicate vertices
     // to each of the meshes. We need to keep track of these duplicates so
     // that we can build the final graph.
+
+    return mesh_union_no_intersections(a, b);
 }
 
 types::Trimesh3D mesh_union(const types::Trimesh3D &a,
