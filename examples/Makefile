@@ -4,9 +4,8 @@ define add_example
 	@echo "" >> README.md
 	@echo "## $(1)" >> README.md
 	@echo "" >> README.md
-	@echo '```stl' >> README.md
-	@python $(1).py && cat $(1).stl >> README.md
-	@echo '```' >> README.md
+	@python $(1).py
+	@python get_readme_block.py $(1).stl >> README.md
 endef
 
 build:

@@ -2,7 +2,7 @@ from fast_trimesh.cpu.io import save_stl_text
 from fast_trimesh.cpu.shapes import cuboid, icosphere, uv_sphere
 from fast_trimesh.cpu.types import Affine3D
 
-num_iters = 5
+num_iters = 4
 
 mesh = cuboid(1.5 + 3 * (num_iters - 1) + 1.5, 1.0, 0.1)
 
