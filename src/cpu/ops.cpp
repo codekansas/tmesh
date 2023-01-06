@@ -13,7 +13,8 @@ trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
         throw std::invalid_argument("Height must be positive.");
     }
 
-    trimesh::Trimesh3D mesh3d;
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
     types::Polygon2D poly = polygon;
@@ -25,32 +26,32 @@ trimesh::Trimesh3D linear_extrude(const types::Polygon2D &polygon,
 
     // Adds bottom face.
     for (int i = 0; i < p; i++) {
-        mesh3d.add_vertex({poly.points[i].x, poly.points[i].y, 0.0f});
+        vertices.push_back({poly.points[i].x, poly.points[i].y, 0.0f});
     }
     for (int i = 0; i < p - 1; i++) {
         int v0 = i, v1 = i + 1, v2 = 0;
         // Note that the order of the vertices is reversed, because the
         // bottom is face-down.
-        mesh3d.add_face(v0, v2, v1);
+        faces.insert(trimesh::face_t(v0, v2, v1));
     }
 
     // Adds top faces.
     for (int i = 0; i < p; i++) {
-        mesh3d.add_vertex({poly.points[i].x, poly.points[i].y, height});
+        vertices.push_back({poly.points[i].x, poly.points[i].y, height});
     }
     for (int i = 0; i < p - 1; i++) {
         int v0 = i + p, v1 = i + 1 + p, v2 = p;
-        mesh3d.add_face(v0, v1, v2);
+        faces.insert(trimesh::face_t(v0, v2, v1));
     }
 
     // Adds side faces. Each side face is made up of two triangles.
     for (int i = 0; i < p; i++) {
         int v0 = i, v1 = (i + 1) % p, v2 = i + p, v3 = (i + 1) % p + p;
-        mesh3d.add_face(v0, v1, v2);
-        mesh3d.add_face(v1, v3, v2);
+        faces.insert(trimesh::face_t(v0, v1, v2));
+        faces.insert(trimesh::face_t(v1, v3, v2));
     }
 
-    return mesh3d;
+    return {vertices, faces};
 }
 
 trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
@@ -72,7 +73,8 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
         throw std::invalid_argument("`axis` must be 0, 1, or 2.");
     }
 
-    trimesh::Trimesh3D mesh3d;
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
     types::Polygon2D poly = polygon;
@@ -84,13 +86,13 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
 
     // Adds bottom face.
     for (int i = 0; i < n; i++) {
-        mesh3d.add_vertex({poly.points[i].x, poly.points[i].y, 0.0f});
+        vertices.push_back({poly.points[0].x, poly.points[0].y, 0.0f});
     }
     for (int i = 1; i < n - 1; i++) {
         int v0 = i, v1 = i + 1, v2 = 0;
         // Note that the order of the vertices is reversed, because the
         // bottom is face-down.
-        mesh3d.add_face(v0, v2, v1);
+        faces.insert(trimesh::face_t(v0, v2, v1));
     }
 
     // Adds side faces. Each side face is made up of two triangles.
@@ -107,15 +109,15 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
         for (int j = 0; j < p; j++) {
             types::Point3D v{poly.points[j].x, poly.points[j].y, 0.0f};
             v <<= tf;
-            mesh3d.add_vertex(v);
+            vertices.push_back(v);
         }
 
         // Adds side faces between adjacent layers of vertices.
         for (int j = 0; j < p; j++) {
             int v0 = j + offset, v1 = (j + 1) % p + offset,
                 v2 = j + offset_next, v3 = (j + 1) % p + offset_next;
-            mesh3d.add_face(v0, v1, v2);
-            mesh3d.add_face(v1, v3, v2);
+            faces.insert(trimesh::face_t(v0, v1, v2));
+            faces.insert(trimesh::face_t(v1, v3, v2));
         }
 
         offset = offset_next;
@@ -124,12 +126,14 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
     // Adds top face.
     for (int j = 1; j < p; j++) {
         int v0 = j + offset, v1 = (j + 1) % p + offset, v2 = offset;
-        mesh3d.add_face(v0, v1, v2);
+        faces.insert(trimesh::face_t(v0, v1, v2));
     }
+
+    trimesh::Trimesh3D mesh3d{vertices, faces};
 
     // Flips inside out if necessary.
     if (mesh3d.signed_volume() < 0) {
-        mesh3d.flip_inside_out();
+        mesh3d = mesh3d.flip_inside_out();
     }
 
     return mesh3d;
@@ -147,7 +151,8 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
         throw std::invalid_argument("`axis` must be 0, 1, or 2.");
     }
 
-    trimesh::Trimesh3D mesh3d;
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
     types::Polygon2D poly = polygon;
@@ -159,7 +164,7 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
 
     // Adds initial layer of vertices.
     for (int i = 0; i < p; i++) {
-        mesh3d.add_vertex({poly.points[i].x, poly.points[i].y, 0.0f});
+        vertices.push_back({poly.points[i].x, poly.points[i].y, 0.0f});
     }
 
     // Adds side faces. Each side face is made up of two triangles.
@@ -176,15 +181,15 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
         for (int j = 0; j < p; j++) {
             types::Point3D v{poly.points[j].x, poly.points[j].y, 0.0f};
             v <<= tf;
-            mesh3d.add_vertex(v);
+            vertices.push_back(v);
         }
 
         // Adds side faces between adjacent layers of vertices.
         for (int j = 0; j < p; j++) {
             int v0 = j + offset, v1 = (j + 1) % p + offset,
                 v2 = j + offset_next, v3 = (j + 1) % p + offset_next;
-            mesh3d.add_face(v0, v1, v2);
-            mesh3d.add_face(v1, v3, v2);
+            faces.insert(trimesh::face_t(v0, v1, v2));
+            faces.insert(trimesh::face_t(v1, v3, v2));
         }
 
         offset = offset_next;
@@ -194,9 +199,11 @@ trimesh::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, int n,
     for (int j = 0; j < p; j++) {
         int v0 = j + offset, v1 = (j + 1) % p + offset, v2 = j,
             v3 = (j + 1) % p;
-        mesh3d.add_face(v0, v1, v2);
-        mesh3d.add_face(v1, v3, v2);
+        faces.insert(trimesh::face_t(v0, v1, v2));
+        faces.insert(trimesh::face_t(v1, v3, v2));
     }
+
+    trimesh::Trimesh3D mesh3d{vertices, faces};
 
     // Flips inside out if necessary.
     if (mesh3d.signed_volume() < 0) {

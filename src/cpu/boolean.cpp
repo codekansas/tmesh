@@ -1,6 +1,6 @@
 #include "boolean.h"
 
-#include "bvh.h"
+#include "aabb_tree.h"
 
 #define TOLERANCE 1e-6
 
@@ -12,7 +12,8 @@ namespace boolean {
 
 trimesh::Trimesh3D triangulation(const types::Triangle3D &triangle,
                                  const std::vector<types::Point3D> &points) {
-    trimesh::Trimesh3D mesh;
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
     // Checks that all points are inside the triangle.
     for (auto &point : points) {
@@ -23,25 +24,25 @@ trimesh::Trimesh3D triangulation(const types::Triangle3D &triangle,
     }
 
     // Adds vertices to mesh.
-    for (auto &point : triangle.vertices()) mesh.add_vertex(point);
-    for (auto &point : points) mesh.add_vertex(point);
+    for (auto &point : triangle.vertices()) vertices.push_back(point);
+    for (auto &point : points) vertices.push_back(point);
 
     // Adds super triangle to mesh.
-    mesh.add_face(0, 1, 2);
+    faces.insert(trimesh::face_t(0, 1, 2));
 
     for (size_t i = 0; i < points.size(); i++) {
         auto &point = points[i];
 
         // Gets the triangle that contains the point.
         bool found_triangle = false;
-        for (auto &face : mesh.get_face_set()) {
+        for (auto &face : faces) {
             auto &[a, b, c] = face;
-            auto triangle = mesh.get_triangle(face);
+            types::Triangle3D triangle{vertices[a], vertices[b], vertices[c]};
             if (point.projects_to_triangle(triangle)) {
-                mesh.add_face(a, b, i + 3);
-                mesh.add_face(b, c, i + 3);
-                mesh.add_face(c, a, i + 3);
-                mesh.remove_face(a, b, c);
+                faces.insert(trimesh::face_t(a, b, i + 3));
+                faces.insert(trimesh::face_t(b, c, i + 3));
+                faces.insert(trimesh::face_t(c, a, i + 3));
+                faces.erase(face);
                 found_triangle = true;
                 break;
             }
@@ -53,57 +54,50 @@ trimesh::Trimesh3D triangulation(const types::Triangle3D &triangle,
         }
     }
 
-    return mesh;
+    return {vertices, faces};
 }
 
 enum boolean_op { UNION, INTERSECTION, DIFFERENCE };
 
-trimesh::Trimesh3D mesh_op(trimesh::Trimesh3D &mesh,
-                           const std::vector<trimesh::Trimesh3D> &meshes,
-                           boolean_op op) {
-    if (meshes.empty()) return mesh;
+trimesh::Trimesh3D mesh_op(const trimesh::Trimesh3D &a,
+                           const trimesh::Trimesh3D &b, boolean_op op) {
+    const size_t n = a.vertices().size();
 
-    // for (auto &other_mesh : meshes) {
-    //     // Gets boundary volume hierarchy of each mesh.
-    //     bvh::BoundaryVolumeHierarchy bvh_a(mesh);
-    //     bvh::BoundaryVolumeHierarchy bvh_b(other_mesh);
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
-    //     // Finds intersections of other mesh with main mesh.
-    //     std::vector<bvh::Intersection> intersections =
-    //         bvh::find_intersections(bvh_a, bvh_b);
+    // Adds all vertices to the output mesh.
+    vertices.insert(vertices.end(), a.vertices().begin(), a.vertices().end());
+    vertices.insert(vertices.end(), b.vertices().begin(), b.vertices().end());
 
-    //     // Applies boolean operation to the main mesh.
-    //     for (auto &intersection : intersections) {
-    //         switch (op) {
-    //             case UNION:
-    //                 mesh.add_triangle(intersection.triangle);
-    //                 break;
-    //             case INTERSECTION:
-    //                 mesh.add_triangle(intersection.triangle);
-    //                 break;
-    //             case DIFFERENCE:
-    //                 mesh.remove_triangle(intersection.triangle);
-    //                 break;
-    //         }
-    //     }
-    // }
+    // Adds first mesh's faces to the output mesh.
+    for (auto &face : a.faces()) {
+        auto &[a, b, c] = face;
+        faces.insert(trimesh::face_t(a, b, c));
+    }
 
-    return mesh;
+    // Adds second mesh's faces to the output mesh, offset by n.
+    for (auto &face : b.faces()) {
+        auto &[a, b, c] = face;
+        faces.insert(trimesh::face_t(a + n, b + n, c + n));
+    }
+
+    return {vertices, faces};
 }
 
-trimesh::Trimesh3D mesh_union(trimesh::Trimesh3D &mesh,
-                              const std::vector<trimesh::Trimesh3D> &meshes) {
-    return mesh_op(mesh, meshes, UNION);
+trimesh::Trimesh3D mesh_union(const trimesh::Trimesh3D &a,
+                              const trimesh::Trimesh3D &b) {
+    return mesh_op(a, b, UNION);
 }
 
-trimesh::Trimesh3D mesh_intersection(
-    trimesh::Trimesh3D &mesh, const std::vector<trimesh::Trimesh3D> &meshes) {
-    return mesh_op(mesh, meshes, INTERSECTION);
+trimesh::Trimesh3D mesh_intersection(const trimesh::Trimesh3D &a,
+                                     const trimesh::Trimesh3D &b) {
+    return mesh_op(a, b, INTERSECTION);
 }
 
-trimesh::Trimesh3D mesh_difference(
-    trimesh::Trimesh3D &mesh, const std::vector<trimesh::Trimesh3D> &meshes) {
-    return mesh_op(mesh, meshes, DIFFERENCE);
+trimesh::Trimesh3D mesh_difference(const trimesh::Trimesh3D &a,
+                                   const trimesh::Trimesh3D &b) {
+    return mesh_op(a, b, DIFFERENCE);
 }
 
 void add_modules(py::module &m) {

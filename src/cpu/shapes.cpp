@@ -45,27 +45,25 @@ trimesh::Trimesh3D cuboid(float width, float height, float depth, bool center) {
         bbox = {{0, 0, 0}, {width, height, depth}};
     }
 
-    // Converts bounding box to a mesh.
-    trimesh::Trimesh3D mesh;
-    mesh.set_vertices(bbox.corners());
-    mesh.set_faces(bbox.triangle_indices());
+    trimesh::vertices3d_t vertices = bbox.corners();
+    trimesh::face_set_t faces;
+    for (auto &face : bbox.triangle_indices()) faces.insert(face);
 
-    return mesh;
+    return {vertices, faces};
 }
 
 trimesh::Trimesh3D tetrahedron(float radius) {
     if (radius <= 0)
         throw std::runtime_error("Tetrahedron radius must be positive.");
 
-    trimesh::Trimesh3D mesh;
-    mesh.set_vertices(
-        {{std::sqrt(8.0f / 9.0f), 0.0f, -1.0f / 3.0f},
-         {-std::sqrt(2.0f / 9.0f), std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
-         {-std::sqrt(2.0f / 9.0f), -std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
-         {0.0f, 0.0f, 1.0f}});
-    mesh.set_faces({{0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {2, 0, 3}});
+    trimesh::vertices3d_t vertices = {
+        {std::sqrt(8.0f / 9.0f), 0.0f, -1.0f / 3.0f},
+        {-std::sqrt(2.0f / 9.0f), std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
+        {-std::sqrt(2.0f / 9.0f), -std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
+        {0.0f, 0.0f, 1.0f}};
+    trimesh::face_set_t faces = {{0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {2, 0, 3}};
 
-    return mesh;
+    return {vertices, faces};
 }
 
 void add_modules(py::module &m) {

@@ -1,13 +1,13 @@
-#include "bvh.h"
+#include "aabb_tree.h"
 
 using namespace pybind11::literals;
 
 namespace fast_trimesh {
 namespace cpu {
-namespace bvh {
+namespace aabb_tree {
 
 void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
-                         const std::vector<std::tuple<int, int, int>> &faces,
+                         const std::vector<trimesh::face_t> &faces,
                          std::vector<size_t> &indices, tree_t &tree, size_t lo,
                          size_t hi) {
     // If the number of boxes is less than 2, then there is nothing to sort.
@@ -88,16 +88,18 @@ void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
     sort_bounding_boxes(boxes, faces, indices, tree, lo + mid, hi);
 }
 
-BoundaryVolumeHierarchy::BoundaryVolumeHierarchy(const trimesh::Trimesh3D &t)
+AABBTree3D::AABBTree3D(const trimesh::Trimesh3D &t)
     : trimesh(std::make_shared<trimesh::Trimesh3D>(t)) {
+    std::vector<trimesh::face_t> faces;
+    for (auto &face : t.faces()) faces.push_back(face);
+
     // Builds the boundaary volume hierachy tree.
     // First, we build a vector of boxes, where each box is represented as a
     // tuple of (min, max), where min and max are the minimum and maximum
     // coordinates of the box, respectively.
     std::vector<types::BoundingBox3D> boxes;
-    for (auto &triangle : t.get_triangles()) {
-        boxes.push_back(types::BoundingBox3D({triangle}));
-    }
+    for (auto &face : faces)
+        boxes.push_back(types::BoundingBox3D({t.get_triangle(face)}));
 
     // Insert the boxes into the tree.
     //
@@ -121,7 +123,7 @@ BoundaryVolumeHierarchy::BoundaryVolumeHierarchy(const trimesh::Trimesh3D &t)
     std::vector<size_t> indices(boxes.size());
     std::iota(indices.begin(), indices.end(), 0);
     tree.resize(boxes.size());
-    sort_bounding_boxes(boxes, t.get_faces(), indices, tree, 0, boxes.size());
+    sort_bounding_boxes(boxes, faces, indices, tree, 0, boxes.size());
 }
 
 void intersections_helper(
@@ -153,30 +155,26 @@ void intersections_helper(
     if (rhs != -1) intersections_helper(tree, vertices, rhs, l, intersections);
 }
 
-std::vector<std::tuple<face_t, types::Point3D>>
-BoundaryVolumeHierarchy::intersections(const types::Line3D &l) const {
+std::vector<std::tuple<face_t, types::Point3D>> AABBTree3D::intersections(
+    const types::Line3D &l) const {
     std::vector<std::tuple<face_t, types::Point3D>> intersections;
-    intersections_helper(tree, trimesh->get_vertices(), 0, l, intersections);
+    intersections_helper(tree, trimesh->vertices(), 0, l, intersections);
     return intersections;
 }
 
 void add_modules(py::module &m) {
-    py::module s = m.def_submodule("bvh");
+    py::module s = m.def_submodule("aabb_tree");
     s.doc() = "Bounding volume hierarchy module";
 
-    py::class_<BoundaryVolumeHierarchy,
-               std::shared_ptr<BoundaryVolumeHierarchy>>(
-        s, "BoundaryVolumeHierarchy")
+    py::class_<AABBTree3D, std::shared_ptr<AABBTree3D>>(s, "AABBTree3D")
         .def(py::init<trimesh::Trimesh3D &>(), "Boundary volume hierarchy",
              "trimesh"_a)
-        .def("intersections", &BoundaryVolumeHierarchy::intersections,
-             "Intersections", "line"_a)
-        .def_property_readonly("trimesh", &BoundaryVolumeHierarchy::get_trimesh,
-                               "Trimesh")
-        .def_property_readonly("tree", &BoundaryVolumeHierarchy::get_tree,
-                               "Tree");
+        .def("intersections", &AABBTree3D::intersections, "Intersections",
+             "line"_a)
+        .def_property_readonly("trimesh", &AABBTree3D::get_trimesh, "Trimesh")
+        .def_property_readonly("tree", &AABBTree3D::get_tree, "Tree");
 }
 
-}  // namespace bvh
+}  // namespace aabb_tree
 }  // namespace cpu
 }  // namespace fast_trimesh

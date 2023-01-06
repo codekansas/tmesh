@@ -5,6 +5,7 @@ import random
 import pytest
 
 from fast_trimesh.cpu.boolean import triangulation
+from fast_trimesh.cpu.shapes import cuboid
 from fast_trimesh.cpu.types import Point3D, Triangle3D
 
 
@@ -33,3 +34,21 @@ def test_triangulation() -> None:
     # triangle.
     sub_areas = sum(sub_triangle.area() for sub_triangle in triangles.get_triangles())
     assert sub_areas == pytest.approx(triangle.area())
+
+
+@pytest.mark.skip(reason="Not implemented")
+def test_union() -> None:
+    """Tests union of two cuboids."""
+
+    # Creates a cuboid.
+    cuboid1 = cuboid(1.0, 1.0, 1.0)
+
+    # Creates a cuboid which is longer and shorter than the first cuboid.
+    cuboid2 = cuboid(2.0, 0.5, 0.5)
+
+    # Gets the union of the two cuboids.
+    union = cuboid1 & cuboid2
+
+    breakpoint()
+
+    asdf

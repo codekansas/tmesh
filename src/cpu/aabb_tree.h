@@ -10,7 +10,7 @@ namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
-namespace bvh {
+namespace aabb_tree {
 
 // Defines the hierarchical box tree structure to support 3D queries.
 // The tree is represented as a vector of nodes, where each node is
@@ -23,15 +23,12 @@ namespace bvh {
 typedef std::tuple<int, int, int> face_t;
 typedef std::vector<std::tuple<face_t, int, int, types::BoundingBox3D>> tree_t;
 
-class BoundaryVolumeHierarchy {
-   private:
+struct AABBTree3D {
     const std::shared_ptr<trimesh::Trimesh3D> trimesh;
-
     tree_t tree;
 
-   public:
-    BoundaryVolumeHierarchy(const trimesh::Trimesh3D &t);
-    ~BoundaryVolumeHierarchy() = default;
+    AABBTree3D(const trimesh::Trimesh3D &t);
+    ~AABBTree3D() = default;
 
     // Accessors.
     const std::shared_ptr<trimesh::Trimesh3D> get_trimesh() const {
@@ -46,6 +43,6 @@ class BoundaryVolumeHierarchy {
 
 void add_modules(py::module &m);
 
-}  // namespace bvh
+}  // namespace aabb_tree
 }  // namespace cpu
 }  // namespace fast_trimesh

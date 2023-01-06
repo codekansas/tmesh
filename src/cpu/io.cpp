@@ -18,22 +18,22 @@ void save_stl(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     f.write("fast_trimesh STL file", 80);
 
     // Number of triangles.
-    uint32_t num_triangles = mesh.num_faces();
+    uint32_t num_triangles = mesh.faces().size();
     f.write(reinterpret_cast<char *>(&num_triangles), sizeof(uint32_t));
 
     // Write each triangle.
-    for (auto &face : mesh.get_face_set()) {
+    for (auto &face : mesh.faces()) {
         // Normal.
-        types::Triangle3D triangle{mesh.get_vertex(std::get<0>(face)),
-                                   mesh.get_vertex(std::get<1>(face)),
-                                   mesh.get_vertex(std::get<2>(face))};
+        types::Triangle3D triangle{mesh.vertices()[std::get<0>(face)],
+                                   mesh.vertices()[std::get<1>(face)],
+                                   mesh.vertices()[std::get<2>(face)]};
         types::Point3D normal = triangle.normal();
         f.write(reinterpret_cast<const char *>(&normal), 3 * sizeof(float));
 
         // Vertices.
-        types::Point3D v1 = mesh.get_vertex(std::get<0>(face)),
-                       v2 = mesh.get_vertex(std::get<1>(face)),
-                       v3 = mesh.get_vertex(std::get<2>(face));
+        types::Point3D v1 = mesh.vertices()[std::get<0>(face)],
+                       v2 = mesh.vertices()[std::get<1>(face)],
+                       v3 = mesh.vertices()[std::get<2>(face)];
         f.write(reinterpret_cast<const char *>(&v1), 3 * sizeof(float));
         f.write(reinterpret_cast<const char *>(&v2), 3 * sizeof(float));
         f.write(reinterpret_cast<const char *>(&v3), 3 * sizeof(float));
@@ -59,15 +59,18 @@ trimesh::Trimesh3D load_stl(const std::string &filename) {
     uint32_t num_triangles;
     f.read(reinterpret_cast<char *>(&num_triangles), sizeof(uint32_t));
 
-    trimesh::Trimesh3D mesh;
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
     // Keeps track of the unique vertices.
     std::map<types::Point3D, size_t> vertex_map;
 
     // Lambda function to get the index of a vertex.
-    auto get_vertex_index = [&vertex_map, &mesh](const types::Point3D &vertex) {
+    auto get_vertex_index = [&vertex_map,
+                             &vertices](const types::Point3D &vertex) {
         if (vertex_map.find(vertex) == vertex_map.end()) {
-            size_t index = mesh.add_vertex(vertex);
+            size_t index = vertices.size();
+            vertices.push_back(vertex);
             vertex_map[vertex] = index;
         }
         return vertex_map[vertex];
@@ -90,7 +93,7 @@ trimesh::Trimesh3D load_stl(const std::string &filename) {
                v3_index = get_vertex_index(v3);
 
         // Add the triangle face.
-        mesh.add_face(v1_index, v2_index, v3_index);
+        faces.insert({v1_index, v2_index, v3_index});
 
         // Attribute byte count.
         uint16_t attribute_byte_count;
@@ -100,7 +103,7 @@ trimesh::Trimesh3D load_stl(const std::string &filename) {
 
     f.close();
 
-    return mesh;
+    return {vertices, faces};
 }
 
 void save_stl_text(const std::string &filename,
@@ -112,20 +115,20 @@ void save_stl_text(const std::string &filename,
     f << "solid fast_trimesh STL file" << std::endl;
 
     // Write each triangle.
-    for (auto &face : mesh.get_face_set()) {
+    for (auto &face : mesh.faces()) {
         // Normal.
-        types::Triangle3D triangle{mesh.get_vertex(std::get<0>(face)),
-                                   mesh.get_vertex(std::get<1>(face)),
-                                   mesh.get_vertex(std::get<2>(face))};
+        types::Triangle3D triangle{mesh.vertices()[std::get<0>(face)],
+                                   mesh.vertices()[std::get<1>(face)],
+                                   mesh.vertices()[std::get<2>(face)]};
         types::Point3D normal = triangle.normal();
         f << "facet normal " << normal.x << " " << normal.y << " " << normal.z
           << std::endl;
         f << "outer loop" << std::endl;
 
         // Vertices.
-        types::Point3D v1 = mesh.get_vertex(std::get<0>(face)),
-                       v2 = mesh.get_vertex(std::get<1>(face)),
-                       v3 = mesh.get_vertex(std::get<2>(face));
+        types::Point3D v1 = mesh.vertices()[std::get<0>(face)],
+                       v2 = mesh.vertices()[std::get<1>(face)],
+                       v3 = mesh.vertices()[std::get<2>(face)];
         f << "vertex " << v1.x << " " << v1.y << " " << v1.z << std::endl;
         f << "vertex " << v2.x << " " << v2.y << " " << v2.z << std::endl;
         f << "vertex " << v3.x << " " << v3.y << " " << v3.z << std::endl;
@@ -148,15 +151,18 @@ trimesh::Trimesh3D load_stl_text(const std::string &filename) {
     std::string line;
     std::getline(f, line);
 
-    trimesh::Trimesh3D mesh;
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
     // Keeps track of the unique vertices.
     std::map<types::Point3D, size_t> vertex_map;
 
     // Lambda function to get the index of a vertex.
-    auto get_vertex_index = [&vertex_map, &mesh](const types::Point3D &vertex) {
+    auto get_vertex_index = [&vertex_map,
+                             &vertices](const types::Point3D &vertex) {
         if (vertex_map.find(vertex) == vertex_map.end()) {
-            size_t index = mesh.add_vertex(vertex);
+            size_t index = vertices.size();
+            vertices.push_back(vertex);
             vertex_map[vertex] = index;
         }
         return vertex_map[vertex];
@@ -195,7 +201,7 @@ trimesh::Trimesh3D load_stl_text(const std::string &filename) {
                v3_index = get_vertex_index(v3);
 
         // Add the triangle face.
-        mesh.add_face(v1_index, v2_index, v3_index);
+        faces.insert({v1_index, v2_index, v3_index});
 
         // Skip "endloop" and "endfacet".
         std::getline(f, line);
@@ -204,7 +210,7 @@ trimesh::Trimesh3D load_stl_text(const std::string &filename) {
 
     f.close();
 
-    return mesh;
+    return {vertices, faces};
 }
 
 void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh) {
@@ -212,14 +218,13 @@ void save_obj(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     f.open(filename, std::ios::out);
 
     // Write the vertices.
-    for (size_t i = 0; i < mesh.num_vertices(); i++) {
-        types::Point3D vertex = mesh.get_vertex(i);
+    for (auto &vertex : mesh.vertices()) {
         f << "v " << vertex.x << " " << vertex.y << " " << vertex.z
           << std::endl;
     }
 
     // Write the faces.
-    for (auto &face : mesh.get_face_set()) {
+    for (auto &face : mesh.faces()) {
         f << "f " << std::get<0>(face) + 1 << " " << std::get<1>(face) + 1
           << " " << std::get<2>(face) + 1 << std::endl;
     }
@@ -231,7 +236,8 @@ trimesh::Trimesh3D load_obj(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
 
-    trimesh::Trimesh3D mesh;
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
     // Keeps track of the unique vertices.
     std::map<types::Point3D, size_t> vertex_map;
@@ -246,18 +252,18 @@ trimesh::Trimesh3D load_obj(const std::string &filename) {
             // Vertex.
             float x, y, z;
             ss >> x >> y >> z;
-            mesh.add_vertex({x, y, z});
+            vertices.push_back({x, y, z});
         } else if (type == "f") {
             // Face.
             int v1, v2, v3;
             ss >> v1 >> v2 >> v3;
-            mesh.add_face(v1 - 1, v2 - 1, v3 - 1);
+            faces.insert({v1 - 1, v2 - 1, v3 - 1});
         }
     }
 
     f.close();
 
-    return mesh;
+    return {vertices, faces};
 }
 
 void save_ply(const std::string &filename, const trimesh::Trimesh3D &mesh) {
@@ -267,22 +273,21 @@ void save_ply(const std::string &filename, const trimesh::Trimesh3D &mesh) {
     // Write the header.
     f << "ply" << std::endl;
     f << "format ascii 1.0" << std::endl;
-    f << "element vertex " << mesh.num_vertices() << std::endl;
+    f << "element vertex " << mesh.vertices().size() << std::endl;
     f << "property float x" << std::endl;
     f << "property float y" << std::endl;
     f << "property float z" << std::endl;
-    f << "element face " << mesh.num_faces() << std::endl;
+    f << "element face " << mesh.vertices().size() << std::endl;
     f << "property list uchar int vertex_index" << std::endl;
     f << "end_header" << std::endl;
 
     // Write the vertices.
-    for (size_t i = 0; i < mesh.num_vertices(); i++) {
-        types::Point3D vertex = mesh.get_vertex(i);
+    for (auto &vertex : mesh.vertices()) {
         f << vertex.x << " " << vertex.y << " " << vertex.z << std::endl;
     }
 
     // Write the faces.
-    for (auto &face : mesh.get_face_set()) {
+    for (auto &face : mesh.faces()) {
         f << "3 " << std::get<0>(face) << " " << std::get<1>(face) << " "
           << std::get<2>(face) << std::endl;
     }
@@ -302,7 +307,8 @@ trimesh::Trimesh3D load_ply(const std::string &filename) {
         }
     }
 
-    trimesh::Trimesh3D mesh;
+    trimesh::vertices3d_t vertices;
+    trimesh::face_set_t faces;
 
     while (std::getline(f, line)) {
         std::istringstream ss(line);
@@ -315,18 +321,18 @@ trimesh::Trimesh3D load_ply(const std::string &filename) {
             // Vertex.
             float x, y, z;
             ss >> x >> y >> z;
-            mesh.add_vertex({x, y, z});
+            vertices.push_back({x, y, z});
         } else if (num_spaces == 3 && line.substr(0, 2) == "3 ") {
             // Face.
             int start, v1, v2, v3;
             ss >> start >> v1 >> v2 >> v3;
-            mesh.add_face(v1, v2, v3);
+            faces.insert({v1, v2, v3});
         }
     }
 
     f.close();
 
-    return mesh;
+    return {vertices, faces};
 }
 
 void add_modules(py::module &m) {

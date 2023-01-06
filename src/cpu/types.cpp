@@ -578,6 +578,62 @@ Point2D Polygon2D::center() const {
     return center;
 }
 
+bool Polygon2D::is_ear(int vi, int vj, int vk) const {
+    types::Point2D pi = points[vi], pj = points[vj], pk = points[vk];
+
+    // Checks if the triangle is convex.
+    if (!types::is_convex(pi, pj, pk)) return false;
+
+    // Checks if the triangle contains any other points.
+    for (int l = 0; l < points.size(); l++) {
+        if (l == vi || l == vj || l == vk) continue;
+        types::Triangle2D triangle = {pi, pj, pk};
+        if (points[l].is_inside_triangle(triangle)) return false;
+    }
+
+    return true;
+}
+
+trimesh::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
+    if (points.size() < 3) throw std::runtime_error("Invalid polygon.");
+
+    // Gets the vertex indices from 0 to n - 1.
+    std::vector<int> indices(points.size());
+    std::iota(indices.begin(), indices.end(), 0);
+
+    // Ensures that the polygon is counter-clockwise.
+    if (is_clockwise()) {
+        std::reverse(indices.begin(), indices.end());
+    }
+
+    trimesh::vertices2d_t vertices(points);
+    trimesh::face_set_t faces;
+
+    // Runs ear clipping algorithm.
+    while (indices.size() > 3) {
+        bool found = false;
+        int n = indices.size();
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            int k = (i + 2) % n;
+            int vi = indices[i], vj = indices[j], vk = indices[k];
+            types::Point2D pi = points[vi], pj = points[vj], pk = points[vk];
+            if (is_convex || is_ear(vi, vj, vk)) {
+                faces.insert({vi, vj, vk});
+                indices.erase(indices.begin() + j);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw std::runtime_error("Unable to triangulate polygon.");
+        }
+    }
+    faces.insert({indices[0], indices[1], indices[2]});
+
+    return {vertices, faces};
+}
+
 std::string Polygon2D::to_string() const {
     std::ostringstream ss;
     ss << "Polygon2D(" << points.size() << " vertices)";
@@ -808,8 +864,9 @@ BarycentricCoordinates Point3D::barycentric_coordinates(
 }
 
 bool Point3D::is_inside_bounding_box(const BoundingBox3D &bb) const {
-    return x >= bb.min.x && x <= bb.max.x && y >= bb.min.y && y <= bb.max.y &&
-           z >= bb.min.z && z <= bb.max.z;
+    return x >= bb.min.x - TOLERANCE && x <= bb.max.x + TOLERANCE &&
+           y >= bb.min.y - TOLERANCE && y <= bb.max.y + TOLERANCE &&
+           z >= bb.min.z - TOLERANCE && z <= bb.max.z + TOLERANCE;
 }
 
 float Point3D::distance_to_point(const Point3D &other) const {
@@ -1876,7 +1933,14 @@ void add_modules(py::module &m) {
              "Returns the polygon's convex hull")
         .def("bounding_box", &Polygon2D::bounding_box,
              "Returns the polygon's bounding box")
-        .def("center", &Polygon2D::center, "Returns the polygon's center");
+        .def("center", &Polygon2D::center, "Returns the polygon's center")
+        .def("is_ear", &Polygon2D::is_ear,
+             "Returns true if the polygon's point "
+             "is an ear (for triangulation)",
+             "vi"_a, "vj"_a, "vk"_a)
+        .def("get_trimesh", &Polygon2D::get_trimesh,
+             "Returns a triangle mesh representation of the polygon",
+             "is_convex"_a = false);
 
     // Defines Affine2D methods.
     affine2d

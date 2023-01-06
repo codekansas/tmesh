@@ -70,9 +70,6 @@ class CMakeBuild(build_ext):
     def initialize_options(self) -> None:
         super().initialize_options()
 
-        # Setting the package name is required for the build to work.
-        # self.package = "fast_trimesh"
-
         # Set parallel build.
         self.parallel = cpu_count()
 

@@ -1,4 +1,5 @@
 {
-  "cmake.sourceDirectory": "${workspaceFolder}/fast_trimesh",
-  "cmake.buildDirectory": "${workspaceFolder}/build"
+  "cmake.sourceDirectory": "${workspaceFolder}/src",
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "python.envFile": "${workspaceFolder}/.env"
 }

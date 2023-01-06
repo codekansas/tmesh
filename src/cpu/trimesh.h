@@ -5,6 +5,7 @@
 
 #include <numeric>
 #include <tuple>
+#include <unordered_set>
 #include <vector>
 
 #include "types.h"
@@ -13,86 +14,79 @@ namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
+
+namespace types {
+
+struct Angle;
+struct BarycentricCoordinates;
+struct Point2D;
+struct Line2D;
+struct Triangle2D;
+struct BoundingBox2D;
+struct Polygon2D;
+struct Affine2D;
+struct Point3D;
+struct Line3D;
+struct Circumcircle3D;
+struct Triangle3D;
+struct BoundingBox3D;
+struct Polygon3D;
+struct Affine3D;
+
+}  // namespace types
+
 namespace trimesh {
 
-template <typename T>
-class Trimesh;
+typedef std::tuple<int, int, int> face_t;
 
-class Trimesh2D;
-class Trimesh3D;
-
-template <typename T>
-class Trimesh {
-   protected:
-    std::vector<T> vertices;
-    std::set<std::tuple<int, int, int>> faces;
-
-   public:
-    Trimesh() = default;
-    ~Trimesh() = default;
-
-    // Accessor methods
-    size_t add_vertex(T vertex) {
-        vertices.push_back(vertex);
-        return vertices.size() - 1;
+struct __face_hash_fn {
+    std::size_t operator()(const face_t &f) const {
+        return std::get<0>(f) ^ std::get<1>(f) ^ std::get<2>(f);
     }
-    void set_vertices(std::vector<T> vertices) { this->vertices = vertices; }
-    void remove_face(int i, int j, int k) { faces.erase({i, j, k}); }
-    void add_face(int i, int j, int k) { faces.insert({i, j, k}); }
-    void set_faces(std::vector<std::tuple<int, int, int>> faces) {
-        this->faces.clear();
-        this->faces.insert(faces.begin(), faces.end());
-    }
-    std::vector<T> get_vertices() const { return vertices; }
-    const std::set<std::tuple<int, int, int>> &get_face_set() const {
-        return faces;
-    }
-    std::vector<std::tuple<int, int, int>> get_faces() const {
-        return std::vector<std::tuple<int, int, int>>(faces.begin(),
-                                                      faces.end());
-    }
-    T get_vertex(int i) const { return vertices[i]; }
-    size_t num_vertices() const { return vertices.size(); }
-    size_t num_faces() const { return faces.size(); }
 };
 
-class Trimesh2D : public Trimesh<types::Point2D> {
+typedef std::vector<types::Point2D> vertices2d_t;
+typedef std::vector<types::Point3D> vertices3d_t;
+typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
+
+class Trimesh2D {
+   private:
+    vertices2d_t _vertices;
+    face_set_t _faces;
+
    public:
-    Trimesh2D() = default;
-    ~Trimesh2D() = default;
+    Trimesh2D(vertices2d_t &vertices, face_set_t &faces);
 
-    Trimesh2D(const types::Polygon2D &polygon, bool is_convex = false);
-
-    void validate() const;
-    Trimesh2D &operator<<=(const types::Affine2D &tf);
-    Trimesh2D operator<<(const types::Affine2D &tf) const;
-
-    types::Triangle2D get_triangle(const std::tuple<int, int, int> &face) const;
-
+    const vertices2d_t &vertices() const;
+    const face_set_t &faces() const;
+    const types::Triangle2D get_triangle(
+        const std::tuple<int, int, int> &face) const;
+    const std::vector<types::Triangle2D> get_triangles() const;
     std::string to_string() const;
+
+    Trimesh2D operator<<(const types::Affine2D &tf) const;
 };
 
-class Trimesh3D : public Trimesh<types::Point3D> {
-   public:
-    Trimesh3D() = default;
-    ~Trimesh3D() = default;
+struct Trimesh3D {
+   private:
+    vertices3d_t _vertices;
+    face_set_t _faces;
 
+   public:
+    Trimesh3D(vertices3d_t &vertices, face_set_t &faces);
+
+    const vertices3d_t &vertices() const;
+    const face_set_t &faces() const;
     types::Triangle3D get_triangle(const std::tuple<int, int, int> &face) const;
     std::vector<types::Triangle3D> get_triangles() const;
-    void validate() const;
-    Trimesh3D &operator<<=(const types::Affine3D &tf);
-    Trimesh3D operator<<(const types::Affine3D &tf) const;
-    Trimesh3D &operator|=(const Trimesh3D &other);
-    Trimesh3D operator|(const Trimesh3D &other) const;
-    Trimesh3D &operator&=(const Trimesh3D &other);
-    Trimesh3D operator&(const Trimesh3D &other) const;
-    Trimesh3D &operator-=(const Trimesh3D &other);
-    Trimesh3D operator-(const Trimesh3D &other) const;
-
     float signed_volume() const;
-    void flip_inside_out();
-
+    Trimesh3D flip_inside_out() const;
     std::string to_string() const;
+
+    Trimesh3D operator<<(const types::Affine3D &tf) const;
+    Trimesh3D operator|(const Trimesh3D &other) const;
+    Trimesh3D operator&(const Trimesh3D &other) const;
+    Trimesh3D operator-(const Trimesh3D &other) const;
 };
 
 void add_modules(py::module &m);

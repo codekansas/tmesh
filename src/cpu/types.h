@@ -5,10 +5,20 @@
 
 #include <string>
 
+#include "trimesh.h"
+
 namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
+
+namespace trimesh {
+
+struct Trimesh2D;
+struct Trimesh3D;
+
+}  // namespace trimesh
+
 namespace types {
 
 struct Angle;
@@ -145,6 +155,8 @@ struct Polygon2D {
     Polygon2D convex_hull() const;
     BoundingBox2D bounding_box() const;
     Point2D center() const;
+    bool is_ear(int vi, int vj, int vk) const;
+    trimesh::Trimesh2D get_trimesh(bool is_convex = false) const;
 
     std::string to_string() const;
 };

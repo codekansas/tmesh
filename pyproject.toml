@@ -19,3 +19,9 @@ testpaths = ["tests"]
 markers = [
     "has_gpu: Marks test as requiring a GPU to run",
 ]
+
+[tool.pylint.general]
+
+# Disables the "Unable to import" PyLint warning for "fast_trimesh", since
+# it is a C extension module.
+ignored-modules = ["fast_trimesh"]
