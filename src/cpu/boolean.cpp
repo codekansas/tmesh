@@ -63,6 +63,7 @@ types::Trimesh3D triangulation(const types::Triangle3D &triangle,
 TrimeshAdjacency::TrimeshAdjacency(const types::Trimesh3D &mesh) {
     // Initializes adjacency lists.
     vertex_to_faces.resize(mesh.vertices().size());
+    vertex_to_vertices.resize(mesh.vertices().size());
     face_to_vertices.resize(mesh.faces().size());
     face_to_faces.resize(mesh.faces().size());
 
@@ -72,6 +73,9 @@ TrimeshAdjacency::TrimeshAdjacency(const types::Trimesh3D &mesh) {
         vertex_to_faces[a].push_back(i);
         vertex_to_faces[b].push_back(i);
         vertex_to_faces[c].push_back(i);
+        vertex_to_vertices[a].push_back(b);
+        vertex_to_vertices[b].push_back(c);
+        vertex_to_vertices[c].push_back(a);
         face_to_vertices[i] = {a, b, c};
     }
 
@@ -101,15 +105,14 @@ TrimeshAdjacency::TrimeshAdjacency(const types::Trimesh3D &mesh) {
 }
 
 void TrimeshAdjacency::validate() const {
-    // Checks that all faces are connected.
-    std::vector<bool> visited(face_to_faces.size(), false);
+    // Checks that all vertices are connected.
+    std::vector<bool> visited(vertex_to_vertices.size(), false);
     std::queue<size_t> queue;
     queue.push(0);
     while (!queue.empty()) {
         auto &i = queue.front();
         queue.pop();
-        auto &[ja, jb, jc] = face_to_faces[i];
-        for (auto &j : {ja, jb, jc}) {
+        for (auto &j : vertex_to_vertices[i]) {
             if (!visited[j]) queue.push(j);
             visited[j] = true;
         }
@@ -264,22 +267,10 @@ void populate_vals(const types::Trimesh3D &mesh, const bvh::BVH3D &tree,
     while (!q.empty()) {
         size_t i = q.front();
         q.pop();
-        for (auto &j : adj.vertex_to_faces[i]) {
-            auto &[ka, kb, kc] = adj.face_to_faces[j];
-            for (auto &k : {ka, kb, kc}) {
-                auto &[la, lb, lc] = adj.face_to_vertices[k];
-                for (auto &l : {la, lb, lc}) {
-                    if (vals[l] != 0 && vals[l] != vals[i])
-                        throw std::runtime_error(
-                            "mesh_op: inconsistent values (c)" +
-                            std::to_string(vals[l]) + " " +
-                            std::to_string(vals[i]) + " for vertex " +
-                            std::to_string(l) + " and " + std::to_string(i));
-                    if (vals[l] == 0) {
-                        vals[l] = vals[i];
-                        q.push(l);
-                    }
-                }
+        for (auto &j : adj.vertex_to_vertices[i]) {
+            if (vals[j] == 0) {
+                vals[j] = vals[i];
+                q.push(j);
             }
         }
     }
@@ -359,8 +350,11 @@ void add_modules(py::module &m) {
     py::class_<TrimeshAdjacency>(s, "TrimeshAdjacency")
         .def(py::init<const types::Trimesh3D &>())
         .def_readonly("vertex_to_faces", &TrimeshAdjacency::vertex_to_faces)
+        .def_readonly("vertex_to_vertices",
+                      &TrimeshAdjacency::vertex_to_vertices)
         .def_readonly("face_to_vertices", &TrimeshAdjacency::face_to_vertices)
         .def_readonly("face_to_faces", &TrimeshAdjacency::face_to_faces)
+        .def_readonly("edge_to_faces", &TrimeshAdjacency::edge_to_faces)
         .def("validate", &TrimeshAdjacency::validate);
 
     s.def("union", &mesh_union, "Union of two meshes", "mesh"_a, "meshes"_a);

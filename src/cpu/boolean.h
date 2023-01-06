@@ -24,6 +24,7 @@ struct __edge_hash_fn {
 
 struct TrimeshAdjacency {
     std::vector<std::vector<size_t>> vertex_to_faces;
+    std::vector<std::vector<size_t>> vertex_to_vertices;
     std::vector<types::face_t> face_to_vertices;
     std::vector<types::face_t> face_to_faces;
     std::unordered_map<edge_t, size_t, __edge_hash_fn> edge_to_faces;
