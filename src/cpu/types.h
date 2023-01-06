@@ -211,8 +211,7 @@ class Trimesh2D {
 
     const vertices2d_t &vertices() const;
     const face_list_t &faces() const;
-    const types::Triangle2D get_triangle(
-        const std::tuple<int, int, int> &face) const;
+    const types::Triangle2D get_triangle(const face_t &face) const;
     const std::vector<types::Triangle2D> get_triangles() const;
     std::string to_string() const;
 
@@ -333,7 +332,7 @@ struct BoundingBox3D {
     bool operator!=(const BoundingBox3D &bb) const;
     BoundingBox3D operator<<=(const Affine3D &q);
 
-    std::vector<std::tuple<int, int, int>> triangle_indices() const;
+    std::vector<face_t> triangle_indices() const;
     std::vector<Point3D> corners() const;
     std::vector<Triangle3D> triangles() const;
 
@@ -406,7 +405,7 @@ struct Trimesh3D {
 
     const vertices3d_t &vertices() const;
     const face_list_t &faces() const;
-    types::Triangle3D get_triangle(const std::tuple<int, int, int> &face) const;
+    types::Triangle3D get_triangle(const face_t &face) const;
     std::vector<types::Triangle3D> get_triangles() const;
     float signed_volume() const;
     Trimesh3D flip_inside_out() const;

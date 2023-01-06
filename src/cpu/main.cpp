@@ -10,7 +10,7 @@ void add_modules(py::module &m) {
     types::add_modules(s);
     io::add_modules(s);
     shapes::add_modules(s);
-    aabb_tree::add_modules(s);
+    bvh::add_modules(s);
     ops::add_modules(s);
     boolean::add_modules(s);
 }

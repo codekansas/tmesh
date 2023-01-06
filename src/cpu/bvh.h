@@ -9,7 +9,7 @@ namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
-namespace aabb_tree {
+namespace bvh {
 
 // Defines the hierarchical box tree structure to support 3D queries.
 // The tree is represented as a vector of nodes, where each node is
@@ -19,15 +19,15 @@ namespace aabb_tree {
 // The triangle ID points to the triangle in the trimesh. If a ray
 // doesn't intersect a box, then we don't need to check any of the
 // triangles in the box.
-typedef std::tuple<int, int, int> face_t;
-typedef std::vector<std::tuple<face_t, int, int, types::BoundingBox3D>> tree_t;
+typedef std::vector<std::tuple<types::face_t, int, int, types::BoundingBox3D>>
+    tree_t;
 
-struct AABBTree3D {
+struct BVH3D {
     const std::shared_ptr<types::Trimesh3D> trimesh;
     tree_t tree;
 
-    AABBTree3D(const types::Trimesh3D &t);
-    ~AABBTree3D() = default;
+    BVH3D(const types::Trimesh3D &t);
+    ~BVH3D() = default;
 
     // Accessors.
     const std::shared_ptr<types::Trimesh3D> get_trimesh() const {
@@ -36,12 +36,12 @@ struct AABBTree3D {
     tree_t get_tree() const { return this->tree; }
 
     // Returns the intersected faces and the intersection points for a line.
-    std::vector<std::tuple<face_t, types::Point3D>> intersections(
+    std::vector<std::tuple<types::face_t, types::Point3D>> intersections(
         const types::Line3D &l) const;
 };
 
 void add_modules(py::module &m);
 
-}  // namespace aabb_tree
+}  // namespace bvh
 }  // namespace cpu
 }  // namespace fast_trimesh

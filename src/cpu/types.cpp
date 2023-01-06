@@ -789,8 +789,7 @@ const vertices2d_t &Trimesh2D::vertices() const { return _vertices; }
 
 const face_list_t &Trimesh2D::faces() const { return _faces; }
 
-const types::Triangle2D Trimesh2D::get_triangle(
-    const std::tuple<int, int, int> &face) const {
+const types::Triangle2D Trimesh2D::get_triangle(const face_t &face) const {
     auto &[vi, vj, vk] = face;
     return {_vertices[vi], _vertices[vj], _vertices[vk]};
 }
@@ -1070,13 +1069,14 @@ std::optional<Point3D> Line3D::line_intersection(const Line3D &l) const {
 }
 
 bool Line3D::intersects_triangle(const Triangle3D &t) const {
-    bool s1 = signed_volume(p1, t.p1, t.p2, t.p3) > 0,
-         s2 = signed_volume(p2, t.p1, t.p2, t.p3) > 0,
-         s3 = signed_volume(p1, p2, t.p1, t.p2) > 0,
-         s4 = signed_volume(p1, p2, t.p2, t.p3) > 0,
-         s5 = signed_volume(p1, p2, t.p3, t.p1) > 0;
+    // bool s1 = signed_volume(p1, t.p1, t.p2, t.p3) > 0,
+    //      s2 = signed_volume(p2, t.p1, t.p2, t.p3) > 0,
+    //      s3 = signed_volume(p1, p2, t.p1, t.p2) > 0,
+    //      s4 = signed_volume(p1, p2, t.p2, t.p3) > 0,
+    //      s5 = signed_volume(p1, p2, t.p3, t.p1) > 0;
+    // return (s1 != s2) && (s3 == s4 && s4 == s5);
 
-    return (s1 != s2) && (s3 == s4 && s4 == s5);
+    return triangle_intersection(t).has_value();
 }
 
 std::optional<Point3D> Line3D::triangle_intersection(
@@ -1097,7 +1097,8 @@ std::optional<Point3D> Line3D::triangle_intersection(
     float v = -e1.dot(dao) / det;
     float w = ao.dot(n) / det;
 
-    if (w < 0.0 || u < 0.0 || v < 0.0 || (u + v) > 1.0 || w > 1.0) {
+    if (w < -TOLERANCE || u < -TOLERANCE || v < -TOLERANCE ||
+        (u + v) > 1.0 + TOLERANCE || w > 1.0 + TOLERANCE) {
         return std::nullopt;
     }
 
@@ -1374,7 +1375,7 @@ BoundingBox3D BoundingBox3D::operator<<=(const Affine3D &a) {
     return *this;
 }
 
-std::vector<std::tuple<int, int, int>> BoundingBox3D::triangle_indices() const {
+std::vector<face_t> BoundingBox3D::triangle_indices() const {
     return {{0, 2, 1}, {0, 3, 2}, {0, 5, 4}, {0, 1, 5}, {1, 6, 5}, {1, 2, 6},
             {2, 7, 6}, {2, 3, 7}, {3, 4, 7}, {3, 0, 4}, {4, 6, 7}, {4, 5, 6}};
 }
@@ -1670,8 +1671,7 @@ const vertices3d_t &Trimesh3D::vertices() const { return _vertices; }
 
 const face_list_t &Trimesh3D::faces() const { return _faces; }
 
-types::Triangle3D Trimesh3D::get_triangle(
-    const std::tuple<int, int, int> &face) const {
+types::Triangle3D Trimesh3D::get_triangle(const face_t &face) const {
     auto &[vi, vj, vk] = face;
     return {_vertices[vi], _vertices[vj], _vertices[vk]};
 }
@@ -1698,8 +1698,7 @@ Trimesh3D Trimesh3D::flip_inside_out() const {
     vertices3d_t vertices = this->_vertices;
     face_list_t faces;
     std::transform(this->_faces.begin(), this->_faces.end(),
-                   std::inserter(faces, faces.begin()),
-                   [](const std::tuple<int, int, int> &face) {
+                   std::inserter(faces, faces.begin()), [](const face_t &face) {
                        return std::make_tuple(std::get<0>(face),
                                               std::get<2>(face),
                                               std::get<1>(face));

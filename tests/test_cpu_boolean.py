@@ -4,8 +4,8 @@ import random
 
 import pytest
 
-from fast_trimesh.cpu.boolean import triangulation
-from fast_trimesh.cpu.shapes import cuboid
+from fast_trimesh.cpu.boolean import TrimeshAdjacency, triangulation
+from fast_trimesh.cpu.shapes import cuboid, tetrahedron
 from fast_trimesh.cpu.types import Point3D, Triangle3D
 
 
@@ -34,6 +34,20 @@ def test_triangulation() -> None:
     # triangle.
     sub_areas = sum(sub_triangle.area() for sub_triangle in triangles.get_triangles())
     assert sub_areas == pytest.approx(triangle.area())
+
+
+def test_adjacency() -> None:
+    """Tests adjacency data structure."""
+
+    tetr = tetrahedron(radius=1.0)
+    tetr_adj = TrimeshAdjacency(tetr)
+    tetr_adj.validate()
+    assert all(len(v) == 3 for v in tetr_adj.vertex_to_faces)
+
+    cub = cuboid(2.0, 2.0, 2.0)
+    cub_adj = TrimeshAdjacency(cub)
+    assert all(len(v) in (4, 5) for v in cub_adj.vertex_to_faces)
+    cub_adj.validate()
 
 
 @pytest.mark.skip(reason="Not implemented")

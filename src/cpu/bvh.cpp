@@ -1,4 +1,4 @@
-#include "aabb_tree.h"
+#include "bvh.h"
 
 #include <numeric>
 
@@ -6,7 +6,7 @@ using namespace pybind11::literals;
 
 namespace fast_trimesh {
 namespace cpu {
-namespace aabb_tree {
+namespace bvh {
 
 void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
                          const std::vector<types::face_t> &faces,
@@ -90,7 +90,7 @@ void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
     sort_bounding_boxes(boxes, faces, indices, tree, lo + mid, hi);
 }
 
-AABBTree3D::AABBTree3D(const types::Trimesh3D &t)
+BVH3D::BVH3D(const types::Trimesh3D &t)
     : trimesh(std::make_shared<types::Trimesh3D>(t)) {
     std::vector<types::face_t> faces;
     for (auto &face : t.faces()) faces.push_back(face);
@@ -131,7 +131,7 @@ AABBTree3D::AABBTree3D(const types::Trimesh3D &t)
 void intersections_helper(
     tree_t tree, const std::vector<types::Point3D> &vertices, int id,
     const types::Line3D &l,
-    std::vector<std::tuple<face_t, types::Point3D>> &intersections) {
+    std::vector<std::tuple<types::face_t, types::Point3D>> &intersections) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
 
     // Gets the bounding box of the current node.
@@ -157,26 +157,25 @@ void intersections_helper(
     if (rhs != -1) intersections_helper(tree, vertices, rhs, l, intersections);
 }
 
-std::vector<std::tuple<face_t, types::Point3D>> AABBTree3D::intersections(
+std::vector<std::tuple<types::face_t, types::Point3D>> BVH3D::intersections(
     const types::Line3D &l) const {
-    std::vector<std::tuple<face_t, types::Point3D>> intersections;
+    std::vector<std::tuple<types::face_t, types::Point3D>> intersections;
     intersections_helper(tree, trimesh->vertices(), 0, l, intersections);
     return intersections;
 }
 
 void add_modules(py::module &m) {
-    py::module s = m.def_submodule("aabb_tree");
+    py::module s = m.def_submodule("bvh");
     s.doc() = "Bounding volume hierarchy module";
 
-    py::class_<AABBTree3D, std::shared_ptr<AABBTree3D>>(s, "AABBTree3D")
+    py::class_<BVH3D, std::shared_ptr<BVH3D>>(s, "BVH3D")
         .def(py::init<types::Trimesh3D &>(), "Boundary volume hierarchy",
              "trimesh"_a)
-        .def("intersections", &AABBTree3D::intersections, "Intersections",
-             "line"_a)
-        .def_property_readonly("trimesh", &AABBTree3D::get_trimesh, "Trimesh")
-        .def_property_readonly("tree", &AABBTree3D::get_tree, "Tree");
+        .def("intersections", &BVH3D::intersections, "Intersections", "line"_a)
+        .def_property_readonly("trimesh", &BVH3D::get_trimesh, "Trimesh")
+        .def_property_readonly("tree", &BVH3D::get_tree, "Tree");
 }
 
-}  // namespace aabb_tree
+}  // namespace bvh
 }  // namespace cpu
 }  // namespace fast_trimesh
