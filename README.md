@@ -44,7 +44,7 @@ STL or OBJ file from a simple mesh:
 ```python
 import math
 
-from fast_trimesh.cpu.io import save_stl_text
+from fast_trimesh.cpu.io import save_stl_text, save_stl, save_obj, save_ply
 from fast_trimesh.cpu.shapes import cuboid
 from fast_trimesh.cpu.types import Affine3D
 
@@ -57,187 +57,14 @@ rot = Affine3D(rot=(math.pi / 4, 0.0, 0.0))
 trans = Affine3D(trans=(0.0, 0.5, 0.0))
 b <<= rot @ trans
 
-# Save the resulting cuboid.
+# Save the resulting mesh.
+save_stl_text("simple_example_ascii.stl", a + b)
 save_stl("simple_example.stl", a + b)
 save_obj("simple_example.obj", a + b)
+save_ply("simple_example.ply", a + b)
 ```
 
-This results in the below STL:
-
-```stl
-solid fast_trimesh STL file
-facet normal 0 0 -1
-outer loop
-vertex -0.5 -0.5 -0.5
-vertex 0.5 0.5 -0.5
-vertex 0.5 -0.5 -0.5
-endloop
-endfacet
-facet normal 0 0 -1
-outer loop
-vertex -0.5 -0.5 -0.5
-vertex -0.5 0.5 -0.5
-vertex 0.5 0.5 -0.5
-endloop
-endfacet
-facet normal 0 -1 0
-outer loop
-vertex -0.5 -0.5 -0.5
-vertex 0.5 -0.5 0.5
-vertex -0.5 -0.5 0.5
-endloop
-endfacet
-facet normal 0 -1 0
-outer loop
-vertex -0.5 -0.5 -0.5
-vertex 0.5 -0.5 -0.5
-vertex 0.5 -0.5 0.5
-endloop
-endfacet
-facet normal 1 0 0
-outer loop
-vertex 0.5 -0.5 -0.5
-vertex 0.5 0.5 0.5
-vertex 0.5 -0.5 0.5
-endloop
-endfacet
-facet normal 1 0 0
-outer loop
-vertex 0.5 -0.5 -0.5
-vertex 0.5 0.5 -0.5
-vertex 0.5 0.5 0.5
-endloop
-endfacet
-facet normal 0 1 -0
-outer loop
-vertex 0.5 0.5 -0.5
-vertex -0.5 0.5 0.5
-vertex 0.5 0.5 0.5
-endloop
-endfacet
-facet normal 0 1 0
-outer loop
-vertex 0.5 0.5 -0.5
-vertex -0.5 0.5 -0.5
-vertex -0.5 0.5 0.5
-endloop
-endfacet
-facet normal -1 0 0
-outer loop
-vertex -0.5 0.5 -0.5
-vertex -0.5 -0.5 0.5
-vertex -0.5 0.5 0.5
-endloop
-endfacet
-facet normal -1 0 0
-outer loop
-vertex -0.5 0.5 -0.5
-vertex -0.5 -0.5 -0.5
-vertex -0.5 -0.5 0.5
-endloop
-endfacet
-facet normal 0 0 1
-outer loop
-vertex -0.5 -0.5 0.5
-vertex 0.5 0.5 0.5
-vertex -0.5 0.5 0.5
-endloop
-endfacet
-facet normal 0 0 1
-outer loop
-vertex -0.5 -0.5 0.5
-vertex 0.5 -0.5 0.5
-vertex 0.5 0.5 0.5
-endloop
-endfacet
-facet normal 0 0.707107 -0.707107
-outer loop
-vertex -0.5 0.5 -0.707107
-vertex 0.5 1.20711 0
-vertex 0.5 0.5 -0.707107
-endloop
-endfacet
-facet normal 0 0.707107 -0.707107
-outer loop
-vertex -0.5 0.5 -0.707107
-vertex -0.5 1.20711 0
-vertex 0.5 1.20711 0
-endloop
-endfacet
-facet normal 0 -0.707107 -0.707107
-outer loop
-vertex -0.5 0.5 -0.707107
-vertex 0.5 -0.207107 0
-vertex -0.5 -0.207107 0
-endloop
-endfacet
-facet normal 0 -0.707107 -0.707107
-outer loop
-vertex -0.5 0.5 -0.707107
-vertex 0.5 0.5 -0.707107
-vertex 0.5 -0.207107 0
-endloop
-endfacet
-facet normal 1 0 -0
-outer loop
-vertex 0.5 0.5 -0.707107
-vertex 0.5 0.5 0.707107
-vertex 0.5 -0.207107 0
-endloop
-endfacet
-facet normal 1 0 0
-outer loop
-vertex 0.5 0.5 -0.707107
-vertex 0.5 1.20711 0
-vertex 0.5 0.5 0.707107
-endloop
-endfacet
-facet normal 0 0.707107 0.707107
-outer loop
-vertex 0.5 1.20711 0
-vertex -0.5 0.5 0.707107
-vertex 0.5 0.5 0.707107
-endloop
-endfacet
-facet normal 0 0.707107 0.707107
-outer loop
-vertex 0.5 1.20711 0
-vertex -0.5 1.20711 0
-vertex -0.5 0.5 0.707107
-endloop
-endfacet
-facet normal -1 0 0
-outer loop
-vertex -0.5 1.20711 0
-vertex -0.5 -0.207107 0
-vertex -0.5 0.5 0.707107
-endloop
-endfacet
-facet normal -1 -0 0
-outer loop
-vertex -0.5 1.20711 0
-vertex -0.5 0.5 -0.707107
-vertex -0.5 -0.207107 0
-endloop
-endfacet
-facet normal 0 -0.707107 0.707107
-outer loop
-vertex -0.5 -0.207107 0
-vertex 0.5 0.5 0.707107
-vertex -0.5 0.5 0.707107
-endloop
-endfacet
-facet normal 0 -0.707107 0.707107
-outer loop
-vertex -0.5 -0.207107 0
-vertex 0.5 -0.207107 0
-vertex 0.5 0.5 0.707107
-endloop
-endfacet
-endsolid fast_trimesh STL file
-```
-
-For more examples, see the [examples](examples).
+See the [examples](examples) directory for more.
 
 ### Unit Tests
 
