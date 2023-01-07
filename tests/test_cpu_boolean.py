@@ -1,12 +1,14 @@
 """Tests CPU boolean operations."""
 
+import math
 import random
 
 import pytest
 
-from fast_trimesh.cpu.boolean import TrimeshAdjacency, triangulation
+from fast_trimesh.cpu.boolean import triangulation
+from fast_trimesh.cpu.bvh import intersections, BVH3D, TrimeshAdjacency
 from fast_trimesh.cpu.shapes import cuboid, tetrahedron
-from fast_trimesh.cpu.types import Point3D, Triangle3D
+from fast_trimesh.cpu.types import Affine3D, Point3D, Triangle3D, Line3D
 
 
 def test_triangulation() -> None:
@@ -50,19 +52,39 @@ def test_adjacency() -> None:
     cub_adj.validate()
 
 
-@pytest.mark.skip(reason="Not implemented")
-def test_union() -> None:
-    """Tests union of two cuboids."""
+def test_simple_boolean_ops() -> None:
+    """Tests boolean ops on two tetrahedrons with simple intersections."""
 
-    # Creates a cuboid.
-    cuboid1 = cuboid(1.0, 1.0, 1.0)
+    scale = Affine3D(scale=1.5)
+    trans = Affine3D(trans=(0.0, 0.0, -1.5))
+    rot = Affine3D(rot=(math.pi, 0.0, math.pi / 3))
 
-    # Creates a cuboid which is longer and shorter than the first cuboid.
-    cuboid2 = cuboid(2.0, 0.5, 0.5)
+    tetr = tetrahedron(radius=1.0)
+    tetr_a = tetr
+    tetr_b = tetr << scale @ trans @ rot
 
-    # Gets the union of the two cuboids.
-    union = cuboid1 & cuboid2
+    # 12 intersections because each triangle has two (for two lines) and
+    # there are six triangles. Since some edges are shared this has some
+    # duplication.
+
+    bvh = BVH3D(tetr_a)
+    line = Line3D(tetr_b.vertices[3], tetr_b.vertices[1])
+    intrs = bvh.intersections(line)
+    face_pts = [Triangle3D(*(tetr_b.vertices[i] for i in face)) for _, face, _ in intrs]
+
+    intersection_set = intersections(tetr_a, tetr_b)
 
     breakpoint()
 
-    asdf
+    tetr_intersection = tetr_a | tetr_b
+    assert len(tetr_intersection.faces) == 6
+
+    tetr_union = tetr_a & tetr_b
+    assert len(tetr_union.faces) == 10
+
+    tetr_difference = tetr_a - tetr_b
+    assert len(tetr_difference.faces) == 9
+
+
+if __name__ == "__main__":
+    test_simple_boolean_ops()

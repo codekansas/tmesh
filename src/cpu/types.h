@@ -33,7 +33,9 @@ typedef std::tuple<size_t, size_t, size_t> face_t;
 
 struct __face_hash_fn {
     std::size_t operator()(const face_t &f) const {
-        return std::get<0>(f) ^ std::get<1>(f) ^ std::get<2>(f);
+        return std::hash<size_t>()(std::get<0>(f)) ^
+               std::hash<size_t>()(std::get<1>(f)) ^
+               std::hash<size_t>()(std::get<2>(f));
     }
 };
 

@@ -1,6 +1,9 @@
 #include "bvh.h"
 
+#include <iostream>
 #include <numeric>
+#include <queue>
+#include <sstream>
 
 using namespace pybind11::literals;
 
@@ -8,13 +11,141 @@ namespace fast_trimesh {
 namespace cpu {
 namespace bvh {
 
+/* --------------- *
+ * IntersectionSet *
+ * --------------- */
+
+void IntersectionSet::add(const size_t a, const size_t b,
+                          const types::Point3D &p) {
+    size_t pid = points.size();
+    points.push_back({{a, b}, p});
+    a_to_b[a].push_back(pid);
+    b_to_a[b].push_back(pid);
+}
+
+std::string IntersectionSet::to_string() const {
+    std::stringstream ss;
+    ss << "IntersectionSet(" << points.size() << " intersections)";
+    return ss.str();
+}
+
+void add_all_intersections(const BVH3D &bvh, const TrimeshAdjacency &adj,
+                           const types::Trimesh3D &a, IntersectionSet &intrs,
+                           bool a_to_b) {
+    for (size_t i = 0; i < adj.face_to_faces.size(); i++) {
+        auto &[fa, fb, fc] = adj.face_to_faces[i];
+        edge_t e1{fa, fb}, e2{fb, fc}, e3{fc, fa};
+        for (auto &[v1, v2] : {e1, e2, e3}) {
+            const types::Line3D line{a.vertices()[v1], a.vertices()[v2]};
+            for (const auto &[k, face, pt] : bvh.intersections(line)) {
+                if (a_to_b)
+                    intrs.add(i, k, pt);
+                else
+                    intrs.add(k, i, pt);
+            }
+        }
+    }
+}
+
+IntersectionSet intersections(const types::Trimesh3D &a,
+                              const types::Trimesh3D &b) {
+    IntersectionSet intrs;
+    intrs.a_to_b.resize(a.faces().size());
+    intrs.b_to_a.resize(b.faces().size());
+
+    BVH3D bvh_a{a}, bvh_b{b};
+    TrimeshAdjacency adj_a{a}, adj_b{b};
+
+    add_all_intersections(bvh_b, adj_a, a, intrs, true);
+    add_all_intersections(bvh_a, adj_b, b, intrs, false);
+
+    return intrs;
+}
+
+/* ---------------- *
+ * TrimeshAdjacency *
+ * ---------------- */
+
+TrimeshAdjacency::TrimeshAdjacency(const types::Trimesh3D &mesh) {
+    // Initializes adjacency lists.
+    vertex_to_faces.resize(mesh.vertices().size());
+    vertex_to_vertices.resize(mesh.vertices().size());
+    face_to_vertices.resize(mesh.faces().size());
+    face_to_faces.resize(mesh.faces().size());
+
+    // Populates adjacency lists.
+    for (size_t i = 0; i < mesh.faces().size(); i++) {
+        auto &[a, b, c] = mesh.faces()[i];
+        vertex_to_faces[a].push_back(i);
+        vertex_to_faces[b].push_back(i);
+        vertex_to_faces[c].push_back(i);
+        vertex_to_vertices[a].push_back(b);
+        vertex_to_vertices[b].push_back(c);
+        vertex_to_vertices[c].push_back(a);
+        face_to_vertices[i] = {a, b, c};
+    }
+
+    // Populates edge-to-face map.
+    for (size_t i = 0; i < mesh.faces().size(); i++) {
+        auto &[a, b, c] = mesh.faces()[i];
+        edge_to_faces[{a, b}] = i;
+        edge_to_faces[{b, c}] = i;
+        edge_to_faces[{c, a}] = i;
+    }
+
+    // Populates face-to-face adjacency list.
+    for (size_t i = 0; i < mesh.faces().size(); i++) {
+        auto &[a, b, c] = mesh.faces()[i];
+        edge_t ba = {b, a}, cb = {c, b}, ac = {a, c};
+        for (const edge_t &e : {ba, cb, ac}) {
+            if (edge_to_faces.find(e) == edge_to_faces.end()) {
+                throw std::runtime_error("Mesh is not manifold; edge " +
+                                         std::to_string(std::get<0>(e)) + ", " +
+                                         std::to_string(std::get<1>(e)) +
+                                         " is not shared.");
+            }
+        }
+        face_to_faces[i] = {edge_to_faces[ba], edge_to_faces[cb],
+                            edge_to_faces[ac]};
+    }
+}
+
+void TrimeshAdjacency::validate() const {
+    // Checks that all vertices are connected.
+    std::vector<bool> visited(vertex_to_vertices.size(), false);
+    std::queue<size_t> queue;
+    queue.push(0);
+    while (!queue.empty()) {
+        auto &i = queue.front();
+        queue.pop();
+        for (auto &j : vertex_to_vertices[i]) {
+            if (!visited[j]) queue.push(j);
+            visited[j] = true;
+        }
+    }
+    size_t num_invalid = 0;
+    for (const auto &v : visited)
+        if (!v) {
+            num_invalid++;
+            std::cout << "Vertex " << std::to_string(&v - &visited[0])
+                      << " is not connected." << std::endl;
+        }
+    if (num_invalid > 0)
+        throw std::runtime_error("Mesh is not connected; found " +
+                                 std::to_string(num_invalid) +
+                                 " unconnected vertices.");
+}
+
+/* ------ *
+ *  BVH3D *
+ * ------ */
+
 void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
-                         const std::vector<types::face_t> &faces,
                          std::vector<size_t> &indices, tree_t &tree, size_t lo,
                          size_t hi) {
     // If the number of boxes is less than 2, then there is nothing to sort.
     if (hi - lo < 2) {
-        tree[lo] = {faces[indices[lo]], -1, -1, boxes[indices[lo]]};
+        tree[lo] = {indices[lo], -1, -1, boxes[indices[lo]]};
         return;
     }
 
@@ -80,27 +211,24 @@ void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
     // Gets the middle element, which will be the root of the subtree.
     size_t mid = (hi - lo + 1) / 2;
     std::swap(indices[lo], indices[lo + mid]);
-    tree[lo] = {faces[indices[lo]],
+    tree[lo] = {indices[lo],
                 mid == 1 ? -1 : lo + 1,
                 mid == (hi - lo) ? -1 : lo + mid,
                 {{min_x, min_y, min_z}, {max_x, max_y, max_z}}};
 
     // Recursively sorts the left and right halves.
-    sort_bounding_boxes(boxes, faces, indices, tree, lo + 1, lo + mid);
-    sort_bounding_boxes(boxes, faces, indices, tree, lo + mid, hi);
+    sort_bounding_boxes(boxes, indices, tree, lo + 1, lo + mid);
+    sort_bounding_boxes(boxes, indices, tree, lo + mid, hi);
 }
 
 BVH3D::BVH3D(const types::Trimesh3D &t)
     : trimesh(std::make_shared<types::Trimesh3D>(t)) {
-    std::vector<types::face_t> faces;
-    for (auto &face : t.faces()) faces.push_back(face);
-
     // Builds the boundaary volume hierachy tree.
     // First, we build a vector of boxes, where each box is represented as a
     // tuple of (min, max), where min and max are the minimum and maximum
     // coordinates of the box, respectively.
     std::vector<types::BoundingBox3D> boxes;
-    for (auto &face : faces)
+    for (auto &face : t.faces())
         boxes.push_back(types::BoundingBox3D({t.get_triangle(face)}));
 
     // Insert the boxes into the tree.
@@ -125,13 +253,13 @@ BVH3D::BVH3D(const types::Trimesh3D &t)
     std::vector<size_t> indices(boxes.size());
     std::iota(indices.begin(), indices.end(), 0);
     tree.resize(boxes.size());
-    sort_bounding_boxes(boxes, faces, indices, tree, 0, boxes.size());
+    sort_bounding_boxes(boxes, indices, tree, 0, boxes.size());
 }
 
 void intersections_helper(
-    tree_t tree, const std::vector<types::Point3D> &vertices, int id,
+    const tree_t tree, const std::shared_ptr<types::Trimesh3D> &trimesh, int id,
     const types::Line3D &l,
-    std::vector<std::tuple<types::face_t, types::Point3D>> &intersections) {
+    std::vector<std::tuple<size_t, types::face_t, types::Point3D>> &intrs) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
 
     // Gets the bounding box of the current node.
@@ -143,25 +271,41 @@ void intersections_helper(
     }
 
     // Checks if the line intersects the current triangle.
-    auto face_indices = std::get<0>(tree[id]);
-    types::Triangle3D face = {vertices[std::get<0>(face_indices)],
-                              vertices[std::get<1>(face_indices)],
-                              vertices[std::get<2>(face_indices)]};
+    auto face_id = std::get<0>(tree[id]);
+    auto face_indices = trimesh->faces()[face_id];
+    types::Triangle3D face = {trimesh->vertices()[std::get<0>(face_indices)],
+                              trimesh->vertices()[std::get<1>(face_indices)],
+                              trimesh->vertices()[std::get<2>(face_indices)]};
     if (auto intr = l.triangle_intersection(face)) {
-        intersections.push_back({face_indices, *intr});
+        intrs.push_back({face_id, face_indices, *intr});
     }
 
     // Recursively checks the left and right subtrees.
     auto lhs = std::get<1>(tree[id]), rhs = std::get<2>(tree[id]);
-    if (lhs != -1) intersections_helper(tree, vertices, lhs, l, intersections);
-    if (rhs != -1) intersections_helper(tree, vertices, rhs, l, intersections);
+    if (lhs != -1) intersections_helper(tree, trimesh, lhs, l, intrs);
+    if (rhs != -1) intersections_helper(tree, trimesh, rhs, l, intrs);
 }
 
-std::vector<std::tuple<types::face_t, types::Point3D>> BVH3D::intersections(
-    const types::Line3D &l) const {
-    std::vector<std::tuple<types::face_t, types::Point3D>> intersections;
-    intersections_helper(tree, trimesh->vertices(), 0, l, intersections);
-    return intersections;
+std::vector<std::tuple<size_t, types::face_t, types::Point3D>>
+BVH3D::intersections(const types::Line3D &l) const {
+    std::vector<std::tuple<size_t, types::face_t, types::Point3D>> intrs;
+    intersections_helper(tree, trimesh, 0, l, intrs);
+    std::cout << "BVH3D::intersections: " << intrs.size() << " intersections"
+              << std::endl;
+    std::cout << "  Line: " << l.to_string() << std::endl;
+    for (auto &intr : intrs) {
+        std::cout << "  Face: "
+                  << trimesh->get_triangles()[std::get<0>(intr)].to_string()
+                  << std::endl;
+        std::cout << "  Point: " << std::get<2>(intr).to_string() << std::endl;
+    }
+    return intrs;
+}
+
+std::string BVH3D::to_string() const {
+    std::stringstream ss;
+    ss << "BVH3D(" << trimesh->to_string() << ")";
+    return ss.str();
 }
 
 void add_modules(py::module &m) {
@@ -171,9 +315,37 @@ void add_modules(py::module &m) {
     py::class_<BVH3D, std::shared_ptr<BVH3D>>(s, "BVH3D")
         .def(py::init<types::Trimesh3D &>(), "Boundary volume hierarchy",
              "trimesh"_a)
+        .def("__str__", &BVH3D::to_string, "String representation",
+             py::is_operator())
+        .def("__repr__", &BVH3D::to_string, "String representation",
+             py::is_operator())
         .def("intersections", &BVH3D::intersections, "Intersections", "line"_a)
         .def_property_readonly("trimesh", &BVH3D::get_trimesh, "Trimesh")
         .def_property_readonly("tree", &BVH3D::get_tree, "Tree");
+
+    py::class_<IntersectionSet, std::shared_ptr<IntersectionSet>>(
+        s, "IntersectionSet")
+        .def(py::init<>(), "Intersection set")
+        .def("__str__", &IntersectionSet::to_string, "String representation",
+             py::is_operator())
+        .def("__repr__", &IntersectionSet::to_string, "String representation",
+             py::is_operator())
+        .def_readonly("a_to_b", &IntersectionSet::a_to_b, "A to B")
+        .def_readonly("b_to_a", &IntersectionSet::b_to_a, "B to A")
+        .def_readonly("points", &IntersectionSet::points,
+                      "Vector of all points");
+
+    py::class_<TrimeshAdjacency>(s, "TrimeshAdjacency")
+        .def(py::init<const types::Trimesh3D &>())
+        .def_readonly("vertex_to_faces", &TrimeshAdjacency::vertex_to_faces)
+        .def_readonly("vertex_to_vertices",
+                      &TrimeshAdjacency::vertex_to_vertices)
+        .def_readonly("face_to_vertices", &TrimeshAdjacency::face_to_vertices)
+        .def_readonly("face_to_faces", &TrimeshAdjacency::face_to_faces)
+        .def_readonly("edge_to_faces", &TrimeshAdjacency::edge_to_faces)
+        .def("validate", &TrimeshAdjacency::validate);
+
+    s.def("intersections", &intersections, "Intersections", "a"_a, "b"_a);
 }
 
 }  // namespace bvh
