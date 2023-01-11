@@ -11,7 +11,7 @@ def main() -> None:
     parser.add_argument("path", help="The path to the STL file")
     args = parser.parse_args()
 
-    print(f"![{Path(args.path).stem}]({args.path})")
+    print(f"- [{Path(args.path).name}]({args.path})")
 
 
 if __name__ == "__main__":

@@ -1,25 +1,8 @@
 # Examples
 
-## simple
-
-![simple](simple.stl)
-
-## cylinder
-
-![cylinder](cylinder.stl)
-
-## torus
-
-![torus](torus.stl)
-
-## intersection
-
-![intersection](intersection.stl)
-
-## sphere
-
-![sphere](sphere.stl)
-
-## convex_hull
-
-![convex_hull](convex_hull.stl)
+- [simple.stl](simple.stl)
+- [cylinder.stl](cylinder.stl)
+- [torus.stl](torus.stl)
+- [intersection.stl](intersection.stl)
+- [sphere.stl](sphere.stl)
+- [convex_hull.stl](convex_hull.stl)
