@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -12,6 +13,9 @@ namespace cpu {
 namespace ops {
 
 types::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height);
+types::Trimesh3D linear_extrude(
+    const types::Polygon2D &polygon,
+    const std::function<float(float, float)> &height_func);
 
 types::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
                                 int n, int axis = 0);

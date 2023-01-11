@@ -7,11 +7,14 @@ namespace cpu {
 namespace ops {
 
 types::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height) {
-    // Checks that `height` is positive.
-    if (height <= 0.0f) {
-        throw std::invalid_argument("Height must be positive.");
-    }
+    std::function<float(float, float)> height_func =
+        [height](float x, float y) -> float { return height; };
+    return linear_extrude(polygon, height_func);
+}
 
+types::Trimesh3D linear_extrude(
+    const types::Polygon2D &polygon,
+    const std::function<float(float, float)> &height_func) {
     types::vertices3d_t vertices;
     types::face_set_t faces;
 
@@ -39,7 +42,13 @@ types::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height) {
 
     // Adds top faces.
     for (int i = 0; i < p; i++) {
-        vertices.push_back({poly.points[i].x, poly.points[i].y, height});
+        float x = poly.points[i].x, y = poly.points[i].y;
+        float height = height_func(x, y);
+        if (height <= 0) {
+            throw std::invalid_argument(
+                "The height function must be positive.");
+        }
+        vertices.push_back({x, y, height});
     }
     for (int i = 0; i < p - 1; i++) {
         int v0 = i + p, v1 = i + 1 + p, v2 = p;
@@ -215,6 +224,11 @@ void add_modules(py::module &m) {
     o.def("linear_extrude",
           py::overload_cast<const types::Polygon2D &, float>(&linear_extrude),
           "Linearly extrudes a 2D mesh", "mesh"_a, "height"_a);
+    o.def("linear_extrude",
+          py::overload_cast<const types::Polygon2D &,
+                            const std::function<float(float, float)> &>(
+              &linear_extrude),
+          "Linearly extrudes a 2D mesh", "mesh"_a, "height_func"_a);
 
     o.def("rotate_extrude",
           py::overload_cast<const types::Polygon2D &, float, int, int>(
