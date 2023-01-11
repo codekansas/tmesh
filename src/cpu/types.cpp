@@ -596,22 +596,22 @@ Point2D Polygon2D::center() const {
 }
 
 bool Polygon2D::is_ear(int vi, int vj, int vk) const {
-    types::Point2D pi = points[vi], pj = points[vj], pk = points[vk];
+    Point2D pi = points[vi], pj = points[vj], pk = points[vk];
 
     // Checks if the triangle is convex.
-    if (!types::is_convex(pi, pj, pk)) return false;
+    if (!is_convex(pi, pj, pk)) return false;
 
     // Checks if the triangle contains any other points.
     for (int l = 0; l < points.size(); l++) {
         if (l == vi || l == vj || l == vk) continue;
-        types::Triangle2D triangle = {pi, pj, pk};
+        Triangle2D triangle = {pi, pj, pk};
         if (points[l].is_inside_triangle(triangle)) return false;
     }
 
     return true;
 }
 
-types::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
+Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
     if (points.size() < 3) throw std::runtime_error("Invalid polygon.");
 
     // Gets the vertex indices from 0 to n - 1.
@@ -623,8 +623,8 @@ types::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
         std::reverse(indices.begin(), indices.end());
     }
 
-    types::vertices2d_t vertices(points);
-    types::face_list_t faces;
+    vertices2d_t vertices(points);
+    face_list_t faces;
 
     // Runs ear clipping algorithm.
     while (indices.size() > 3) {
@@ -634,7 +634,7 @@ types::Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
             int j = (i + 1) % n;
             int k = (i + 2) % n;
             int vi = indices[i], vj = indices[j], vk = indices[k];
-            types::Point2D pi = points[vi], pj = points[vj], pk = points[vk];
+            Point2D pi = points[vi], pj = points[vj], pk = points[vk];
             if (is_convex || is_ear(vi, vj, vk)) {
                 faces.push_back({vi, vj, vk});
                 indices.erase(indices.begin() + j);
@@ -789,17 +789,77 @@ const vertices2d_t &Trimesh2D::vertices() const { return _vertices; }
 
 const face_list_t &Trimesh2D::faces() const { return _faces; }
 
-const types::Triangle2D Trimesh2D::get_triangle(const face_t &face) const {
+const Triangle2D Trimesh2D::get_triangle(const face_t &face) const {
     auto &[vi, vj, vk] = face;
     return {_vertices[vi], _vertices[vj], _vertices[vk]};
 }
 
-const std::vector<types::Triangle2D> Trimesh2D::get_triangles() const {
-    std::vector<types::Triangle2D> result;
+const std::vector<Triangle2D> Trimesh2D::get_triangles() const {
+    std::vector<Triangle2D> result;
     for (auto &face : _faces) {
         result.push_back(get_triangle(face));
     }
     return result;
+}
+
+float angle(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
+    auto v1 = p2 - p1;
+    auto v2 = p3 - p1;
+    auto angle = std::atan2(v2.y, v2.x) - std::atan2(v1.y, v1.x);
+    if (angle < 0.0f) angle += 2.0f * M_PI;
+    return angle;
+}
+
+const std::vector<size_t> Trimesh2D::get_polygon_inds() const {
+    // First, counts the number of faces that each edge is part of.
+    std::map<const std::tuple<size_t, size_t>, size_t> edge_counts;
+    for (auto &face : _faces) {
+        auto &[vi, vj, vk] = face;
+        edge_counts[{vi, vj}]++;
+        edge_counts[{vj, vi}]++;
+        edge_counts[{vj, vk}]++;
+        edge_counts[{vk, vj}]++;
+        edge_counts[{vk, vi}]++;
+        edge_counts[{vi, vk}]++;
+    }
+
+    // Next, get the adjacencies of each vertex.
+    std::map<size_t, std::vector<size_t>> adjacencies;
+    for (auto &[edge, count] : edge_counts) {
+        if (count == 1) {
+            auto &[vi, vj] = edge;
+            adjacencies[vi].push_back(vj);
+            adjacencies[vj].push_back(vi);
+        }
+    }
+
+    // Finally, find the starting vertex and walk around the polygon.
+    auto start = adjacencies.begin()->first;
+    auto current = start;
+    std::vector<size_t> polygon_inds;
+    while (true) {
+        polygon_inds.push_back(current);
+        auto &adj = adjacencies[current];
+        if (adj.size() == 0) break;
+        auto next = adj[0];
+        adj.erase(adj.begin());
+        current = next;
+    }
+
+    return polygon_inds;
+}
+
+const Polygon2D Trimesh2D::get_polygon() const {
+    auto polygon_inds = get_polygon_inds();
+    std::vector<Point2D> polygon;
+    for (auto &ind : polygon_inds) {
+        polygon.push_back(_vertices[ind]);
+    }
+    Polygon2D poly{polygon};
+    if (poly.is_clockwise()) {
+        poly.reverse();
+    }
+    return poly;
 }
 
 std::string Trimesh2D::to_string() const {
@@ -830,13 +890,12 @@ std::string Trimesh2D::to_string() const {
     return ss.str();
 }
 
-Trimesh2D Trimesh2D::operator<<(const types::Affine2D &tf) const {
+Trimesh2D Trimesh2D::operator<<(const Affine2D &tf) const {
     vertices2d_t vertices;
     face_list_t faces = this->_faces;
-    std::transform(
-        this->_vertices.begin(), this->_vertices.end(),
-        std::back_inserter(vertices),
-        [&tf](const types::Point2D &vertex) { return vertex << tf; });
+    std::transform(this->_vertices.begin(), this->_vertices.end(),
+                   std::back_inserter(vertices),
+                   [&tf](const Point2D &vertex) { return vertex << tf; });
     return {vertices, faces};
 }
 
@@ -1021,8 +1080,8 @@ Point3D operator/(const Point3D &p, float s) {
     return {p.x / s, p.y / s, p.z / s};
 }
 
-float signed_volume(const Point3D &a, const Point3D &b, const Point3D &c,
-                    const Point3D &d) {
+float triangle_signed_volume(const Point3D &a, const Point3D &b,
+                             const Point3D &c, const Point3D &d) {
     return (1.0 / 6.0) * (b - a).cross(c - a).dot(d - a);
 }
 
@@ -1671,13 +1730,13 @@ const vertices3d_t &Trimesh3D::vertices() const { return _vertices; }
 
 const face_list_t &Trimesh3D::faces() const { return _faces; }
 
-types::Triangle3D Trimesh3D::get_triangle(const face_t &face) const {
+Triangle3D Trimesh3D::get_triangle(const face_t &face) const {
     auto &[vi, vj, vk] = face;
     return {_vertices[vi], _vertices[vj], _vertices[vk]};
 }
 
-std::vector<types::Triangle3D> Trimesh3D::get_triangles() const {
-    std::vector<types::Triangle3D> result;
+std::vector<Triangle3D> Trimesh3D::get_triangles() const {
+    std::vector<Triangle3D> result;
     for (auto &face : _faces) {
         result.push_back(get_triangle(face));
     }
@@ -1685,11 +1744,11 @@ std::vector<types::Triangle3D> Trimesh3D::get_triangles() const {
 }
 
 float Trimesh3D::signed_volume() const {
-    types::Point3D center = {0, 0, 0};
+    Point3D center = {0, 0, 0};
     float volume = 0;
     for (auto &triangle : get_triangles()) {
-        volume +=
-            types::signed_volume(center, triangle.p1, triangle.p2, triangle.p3);
+        volume += triangle_signed_volume(center, triangle.p1, triangle.p2,
+                                         triangle.p3);
     }
     return volume;
 }
@@ -1734,13 +1793,12 @@ std::string Trimesh3D::to_string() const {
     return ss.str();
 }
 
-Trimesh3D Trimesh3D::operator<<(const types::Affine3D &tf) const {
+Trimesh3D Trimesh3D::operator<<(const Affine3D &tf) const {
     vertices3d_t vertices;
     face_list_t faces = this->_faces;
-    std::transform(
-        this->_vertices.begin(), this->_vertices.end(),
-        std::back_inserter(vertices),
-        [&tf](const types::Point3D &vertex) { return vertex << tf; });
+    std::transform(this->_vertices.begin(), this->_vertices.end(),
+                   std::back_inserter(vertices),
+                   [&tf](const Point3D &vertex) { return vertex << tf; });
     return {vertices, faces};
 }
 

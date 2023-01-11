@@ -1,5 +1,7 @@
 #include "ops.h"
 
+#include <iostream>
+
 using namespace pybind11::literals;
 
 namespace fast_trimesh {
@@ -15,51 +17,62 @@ types::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height) {
 types::Trimesh3D linear_extrude(
     const types::Polygon2D &polygon,
     const std::function<float(float, float)> &height_func) {
+    return linear_extrude(polygon.get_trimesh(), height_func);
+}
+
+types::Trimesh3D linear_extrude(const types::Trimesh2D &polygon, float height) {
+    std::function<float(float, float)> height_func =
+        [height](float x, float y) -> float { return height; };
+    return linear_extrude(polygon, height_func);
+}
+
+types::Trimesh3D linear_extrude(
+    const types::Trimesh2D &mesh,
+    const std::function<float(float, float)> &height_func) {
     types::vertices3d_t vertices;
     types::face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
-    types::Polygon2D poly = polygon;
-    if (poly.is_clockwise()) {
-        poly.reverse();
+    std::vector<size_t> poly_inds = mesh.get_polygon_inds();
+
+    size_t tv = mesh.vertices().size();
+    size_t tf = mesh.faces().size();
+    size_t p = poly_inds.size();
+
+    vertices.reserve(2 * tv);
+    faces.reserve(2 * tf + 2 * p);
+
+    // Adds bottom vertices.
+    for (size_t i = 0; i < tv; i++) {
+        float x = mesh.vertices()[i].x;
+        float y = mesh.vertices()[i].y;
+        float z = height_func(x, y);
+        vertices.push_back({x, y, 0});
     }
 
-    int p = poly.points.size();
-
-    vertices.reserve(p * 2);
-    faces.reserve(p * 2 + (p - 2) * 2);
-
-    // Adds bottom face.
-    for (int i = 0; i < p; i++) {
-        vertices.push_back({poly.points[i].x, poly.points[i].y, 0.0f});
-    }
-    for (int i = 0; i < p - 1; i++) {
-        int v0 = i, v1 = i + 1, v2 = 0;
-        // Note that the order of the vertices is reversed, because the
-        // bottom is face-down.
-        faces.insert(types::face_t(v0, v2, v1));
+    // Adds top vertices.
+    for (size_t i = 0; i < tv; i++) {
+        float x = mesh.vertices()[i].x;
+        float y = mesh.vertices()[i].y;
+        float z = height_func(x, y);
+        vertices.push_back({x, y, z});
     }
 
-    // Adds top faces.
-    for (int i = 0; i < p; i++) {
-        float x = poly.points[i].x, y = poly.points[i].y;
-        float height = height_func(x, y);
-        if (height <= 0) {
-            throw std::invalid_argument(
-                "The height function must be positive.");
-        }
-        vertices.push_back({x, y, height});
-    }
-    for (int i = 0; i < p - 1; i++) {
-        int v0 = i + p, v1 = i + 1 + p, v2 = p;
-        faces.insert(types::face_t(v0, v1, v2));
+    // Adds top and bottom faces.
+    for (size_t i = 0; i < tf; i++) {
+        size_t v0 = std::get<0>(mesh.faces()[i]);
+        size_t v1 = std::get<1>(mesh.faces()[i]);
+        size_t v2 = std::get<2>(mesh.faces()[i]);
+        faces.insert({v0, v2, v1});
+        faces.insert({v0 + tv, v1 + tv, v2 + tv});
     }
 
     // Adds side faces. Each side face is made up of two triangles.
-    for (int i = 0; i < p; i++) {
-        int v0 = i, v1 = (i + 1) % p, v2 = i + p, v3 = (i + 1) % p + p;
-        faces.insert(types::face_t(v0, v1, v2));
-        faces.insert(types::face_t(v1, v3, v2));
+    for (size_t i = 0; i < p; i++) {
+        size_t v0 = poly_inds[i];
+        size_t v1 = poly_inds[(i + 1) % p];
+        faces.insert({v0, v1 + tv, v1});
+        faces.insert({v0, v0 + tv, v1 + tv});
     }
 
     return {vertices, faces};
@@ -226,6 +239,14 @@ void add_modules(py::module &m) {
           "Linearly extrudes a 2D mesh", "mesh"_a, "height"_a);
     o.def("linear_extrude",
           py::overload_cast<const types::Polygon2D &,
+                            const std::function<float(float, float)> &>(
+              &linear_extrude),
+          "Linearly extrudes a 2D mesh", "mesh"_a, "height_func"_a);
+    o.def("linear_extrude",
+          py::overload_cast<const types::Trimesh2D &, float>(&linear_extrude),
+          "Linearly extrudes a 2D mesh", "mesh"_a, "height"_a);
+    o.def("linear_extrude",
+          py::overload_cast<const types::Trimesh2D &,
                             const std::function<float(float, float)> &>(
               &linear_extrude),
           "Linearly extrudes a 2D mesh", "mesh"_a, "height_func"_a);

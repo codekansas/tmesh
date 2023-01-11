@@ -15,6 +15,8 @@ types::Polygon2D rectangle(float width, float height, bool center = false);
 
 types::Polygon2D regular_polygon(float radius, int n);
 
+types::Trimesh2D regular_polygon_mesh(float radius, int n);
+
 types::Trimesh3D cuboid(float width, float height, float depth,
                         bool center = false);
 

@@ -16,6 +16,10 @@ types::Trimesh3D linear_extrude(const types::Polygon2D &polygon, float height);
 types::Trimesh3D linear_extrude(
     const types::Polygon2D &polygon,
     const std::function<float(float, float)> &height_func);
+types::Trimesh3D linear_extrude(const types::Trimesh2D &polygon, float height);
+types::Trimesh3D linear_extrude(
+    const types::Trimesh2D &mesh,
+    const std::function<float(float, float)> &height_func);
 
 types::Trimesh3D rotate_extrude(const types::Polygon2D &polygon, float angle,
                                 int n, int axis = 0);

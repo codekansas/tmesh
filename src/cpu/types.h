@@ -39,8 +39,8 @@ struct __face_hash_fn {
     }
 };
 
-typedef std::vector<types::Point2D> vertices2d_t;
-typedef std::vector<types::Point3D> vertices3d_t;
+typedef std::vector<Point2D> vertices2d_t;
+typedef std::vector<Point3D> vertices3d_t;
 typedef std::vector<face_t> face_list_t;
 typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
 
@@ -165,7 +165,7 @@ struct Polygon2D {
     BoundingBox2D bounding_box() const;
     Point2D center() const;
     bool is_ear(int vi, int vj, int vk) const;
-    types::Trimesh2D get_trimesh(bool is_convex = false) const;
+    Trimesh2D get_trimesh(bool is_convex = false) const;
 
     std::string to_string() const;
 };
@@ -213,11 +213,13 @@ class Trimesh2D {
 
     const vertices2d_t &vertices() const;
     const face_list_t &faces() const;
-    const types::Triangle2D get_triangle(const face_t &face) const;
-    const std::vector<types::Triangle2D> get_triangles() const;
+    const Triangle2D get_triangle(const face_t &face) const;
+    const std::vector<Triangle2D> get_triangles() const;
+    const std::vector<size_t> get_polygon_inds() const;
+    const Polygon2D get_polygon() const;
     std::string to_string() const;
 
-    Trimesh2D operator<<(const types::Affine2D &tf) const;
+    Trimesh2D operator<<(const Affine2D &tf) const;
 };
 
 struct Point3D {
@@ -264,8 +266,8 @@ Point3D operator/(const Point3D &p1, const Point3D &p2);
 Point3D operator/(const Point3D &p, float s);
 Point3D operator<<(const Point3D &p, const Affine3D &q);
 
-float signed_volume(const Point3D &a, const Point3D &b, const Point3D &c,
-                    const Point3D &d);
+float triangle_signed_volume(const Point3D &a, const Point3D &b,
+                             const Point3D &c, const Point3D &d);
 
 struct Line3D {
     Point3D p1, p2;
@@ -407,13 +409,13 @@ struct Trimesh3D {
 
     const vertices3d_t &vertices() const;
     const face_list_t &faces() const;
-    types::Triangle3D get_triangle(const face_t &face) const;
-    std::vector<types::Triangle3D> get_triangles() const;
+    Triangle3D get_triangle(const face_t &face) const;
+    std::vector<Triangle3D> get_triangles() const;
     float signed_volume() const;
     Trimesh3D flip_inside_out() const;
     std::string to_string() const;
 
-    Trimesh3D operator<<(const types::Affine3D &tf) const;
+    Trimesh3D operator<<(const Affine3D &tf) const;
     Trimesh3D operator|(const Trimesh3D &other) const;
     Trimesh3D operator&(const Trimesh3D &other) const;
     Trimesh3D operator-(const Trimesh3D &other) const;

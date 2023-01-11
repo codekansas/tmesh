@@ -32,6 +32,21 @@ types::Polygon2D regular_polygon(float radius, int n) {
     return {vertices};
 }
 
+types::Trimesh2D regular_polygon_mesh(float radius, int n) {
+    if (radius < 0)
+        throw std::runtime_error("Polygon radius must be positive.");
+    if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
+    types::vertices2d_t vertices;
+    types::face_list_t faces;
+    vertices.push_back({0, 0});
+    for (int i = 0; i < n; i++) {
+        float theta = 2 * M_PI * i / n;
+        vertices.push_back({radius * cos(theta), radius * sin(theta)});
+        faces.push_back({0, i + 1, (i + 1) % n + 1});
+    }
+    return {vertices, faces};
+}
+
 types::Trimesh3D cuboid(float width, float height, float depth, bool center) {
     if (width < 0 || height < 0 || depth < 0)
         throw std::runtime_error("Cuboid dimensions must be positive.");
@@ -168,6 +183,8 @@ void add_modules(py::module &m) {
           "center"_a = false);
     s.def("regular_polygon", &regular_polygon, "Gets a 2D regular polygon",
           "radius"_a, "n"_a);
+    s.def("regular_polygon_mesh", &regular_polygon_mesh,
+          "Gets a 2D regular polygon mesh", "radius"_a, "n"_a);
     s.def("cuboid", &cuboid, "Gets a 3D cuboid mesh", "width"_a, "height"_a,
           "depth"_a, "center"_a = false);
     s.def("tetrahedron", &tetrahedron, "Gets a 3D tetrahedron mesh",
