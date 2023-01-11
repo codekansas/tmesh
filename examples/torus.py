@@ -1,6 +1,6 @@
 import math
 
-from fast_trimesh.cpu.io import save_stl_text
+from fast_trimesh.cpu.io import save_stl
 from fast_trimesh.cpu.ops import rotate_extrude
 from fast_trimesh.cpu.shapes import regular_polygon
 from fast_trimesh.cpu.types import Affine2D
@@ -15,4 +15,4 @@ circ <<= Affine2D(trans=(10.0, 0.0))
 torus_b = rotate_extrude(circ, n=10, axis=1)
 
 # Save the result.
-save_stl_text("torus.stl", torus_a | torus_b)
+save_stl("torus.stl", torus_a | torus_b)

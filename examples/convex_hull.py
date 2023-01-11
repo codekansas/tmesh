@@ -1,4 +1,4 @@
-from fast_trimesh.cpu.io import save_stl_text
+from fast_trimesh.cpu.io import save_stl
 from fast_trimesh.cpu.ops import linear_extrude
 from fast_trimesh.cpu.shapes import regular_polygon
 from fast_trimesh.cpu.types import Affine2D
@@ -15,4 +15,4 @@ e = (
 )
 
 # Save the result.
-save_stl_text("convex_hull.stl", e)
+save_stl("convex_hull.stl", e)

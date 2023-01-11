@@ -1,4 +1,4 @@
-from fast_trimesh.cpu.io import save_stl_text
+from fast_trimesh.cpu.io import save_stl
 from fast_trimesh.cpu.shapes import cuboid, icosphere, uv_sphere
 from fast_trimesh.cpu.types import Affine3D
 
@@ -15,4 +15,4 @@ for i in range(num_iters):
     mesh &= uvsphr << Affine3D(trans=(1.5 + 3.0 * i, 0.0, -2.0))
 
 # Save the result.
-save_stl_text("sphere.stl", mesh)
+save_stl("sphere.stl", mesh)

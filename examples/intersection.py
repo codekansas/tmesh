@@ -1,6 +1,6 @@
 import math
 
-from fast_trimesh.cpu.io import save_stl_text
+from fast_trimesh.cpu.io import save_stl
 from fast_trimesh.cpu.shapes import tetrahedron
 from fast_trimesh.cpu.types import Affine3D
 
@@ -13,4 +13,4 @@ tetr_a = tetr
 tetr_b = tetr << scale @ trans @ rot
 
 # Save the result.
-save_stl_text("intersection.stl", tetr_a & tetr_b)
+save_stl("intersection.stl", tetr_a & tetr_b)

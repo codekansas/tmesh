@@ -862,6 +862,68 @@ const Polygon2D Trimesh2D::get_polygon() const {
     return poly;
 }
 
+template <typename Tm, typename Tv>
+Tm subdivide_trimesh(const Tv &_vertices, const face_list_t &_faces,
+                     bool at_edges) {
+    Tv vertices = _vertices;
+    face_list_t faces;
+
+    if (at_edges) {
+        // Add center points of each edge as new vertices.
+        std::map<const std::tuple<size_t, size_t>, size_t> edge_map;
+        auto add_edge = [&](const size_t &p1, const size_t &p2) {
+            std::tuple<size_t, size_t> edge = {p1, p2};
+            if (edge_map.find(edge) == edge_map.end()) {
+                edge_map[edge] = vertices.size();
+                const auto &v1 = _vertices[p1], &v2 = _vertices[p2];
+                vertices.push_back(v1 + (v2 - v1) / 2.0f);
+            }
+        };
+        for (auto &face : _faces) {
+            add_edge(std::get<0>(face), std::get<1>(face));
+            add_edge(std::get<1>(face), std::get<2>(face));
+            add_edge(std::get<2>(face), std::get<0>(face));
+        }
+
+        // Add new faces.
+        for (auto &face : _faces) {
+            auto &[vi, vj, vk] = face;
+            auto e1 = edge_map[{vi, vj}];
+            auto e2 = edge_map[{vj, vk}];
+            auto e3 = edge_map[{vk, vi}];
+            faces.push_back({vi, e1, e3});
+            faces.push_back({vj, e2, e1});
+            faces.push_back({vk, e3, e2});
+            faces.push_back({e1, e2, e3});
+        }
+    } else {
+        // Add center point of each face as an additional vertex.
+        for (auto &face : _faces) {
+            auto &[vi, vj, vk] = face;
+            auto center =
+                (_vertices[vi] + _vertices[vj] + _vertices[vk]) / 3.0f;
+            vertices.push_back(center);
+        }
+
+        // Add new faces.
+        size_t i = 0;
+        for (auto &face : _faces) {
+            auto &[vi, vj, vk] = face;
+            auto center = _vertices.size() + i++;
+            faces.push_back({vi, center, vk});
+            faces.push_back({vj, center, vi});
+            faces.push_back({vk, center, vj});
+        }
+    }
+
+    return Tm{vertices, faces};
+}
+
+Trimesh2D Trimesh2D::subdivide(bool at_edges) const {
+    return subdivide_trimesh<Trimesh2D, vertices2d_t>(this->_vertices,
+                                                      this->_faces, at_edges);
+}
+
 std::string Trimesh2D::to_string() const {
     std::stringstream ss;
     ss << "Trimesh2D(" << std::endl;
@@ -1765,6 +1827,11 @@ Trimesh3D Trimesh3D::flip_inside_out() const {
     return {vertices, faces};
 }
 
+Trimesh3D Trimesh3D::subdivide(bool at_edges) const {
+    return subdivide_trimesh<Trimesh3D, vertices3d_t>(this->_vertices,
+                                                      this->_faces, at_edges);
+}
+
 std::string Trimesh3D::to_string() const {
     std::stringstream ss;
     ss << "Trimesh3D(" << std::endl;
@@ -1936,7 +2003,8 @@ void add_modules(py::module &m) {
     py::module s = m.def_submodule("types");
     s.doc() = "Types";
 
-    // Defines the classes first, so that methods can resolve types correctly.
+    // Defines the classes first, so that methods can resolve types
+    // correctly.
     auto point2d = py::class_<Point2D>(s, "Point2D");
     auto line2d = py::class_<Line2D>(s, "Line2D");
     auto triangle2d = py::class_<Triangle2D>(s, "Triangle2D");
@@ -2195,7 +2263,8 @@ void add_modules(py::module &m) {
         .def(py::init<std::optional<float>,
                       std::optional<std::tuple<float, float>>,
                       std::optional<float>>(),
-             "Initialize affine transformation from rotation and translation "
+             "Initialize affine transformation from rotation and "
+             "translation "
              "vectors",
              "rot"_a = std::nullopt, "trans"_a = std::nullopt,
              "scale"_a = std::nullopt)
@@ -2241,6 +2310,17 @@ void add_modules(py::module &m) {
         .def_property_readonly("vertices", &Trimesh2D::vertices,
                                "The mesh vertices")
         .def_property_readonly("faces", &Trimesh2D::faces, "The mesh faces")
+        .def("get_triangle", &Trimesh2D::get_triangle,
+             "Returns the triangle for a given face", "face"_a)
+        .def("get_triangles", &Trimesh2D::get_triangles,
+             "Returns all the triangles in the trimesh")
+        .def("get_polygon_inds", &Trimesh2D::get_polygon_inds,
+             "Returns the indices of the polygon inscribing the trimesh")
+        .def("get_polygon", &Trimesh2D::get_polygon,
+             "Returns the polygon inscribing the trimesh")
+        .def("subdivide", &Trimesh2D::subdivide,
+             "Splits each triangle into four smaller triangles",
+             "at_edges"_a = false)
         .def("__str__", &Trimesh2D::to_string, "Converts the mesh to a string",
              py::is_operator())
         .def("__repr__", &Trimesh2D::to_string, "Converts the mesh to a string",
@@ -2313,7 +2393,8 @@ void add_modules(py::module &m) {
         .def("cross", &Point3D::cross, "The cross product of the point",
              "other"_a)
         .def("barycentric_coordinates", &Point3D::barycentric_coordinates,
-             "The barycentric coordinates of the point relative to a triangle",
+             "The barycentric coordinates of the point relative to a "
+             "triangle",
              "t"_a)
         .def("is_inside_bounding_box", &Point3D::is_inside_bounding_box,
              "Checks if the point is inside a bounding box", "bb"_a)
@@ -2354,7 +2435,8 @@ void add_modules(py::module &m) {
         .def("distance_to_line", &Line3D::distance_to_line,
              "The distance to another line", "other"_a)
         .def("closest_points", &Line3D::closest_points,
-             "The closest points between two lines; returns None if the lines "
+             "The closest points between two lines; returns None if the "
+             "lines "
              "are parallel",
              "other"_a)
         .def("line_intersection", &Line3D::line_intersection,
@@ -2496,7 +2578,8 @@ void add_modules(py::module &m) {
         .def(py::init<std::optional<std::tuple<float, float, float>>,
                       std::optional<std::tuple<float, float, float>>,
                       std::optional<float>>(),
-             "Initialize affine transformation from rotation and translation "
+             "Initialize affine transformation from rotation and "
+             "translation "
              "vectors",
              "rot"_a = std::nullopt, "trans"_a = std::nullopt,
              "scale"_a = std::nullopt)
@@ -2550,6 +2633,8 @@ void add_modules(py::module &m) {
              "Computes the signed volume of the mesh")
         .def("flip_inside_out", &Trimesh3D::flip_inside_out,
              "Flips the mesh inside out")
+        .def("subdivide", &Trimesh3D::subdivide,
+             "Subdivides the mesh into smaller triangles")
         .def("__str__", &Trimesh3D::to_string, "Converts the mesh to a string")
         .def("__repr__", &Trimesh3D::to_string, "Converts the mesh to a string")
         .def("__or__", &Trimesh3D::operator|,
@@ -2602,11 +2687,13 @@ void add_modules(py::module &m) {
              "Checks if two barycentric coordinates are not equal", "other"_a,
              py::is_operator())
         .def("get_point_2d", &BarycentricCoordinates::get_point_2d,
-             "The point corresponding to the barycentric coordinates within a "
+             "The point corresponding to the barycentric coordinates "
+             "within a "
              "2D triangle",
              "t"_a)
         .def("get_point_3d", &BarycentricCoordinates::get_point_3d,
-             "The point corresponding to the barycentric coordinates within a "
+             "The point corresponding to the barycentric coordinates "
+             "within a "
              "3D triangle",
              "t"_a);
 }

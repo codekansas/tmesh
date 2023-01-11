@@ -202,7 +202,7 @@ BoundingBox2D operator<<(const BoundingBox2D &bb, const Affine2D &a);
 Polygon2D operator>>(const Affine2D &a, const Polygon2D &p);
 Polygon2D operator<<(const Polygon2D &p, const Affine2D &a);
 
-class Trimesh2D {
+struct Trimesh2D {
    private:
     const vertices2d_t _vertices;
     const face_list_t _faces;
@@ -217,6 +217,7 @@ class Trimesh2D {
     const std::vector<Triangle2D> get_triangles() const;
     const std::vector<size_t> get_polygon_inds() const;
     const Polygon2D get_polygon() const;
+    Trimesh2D subdivide(bool at_edges = false) const;
     std::string to_string() const;
 
     Trimesh2D operator<<(const Affine2D &tf) const;
@@ -413,6 +414,7 @@ struct Trimesh3D {
     std::vector<Triangle3D> get_triangles() const;
     float signed_volume() const;
     Trimesh3D flip_inside_out() const;
+    Trimesh3D subdivide(bool at_edges = false) const;
     std::string to_string() const;
 
     Trimesh3D operator<<(const Affine3D &tf) const;
