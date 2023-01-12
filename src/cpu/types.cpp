@@ -780,10 +780,69 @@ Polygon2D operator<<(const Polygon2D &p, const Affine2D &a) { return a >> p; }
  * --------- */
 
 Trimesh2D::Trimesh2D(const vertices2d_t &vertices, const face_set_t &faces)
-    : _vertices(vertices), _faces(faces.begin(), faces.end()) {}
+    : _vertices(vertices), _faces(faces.begin(), faces.end()) {
+    validate();
+}
 
 Trimesh2D::Trimesh2D(const vertices2d_t &vertices, const face_list_t &faces)
-    : _vertices(vertices), _faces(faces) {}
+    : _vertices(vertices), _faces(faces) {
+    validate();
+}
+
+void Trimesh2D::validate() const {
+    // Checks that there is at least one face.
+    if (_faces.empty()) {
+        throw std::invalid_argument("No faces");
+    }
+
+    // Checks that all face vertices are valid.
+    for (auto &face : _faces) {
+        auto &[vi, vj, vk] = face;
+        if (vi >= _vertices.size() || vj >= _vertices.size() ||
+            vk >= _vertices.size()) {
+            throw std::invalid_argument("Invalid face");
+        }
+    }
+
+    // Checks that all vertices are used.
+    std::vector<bool> used(_vertices.size(), false);
+    for (auto &face : _faces) {
+        auto &[vi, vj, vk] = face;
+        used[vi] = true;
+        used[vj] = true;
+        used[vk] = true;
+    }
+    for (bool b : used) {
+        if (!b) {
+            throw std::invalid_argument("Unused vertex");
+        }
+    }
+
+    // Checks that all faces are triangles.
+    for (auto &face : _faces) {
+        auto &[vi, vj, vk] = face;
+        if (vi == vj || vi == vk || vj == vk) {
+            throw std::invalid_argument("Face is not a triangle");
+        }
+    }
+
+    // Checks that all 2D faces are oriented the same direction.
+    auto &face = _faces[0];
+    auto &[vi, vj, vk] = face;
+    const Point2D &p1 = _vertices[vi], &p2 = _vertices[vj], &p3 = _vertices[vk];
+    const Point2D v1 = p2 - p1, v2 = p3 - p1;
+    float normal = v1.cross(v2);
+    for (auto &face : _faces) {
+        auto &[vi, vj, vk] = face;
+        const Point2D &p1 = _vertices[vi], &p2 = _vertices[vj],
+                      &p3 = _vertices[vk];
+        const Point2D v1 = p2 - p1, v2 = p3 - p1;
+        float normal1 = v1.cross(v2);
+        if (normal * normal1 < 0) {
+            throw std::invalid_argument("Face is not oriented the same way");
+        }
+    }
+}
 
 const vertices2d_t &Trimesh2D::vertices() const { return _vertices; }
 
@@ -823,27 +882,52 @@ const std::vector<size_t> Trimesh2D::get_polygon_inds() const {
         edge_counts[{vi, vk}]++;
     }
 
-    // Next, get the adjacencies of each vertex.
-    std::map<size_t, std::vector<size_t>> adjacencies;
+    // Checks that each edge is part of exactly one or two faces.
+    for (auto &[edge, count] : edge_counts) {
+        if (count != 1 && count != 2) {
+            throw std::invalid_argument("Edge is part of more than two faces");
+        }
+    }
+
+    // Next, get the adjacencies of each vertex for the endpoints of the
+    // edges that are part of only one face.
+    std::map<size_t, std::set<size_t>> adjacencies;
     for (auto &[edge, count] : edge_counts) {
         if (count == 1) {
             auto &[vi, vj] = edge;
-            adjacencies[vi].push_back(vj);
-            adjacencies[vj].push_back(vi);
+            adjacencies[vi].insert(vj);
+            adjacencies[vj].insert(vi);
         }
     }
 
     // Finally, find the starting vertex and walk around the polygon.
-    auto start = adjacencies.begin()->first;
-    auto current = start;
+    auto current = adjacencies.begin()->first;
     std::vector<size_t> polygon_inds;
     while (true) {
         polygon_inds.push_back(current);
-        auto &adj = adjacencies[current];
-        if (adj.size() == 0) break;
-        auto next = adj[0];
-        adj.erase(adj.begin());
-        current = next;
+        auto next = adjacencies[current].begin();
+        adjacencies[current].erase(next);
+        adjacencies[*next].erase(current);
+        current = *next;
+        if (current == polygon_inds[0]) {
+            break;
+        }
+    }
+
+    // If the polygon is oriented clockwise, reverse it.
+    auto &p1 = _vertices[polygon_inds[0]], &p2 = _vertices[polygon_inds[1]],
+         &p3 = _vertices[polygon_inds[2]];
+    if (angle(p1, p2, p3) < M_PI) {
+        std::reverse(polygon_inds.begin(), polygon_inds.end());
+    }
+
+    // Check that the polygon indices are unique.
+    std::set<size_t> unique_inds;
+    for (auto &ind : polygon_inds) {
+        unique_inds.insert(ind);
+    }
+    if (unique_inds.size() != polygon_inds.size()) {
+        throw std::invalid_argument("Polygon indices are not unique");
     }
 
     return polygon_inds;
@@ -855,11 +939,7 @@ const Polygon2D Trimesh2D::get_polygon() const {
     for (auto &ind : polygon_inds) {
         polygon.push_back(_vertices[ind]);
     }
-    Polygon2D poly{polygon};
-    if (poly.is_clockwise()) {
-        poly.reverse();
-    }
-    return poly;
+    return {polygon};
 }
 
 template <typename Tm, typename Tv>
@@ -872,9 +952,11 @@ Tm subdivide_trimesh(const Tv &_vertices, const face_list_t &_faces,
         // Add center points of each edge as new vertices.
         std::map<const std::tuple<size_t, size_t>, size_t> edge_map;
         auto add_edge = [&](const size_t &p1, const size_t &p2) {
-            std::tuple<size_t, size_t> edge = {p1, p2};
-            if (edge_map.find(edge) == edge_map.end()) {
-                edge_map[edge] = vertices.size();
+            std::tuple<size_t, size_t> edge1 = {p1, p2}, edge2 = {p2, p1};
+            if (edge_map.find(edge1) == edge_map.end() &&
+                edge_map.find(edge2) == edge_map.end()) {
+                edge_map[edge1] = vertices.size();
+                edge_map[edge2] = vertices.size();
                 const auto &v1 = _vertices[p1], &v2 = _vertices[p2];
                 vertices.push_back(v1 + (v2 - v1) / 2.0f);
             }
@@ -1783,10 +1865,52 @@ Polygon3D operator<<(const Polygon3D &p, const Affine3D &a) { return a >> p; }
  * --------- */
 
 Trimesh3D::Trimesh3D(const vertices3d_t &vertices, const face_set_t &faces)
-    : _vertices(vertices), _faces(faces.begin(), faces.end()) {}
+    : _vertices(vertices), _faces(faces.begin(), faces.end()) {
+    validate();
+}
 
 Trimesh3D::Trimesh3D(const vertices3d_t &vertices, const face_list_t &faces)
-    : _vertices(vertices), _faces(faces) {}
+    : _vertices(vertices), _faces(faces) {
+    validate();
+}
+
+void Trimesh3D::validate() const {
+    // Checks that there is at least one face.
+    if (_faces.empty()) {
+        throw std::runtime_error("No faces");
+    }
+
+    // Check that all vertices are valid.
+    for (auto &face : _faces) {
+        auto &[vi, vj, vk] = face;
+        if (vi >= _vertices.size() || vj >= _vertices.size() ||
+            vk >= _vertices.size()) {
+            throw std::runtime_error("Invalid face");
+        }
+    }
+
+    // Check that all vertices are used.
+    std::vector<bool> used(_vertices.size(), false);
+    for (auto &face : _faces) {
+        auto &[vi, vj, vk] = face;
+        used[vi] = true;
+        used[vj] = true;
+        used[vk] = true;
+    }
+    for (bool b : used) {
+        if (!b) {
+            throw std::runtime_error("Unused vertex");
+        }
+    }
+
+    // Check that all faces are triangles.
+    for (auto &face : _faces) {
+        auto &[vi, vj, vk] = face;
+        if (vi == vj || vi == vk || vj == vk) {
+            throw std::runtime_error("Degenerate face");
+        }
+    }
+}
 
 const vertices3d_t &Trimesh3D::vertices() const { return _vertices; }
 
@@ -2320,7 +2444,7 @@ void add_modules(py::module &m) {
              "Returns the polygon inscribing the trimesh")
         .def("subdivide", &Trimesh2D::subdivide,
              "Splits each triangle into four smaller triangles",
-             "at_edges"_a = false)
+             "at_edges"_a = true)
         .def("__str__", &Trimesh2D::to_string, "Converts the mesh to a string",
              py::is_operator())
         .def("__repr__", &Trimesh2D::to_string, "Converts the mesh to a string",
@@ -2634,7 +2758,7 @@ void add_modules(py::module &m) {
         .def("flip_inside_out", &Trimesh3D::flip_inside_out,
              "Flips the mesh inside out")
         .def("subdivide", &Trimesh3D::subdivide,
-             "Subdivides the mesh into smaller triangles")
+             "Subdivides the mesh into smaller triangles", "at_edges"_a = true)
         .def("__str__", &Trimesh3D::to_string, "Converts the mesh to a string")
         .def("__repr__", &Trimesh3D::to_string, "Converts the mesh to a string")
         .def("__or__", &Trimesh3D::operator|,

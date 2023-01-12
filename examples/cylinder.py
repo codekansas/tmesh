@@ -7,12 +7,15 @@ from fast_trimesh.cpu.types import Affine3D
 circ = regular_polygon_mesh(radius=1.0, n=20)
 
 # Linear extrude the circle.
-cyl = linear_extrude(circ, height=2.0)
+cyl = linear_extrude(
+    circ.subdivide().subdivide(),
+    height_func=lambda _, y: y**3 + 1.5,
+)
 
 # Linear extude the circle with a function.
 cyl2 = linear_extrude(
-    circ.subdivide(at_edges=True).subdivide(at_edges=True),
-    height_func=lambda x, _: x**2 + 1,
+    circ.subdivide().subdivide(),
+    height_func=lambda x, _: x**2 + 0.5,
 ) << Affine3D(trans=(0, 3, 0))
 
 # Save the result.

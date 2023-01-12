@@ -96,9 +96,9 @@ bool is_inside(const types::Triangle3D &triangle, const types::Point3D &face_pt,
                const types::Point3D &pt) {
     types::Point3D normal = triangle.normal();
     types::Point3D vec = pt - face_pt;
-    std::cout << "normal: " << normal.to_string() << std::endl;
+    // std::cout << "normal: " << normal.to_string() << std::endl;
     float dp = normal.dot(vec);
-    std::cout << "dp: " << dp << std::endl;
+    // std::cout << "dp: " << dp << std::endl;
     return dp < 0;
 }
 
@@ -126,16 +126,16 @@ types::Trimesh3D mesh_op(const types::Trimesh3D &a, const types::Trimesh3D &b,
                          boolean_op op) {
     const size_t n = a.vertices().size();
 
-    std::cout << "a:" << std::endl;
+    // std::cout << "a:" << std::endl;
     for (size_t i = 0; i < a.vertices().size(); i++) {
         auto &v = a.vertices()[i];
-        std::cout << i << " " << v.to_string() << std::endl;
+        // std::cout << i << " " << v.to_string() << std::endl;
     }
 
-    std::cout << "b:" << std::endl;
+    // std::cout << "b:" << std::endl;
     for (size_t i = 0; i < b.vertices().size(); i++) {
         auto &v = b.vertices()[i];
-        std::cout << i << " " << v.to_string() << std::endl;
+        // std::cout << i << " " << v.to_string() << std::endl;
     }
 
     bvh::BVH3D a_tree(a), b_tree(b);

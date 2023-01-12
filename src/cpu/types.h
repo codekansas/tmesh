@@ -206,6 +206,7 @@ struct Trimesh2D {
    private:
     const vertices2d_t _vertices;
     const face_list_t _faces;
+    void validate() const;
 
    public:
     Trimesh2D(const vertices2d_t &vertices, const face_set_t &faces);
@@ -217,7 +218,7 @@ struct Trimesh2D {
     const std::vector<Triangle2D> get_triangles() const;
     const std::vector<size_t> get_polygon_inds() const;
     const Polygon2D get_polygon() const;
-    Trimesh2D subdivide(bool at_edges = false) const;
+    Trimesh2D subdivide(bool at_edges = true) const;
     std::string to_string() const;
 
     Trimesh2D operator<<(const Affine2D &tf) const;
@@ -403,6 +404,7 @@ struct Trimesh3D {
    private:
     const vertices3d_t _vertices;
     const face_list_t _faces;
+    void validate() const;
 
    public:
     Trimesh3D(const vertices3d_t &vertices, const face_set_t &faces);
@@ -414,7 +416,7 @@ struct Trimesh3D {
     std::vector<Triangle3D> get_triangles() const;
     float signed_volume() const;
     Trimesh3D flip_inside_out() const;
-    Trimesh3D subdivide(bool at_edges = false) const;
+    Trimesh3D subdivide(bool at_edges = true) const;
     std::string to_string() const;
 
     Trimesh3D operator<<(const Affine3D &tf) const;
