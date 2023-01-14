@@ -5,19 +5,17 @@
 
 #include <vector>
 
-#include "io.h"
-#include "ops.h"
-#include "shapes.h"
-#include "three/main.h"
-#include "two/main.h"
-#include "types.h"
+#include "boolean.h"
+#include "bvh.h"
 
 namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
+namespace two {
 
 void add_modules(py::module &m);
 
+}
 }  // namespace cpu
 }  // namespace fast_trimesh

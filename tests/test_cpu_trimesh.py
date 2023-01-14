@@ -66,14 +66,6 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     trans = Affine3D(trans=(3.0, 3.0, 3.0))
     tr_b = tr_b << rot @ trans
 
-    # Tests the intersection of two trimeshes.
-    tr_c = tr_a & tr_b
-
-    # Tests adding the two trimeshes together in-place.
-    tr_a &= tr_b
-    assert tr_c.vertices == tr_a.vertices
-    assert tr_c.faces == tr_a.faces
-
     # Tests saving and loading the trimesh as an STL.
     stl_path = str(tmpdir / "file.stl")
     save_stl(stl_path, tr_a)

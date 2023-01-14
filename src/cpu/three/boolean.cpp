@@ -10,7 +10,15 @@ using namespace pybind11::literals;
 
 namespace fast_trimesh {
 namespace cpu {
+namespace three {
 namespace boolean {
+
+std::vector<std::tuple<size_t, size_t>> get_edges(const types::face_t &face) {
+    auto &[a, b, c] = face;
+    return {{a, b}, {b, c}, {c, a}};
+}
+
+enum boolean_op { UNION, INTERSECTION, DIFFERENCE };
 
 types::Trimesh3D triangulation(const types::Triangle3D &triangle,
                                const std::vector<types::Point3D> &points) {
@@ -85,20 +93,11 @@ types::Trimesh3D mesh_union_no_intersections(const types::Trimesh3D &a,
     return {vertices, faces};
 }
 
-std::vector<std::tuple<size_t, size_t>> get_edges(const types::face_t &face) {
-    auto &[a, b, c] = face;
-    return {{a, b}, {b, c}, {c, a}};
-}
-
-enum boolean_op { UNION, INTERSECTION, DIFFERENCE };
-
 bool is_inside(const types::Triangle3D &triangle, const types::Point3D &face_pt,
                const types::Point3D &pt) {
     types::Point3D normal = triangle.normal();
     types::Point3D vec = pt - face_pt;
-    // std::cout << "normal: " << normal.to_string() << std::endl;
     float dp = normal.dot(vec);
-    // std::cout << "dp: " << dp << std::endl;
     return dp < 0;
 }
 
@@ -114,7 +113,7 @@ std::tuple<types::Trimesh3D, types::Trimesh3D> split_at_all_intersections(
                       b.vertices().end());
 
     // Gets BVH for each mesh.
-    bvh::BVH3D a_bvh(a), b_bvh(b);
+    bvh::BVH a_bvh(a), b_bvh(b);
 
     // Stores IDs of vertices which are shared between meshes.
     std::vector<std::tuple<size_t, size_t>> vertex_pairs;
@@ -124,26 +123,7 @@ std::tuple<types::Trimesh3D, types::Trimesh3D> split_at_all_intersections(
 
 types::Trimesh3D mesh_op(const types::Trimesh3D &a, const types::Trimesh3D &b,
                          boolean_op op) {
-    const size_t n = a.vertices().size();
-
-    // std::cout << "a:" << std::endl;
-    for (size_t i = 0; i < a.vertices().size(); i++) {
-        auto &v = a.vertices()[i];
-        // std::cout << i << " " << v.to_string() << std::endl;
-    }
-
-    // std::cout << "b:" << std::endl;
-    for (size_t i = 0; i < b.vertices().size(); i++) {
-        auto &v = b.vertices()[i];
-        // std::cout << i << " " << v.to_string() << std::endl;
-    }
-
-    bvh::BVH3D a_tree(a), b_tree(b);
-
-    types::vertices3d_t vertices;
-    types::face_set_t faces;
-
-    return mesh_union_no_intersections(a, b);
+    throw std::runtime_error("Not implemented yet.");
 }
 
 types::Trimesh3D mesh_union(const types::Trimesh3D &a,
@@ -168,14 +148,14 @@ void add_modules(py::module &m) {
     s.def("triangulation", &triangulation,
           "Gets a triangulation of a triangle and a set of points",
           "triangle"_a, "points"_a);
-
-    s.def("union", &mesh_union, "Union of two meshes", "mesh"_a, "meshes"_a);
+    s.def("union", &mesh_union, "Union of two meshes", "a"_a, "b"_a);
     s.def("intersection", &mesh_intersection, "Intersection of two meshes",
-          "mesh"_a, "meshes"_a);
-    s.def("difference", &mesh_difference, "Difference of two meshes", "mesh"_a,
-          "meshes"_a);
+          "a"_a, "b"_a);
+    s.def("difference", &mesh_difference, "Difference of two meshes", "a"_a,
+          "b"_a);
 }
 
 }  // namespace boolean
+}  // namespace three
 }  // namespace cpu
 }  // namespace fast_trimesh

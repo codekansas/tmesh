@@ -4,7 +4,8 @@
 #include <numeric>
 #include <sstream>
 
-#include "boolean.h"
+#include "three/boolean.h"
+#include "two/boolean.h"
 
 using namespace pybind11::literals;
 
@@ -212,7 +213,7 @@ Point2D Line2D::closest_point(const Point2D &p) const {
     return p1 + v * b;
 }
 
-std::optional<Point2D> Line2D::intersection(const Line2D &l) const {
+std::optional<Point2D> Line2D::line_intersection(const Line2D &l) const {
     Point2D r = p2 - p1;
     Point2D s = l.p2 - l.p1;
 
@@ -228,13 +229,44 @@ std::optional<Point2D> Line2D::intersection(const Line2D &l) const {
     return p1 + r * t;
 }
 
+bool Line2D::intersects_triangle(const Triangle2D &t) const {
+    if (p1.is_inside_triangle(t) || p2.is_inside_triangle(t)) {
+        return true;
+    }
+    for (auto &l : t.edges()) {
+        if (line_intersection(l)) return true;
+    }
+    return false;
+}
+
+std::vector<Point2D> Line2D::triangle_intersection(const Triangle2D &t) const {
+    std::vector<Point2D> points;
+    if (p1.is_inside_triangle(t)) points.push_back(p1);
+    if (p2.is_inside_triangle(t)) points.push_back(p2);
+    for (auto &l : t.edges()) {
+        std::optional<Point2D> p = line_intersection(l);
+        if (p) points.push_back(*p);
+    }
+    return points;
+}
+
+bool Line2D::intersects_bounding_box(const BoundingBox2D &b) const {
+    if (p1.is_inside_bounding_box(b) || p2.is_inside_bounding_box(b)) {
+        return true;
+    }
+    for (auto &l : b.edges()) {
+        if (line_intersection(l)) return true;
+    }
+    return false;
+}
+
 float Line2D::distance_to_point(const Point2D &p) const {
     Point2D pb = closest_point(p);
     return p.distance_to_point(pb);
 }
 
 float Line2D::distance_to_line(const Line2D &l) const {
-    std::optional<Point2D> p = intersection(l);
+    std::optional<Point2D> p = line_intersection(l);
 
     if (p) return 0.0f;
 
@@ -284,6 +316,16 @@ float Triangle2D::area() const {
 }
 
 Point2D Triangle2D::center() const { return (p1 + p2 + p3) / 3.0f; }
+
+std::vector<Point2D> Triangle2D::vertices() const { return {p1, p2, p3}; }
+
+std::vector<Line2D> Triangle2D::edges() const {
+    return {{p1, p2}, {p2, p3}, {p3, p1}};
+}
+
+bool Triangle2D::contains(const Point2D &p) const {
+    return p.is_inside_triangle(*this);
+}
 
 float Triangle2D::distance_to_point(const Point2D &p) const {
     if (p.is_inside_triangle(*this)) return 0.0f;
@@ -432,6 +474,23 @@ BoundingBox2D BoundingBox2D::operator<<=(const Affine2D &a) {
     min <<= a;
     max <<= a;
     return *this;
+}
+
+float BoundingBox2D::area() const { return (max.x - min.x) * (max.y - min.y); }
+
+Point2D BoundingBox2D::center() const {
+    return {(min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f};
+}
+
+std::vector<Point2D> BoundingBox2D::vertices() const {
+    return {min, {max.x, min.y}, max, {min.x, max.y}};
+}
+
+std::vector<Line2D> BoundingBox2D::edges() const {
+    return {{min, {max.x, min.y}},
+            {{max.x, min.y}, max},
+            {max, {min.x, max.y}},
+            {{min.x, max.y}, min}};
 }
 
 float BoundingBox2D::distance_to_point(const Point2D &p) const {
@@ -1043,6 +1102,18 @@ Trimesh2D Trimesh2D::operator<<(const Affine2D &tf) const {
     return {vertices, faces};
 }
 
+Trimesh2D Trimesh2D::operator|(const Trimesh2D &other) const {
+    return two::boolean::mesh_intersection(*this, other);
+}
+
+Trimesh2D Trimesh2D::operator&(const Trimesh2D &other) const {
+    return two::boolean::mesh_union(*this, other);
+}
+
+Trimesh2D Trimesh2D::operator-(const Trimesh2D &other) const {
+    return two::boolean::mesh_difference(*this, other);
+}
+
 /* ------- *
  * Point3D *
  * ------- */
@@ -1589,6 +1660,23 @@ std::vector<Point3D> BoundingBox3D::corners() const {
             {max.x, max.y, max.z}, {min.x, max.y, max.z}};
 }
 
+std::vector<Line3D> BoundingBox3D::edges() const {
+    return {
+        {min, {max.x, min.y, min.z}},
+        {min, {min.x, max.y, min.z}},
+        {min, {min.x, min.y, max.z}},
+        {max, {min.x, max.y, max.z}},
+        {max, {max.x, min.y, max.z}},
+        {max, {max.x, max.y, min.z}},
+        {{min.x, max.y, min.z}, {max.x, max.y, min.z}},
+        {{min.x, max.y, min.z}, {min.x, max.y, max.z}},
+        {{max.x, min.y, min.z}, {max.x, max.y, min.z}},
+        {{max.x, min.y, min.z}, {max.x, min.y, max.z}},
+        {{min.x, min.y, max.z}, {max.x, min.y, max.z}},
+        {{min.x, min.y, max.z}, {min.x, max.y, max.z}},
+    };
+}
+
 std::vector<Triangle3D> BoundingBox3D::triangles() const {
     std::vector<Triangle3D> triangles;
     auto indices = this->triangle_indices();
@@ -1994,15 +2082,15 @@ Trimesh3D Trimesh3D::operator<<(const Affine3D &tf) const {
 }
 
 Trimesh3D Trimesh3D::operator|(const Trimesh3D &other) const {
-    return boolean::mesh_intersection(*this, other);
+    return three::boolean::mesh_intersection(*this, other);
 }
 
 Trimesh3D Trimesh3D::operator&(const Trimesh3D &other) const {
-    return boolean::mesh_union(*this, other);
+    return three::boolean::mesh_union(*this, other);
 }
 
 Trimesh3D Trimesh3D::operator-(const Trimesh3D &other) const {
-    return boolean::mesh_difference(*this, other);
+    return three::boolean::mesh_difference(*this, other);
 }
 
 /* ----- *
@@ -2253,10 +2341,14 @@ void add_modules(py::module &m) {
              py::is_operator())
         .def("closest_point", &Line2D::closest_point,
              "The closest point on the line to another point", "p"_a)
-        .def("intersection", &Line2D::intersection,
+        .def("line_intersection", &Line2D::line_intersection,
              "The intersection point of two lines (None if they don't "
              "intersect)",
              "l"_a)
+        .def("intersects_triangle", &Line2D::intersects_triangle,
+             "Does the line intersect a triangle", "t"_a)
+        .def("intersects_bounding_box", &Line2D::intersects_bounding_box,
+             "Does the line intersect a bounding box", "bb"_a)
         .def("distance_to_point", &Line2D::distance_to_point,
              "Distance to a point", "p"_a)
         .def("distance_to_line", &Line2D::distance_to_line,
@@ -2330,6 +2422,11 @@ void add_modules(py::module &m) {
         .def("__ilshift__", &BoundingBox2D::operator<<=,
              "Applies a affine transformation to the bounding box", "other"_a,
              py::is_operator())
+        .def("area", &BoundingBox2D::area, "The bounding box's area")
+        .def("center", &BoundingBox2D::center, "The bounding box's center")
+        .def("vertices", &BoundingBox2D::vertices,
+             "The bounding box's vertices")
+        .def("edges", &BoundingBox2D::edges, "The bounding box's edges")
         .def("distance_to_point", &BoundingBox2D::distance_to_point,
              "Distance to a point", "p"_a)
         .def("distance_to_line", &BoundingBox2D::distance_to_line,
@@ -2448,6 +2545,15 @@ void add_modules(py::module &m) {
         .def("__str__", &Trimesh2D::to_string, "Converts the mesh to a string",
              py::is_operator())
         .def("__repr__", &Trimesh2D::to_string, "Converts the mesh to a string",
+             py::is_operator())
+        .def("__or__", &Trimesh2D::operator|,
+             "Computes the union of two 2D meshes", "other"_a,
+             py::is_operator())
+        .def("__and__", &Trimesh2D::operator&,
+             "Computes the intersection of two 2D meshes", "other"_a,
+             py::is_operator())
+        .def("__sub__", &Trimesh2D::operator-,
+             "Computes the difference of two 2D meshes", "other"_a,
              py::is_operator())
         .def("__lshift__", &Trimesh2D::operator<<,
              "Applies affine transformation to the mesh", "affine"_a,
@@ -2759,8 +2865,10 @@ void add_modules(py::module &m) {
              "Flips the mesh inside out")
         .def("subdivide", &Trimesh3D::subdivide,
              "Subdivides the mesh into smaller triangles", "at_edges"_a = true)
-        .def("__str__", &Trimesh3D::to_string, "Converts the mesh to a string")
-        .def("__repr__", &Trimesh3D::to_string, "Converts the mesh to a string")
+        .def("__str__", &Trimesh3D::to_string, "Converts the mesh to a string",
+             py::is_operator())
+        .def("__repr__", &Trimesh3D::to_string, "Converts the mesh to a string",
+             py::is_operator())
         .def("__or__", &Trimesh3D::operator|,
              "Computes the union of two 3D meshes", "other"_a,
              py::is_operator())

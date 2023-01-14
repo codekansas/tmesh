@@ -273,7 +273,7 @@ def test_line_line_intersection_2d(lhs: Line2D, rhs: Line2D, expected: Point2D |
         expected: The expected intersection.
     """
 
-    result = lhs.intersection(rhs)
+    result = lhs.line_intersection(rhs)
     if result is None:
         assert expected is None
     else:

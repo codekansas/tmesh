@@ -97,7 +97,10 @@ struct Line2D {
     Line2D operator<<=(const Affine2D &a);
 
     Point2D closest_point(const Point2D &p) const;
-    std::optional<Point2D> intersection(const Line2D &l) const;
+    std::optional<Point2D> line_intersection(const Line2D &l) const;
+    bool intersects_triangle(const Triangle2D &t) const;
+    std::vector<Point2D> triangle_intersection(const Triangle2D &t) const;
+    bool intersects_bounding_box(const BoundingBox2D &b) const;
 
     float distance_to_point(const Point2D &p) const;
     float distance_to_line(const Line2D &l) const;
@@ -116,7 +119,10 @@ struct Triangle2D {
 
     float area() const;
     Point2D center() const;
+    std::vector<Point2D> vertices() const;
+    std::vector<Line2D> edges() const;
 
+    bool contains(const Point2D &p) const;
     float distance_to_point(const Point2D &p) const;
     float distance_to_line(const Line2D &l) const;
     float distance_to_triangle(const Triangle2D &t) const;
@@ -138,6 +144,11 @@ struct BoundingBox2D {
     bool operator==(const BoundingBox2D &bb) const;
     bool operator!=(const BoundingBox2D &bb) const;
     BoundingBox2D operator<<=(const Affine2D &a);
+
+    float area() const;
+    Point2D center() const;
+    std::vector<Point2D> vertices() const;
+    std::vector<Line2D> edges() const;
 
     float distance_to_point(const Point2D &p) const;
     float distance_to_line(const Line2D &l) const;
@@ -222,6 +233,9 @@ struct Trimesh2D {
     std::string to_string() const;
 
     Trimesh2D operator<<(const Affine2D &tf) const;
+    Trimesh2D operator|(const Trimesh2D &other) const;
+    Trimesh2D operator&(const Trimesh2D &other) const;
+    Trimesh2D operator-(const Trimesh2D &other) const;
 };
 
 struct Point3D {
@@ -283,7 +297,7 @@ struct Line3D {
     std::optional<Point3D> line_intersection(const Line3D &l) const;
     bool intersects_triangle(const Triangle3D &t) const;
     std::optional<Point3D> triangle_intersection(const Triangle3D &t) const;
-    bool intersects_bounding_box(const BoundingBox3D &bb) const;
+    bool intersects_bounding_box(const BoundingBox3D &b) const;
 
     float distance_to_point(const Point3D &p) const;
     float distance_to_line(const Line3D &l) const;
@@ -340,6 +354,7 @@ struct BoundingBox3D {
 
     std::vector<face_t> triangle_indices() const;
     std::vector<Point3D> corners() const;
+    std::vector<Line3D> edges() const;
     std::vector<Triangle3D> triangles() const;
 
     Point3D center() const;

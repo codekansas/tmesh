@@ -9,6 +9,7 @@ using namespace pybind11::literals;
 
 namespace fast_trimesh {
 namespace cpu {
+namespace three {
 namespace bvh {
 
 /* --------------- *
@@ -29,7 +30,7 @@ std::string IntersectionSet::to_string() const {
     return ss.str();
 }
 
-void add_all_intersections(const BVH3D &bvh, const TrimeshAdjacency &adj,
+void add_all_intersections(const BVH &bvh, const TrimeshAdjacency &adj,
                            const types::Trimesh3D &a, IntersectionSet &intrs,
                            bool a_to_b) {
     for (size_t i = 0; i < adj.face_to_faces.size(); i++) {
@@ -53,7 +54,7 @@ IntersectionSet intersections(const types::Trimesh3D &a,
     intrs.a_to_b.resize(a.faces().size());
     intrs.b_to_a.resize(b.faces().size());
 
-    BVH3D bvh_a{a}, bvh_b{b};
+    BVH bvh_a{a}, bvh_b{b};
     TrimeshAdjacency adj_a{a}, adj_b{b};
 
     add_all_intersections(bvh_b, adj_a, a, intrs, true);
@@ -136,9 +137,9 @@ void TrimeshAdjacency::validate() const {
                                  " unconnected vertices.");
 }
 
-/* ------ *
- *  BVH3D *
- * ------ */
+/* ---- *
+ *  BVH *
+ * ---- */
 
 void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
                          std::vector<size_t> &indices, tree_t &tree, size_t lo,
@@ -157,20 +158,17 @@ void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
           max_y = std::numeric_limits<float>::lowest(),
           max_z = std::numeric_limits<float>::lowest();
     for (size_t i = lo; i < hi; i++) {
-        auto min = boxes[indices[i]].min;
-        auto max = boxes[indices[i]].max;
-        min_x = std::min(min_x, min.x);
-        min_y = std::min(min_y, min.y);
-        min_z = std::min(min_z, min.z);
-        max_x = std::max(max_x, max.x);
-        max_y = std::max(max_y, max.y);
-        max_z = std::max(max_z, max.z);
+        const auto &box = boxes[indices[i]];
+        min_x = std::min(min_x, box.min.x);
+        min_y = std::min(min_y, box.min.y);
+        min_z = std::min(min_z, box.min.z);
+        max_x = std::max(max_x, box.max.x);
+        max_y = std::max(max_y, box.max.y);
+        max_z = std::max(max_z, box.max.z);
     }
 
     // Gets the longest axis.
-    float dx = max_x - min_x;
-    float dy = max_y - min_y;
-    float dz = max_z - min_z;
+    float dx = max_x - min_x, dy = max_y - min_y, dz = max_z - min_z;
     size_t axis = 0;
     if (dy > dx) {
         axis = 1;
@@ -180,31 +178,28 @@ void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
         axis = 2;
     }
 
-    auto get_axis_vals = [axis](const types::BoundingBox3D &box) {
+    auto get_axis_vals = [&axis](const types::BoundingBox3D &box) {
         auto min = box.min, max = box.max;
-        std::tuple<float, float> vals;
         switch (axis) {
             case 0:
-                vals = std::make_tuple(min.x, max.x);
-                break;
+                return std::make_pair(min.x, max.x);
             case 1:
-                vals = std::make_tuple(min.y, max.y);
-                break;
+                return std::make_pair(min.y, max.y);
             case 2:
-                vals = std::make_tuple(min.z, max.z);
-                break;
+                return std::make_pair(min.z, max.z);
+            default:
+                throw std::runtime_error("Invalid axis.");
         }
-        return vals;
     };
 
-    auto get_sort_val = [boxes, get_axis_vals](const size_t &i) {
-        auto min_max = get_axis_vals(boxes[i]);
-        return (std::get<0>(min_max) + std::get<1>(min_max)) / 2;
+    auto get_sort_val = [&boxes, &get_axis_vals](const size_t &i) {
+        auto [min, max] = get_axis_vals(boxes[i]);
+        return (min + max) / 2;
     };
 
     // Sorts the bounding boxes along the longest axis.
     std::sort(indices.begin() + lo, indices.begin() + hi,
-              [get_sort_val](const size_t &a, const size_t &b) {
+              [&get_sort_val](const size_t &a, const size_t &b) {
                   return get_sort_val(a) < get_sort_val(b);
               });
 
@@ -221,7 +216,7 @@ void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
     sort_bounding_boxes(boxes, indices, tree, lo + mid, hi);
 }
 
-BVH3D::BVH3D(const types::Trimesh3D &t)
+BVH::BVH(const types::Trimesh3D &t)
     : trimesh(std::make_shared<types::Trimesh3D>(t)) {
     // Builds the boundaary volume hierachy tree.
     // First, we build a vector of boxes, where each box is represented as a
@@ -287,24 +282,15 @@ void intersections_helper(
 }
 
 std::vector<std::tuple<size_t, types::face_t, types::Point3D>>
-BVH3D::intersections(const types::Line3D &l) const {
+BVH::intersections(const types::Line3D &l) const {
     std::vector<std::tuple<size_t, types::face_t, types::Point3D>> intrs;
     intersections_helper(tree, trimesh, 0, l, intrs);
-    std::cout << "BVH3D::intersections: " << intrs.size() << " intersections"
-              << std::endl;
-    std::cout << "  Line: " << l.to_string() << std::endl;
-    for (auto &intr : intrs) {
-        std::cout << "  Face: "
-                  << trimesh->get_triangles()[std::get<0>(intr)].to_string()
-                  << std::endl;
-        std::cout << "  Point: " << std::get<2>(intr).to_string() << std::endl;
-    }
     return intrs;
 }
 
-std::string BVH3D::to_string() const {
+std::string BVH::to_string() const {
     std::stringstream ss;
-    ss << "BVH3D(" << trimesh->to_string() << ")";
+    ss << "BVH(" << trimesh->to_string() << ")";
     return ss.str();
 }
 
@@ -312,16 +298,16 @@ void add_modules(py::module &m) {
     py::module s = m.def_submodule("bvh");
     s.doc() = "Bounding volume hierarchy module";
 
-    py::class_<BVH3D, std::shared_ptr<BVH3D>>(s, "BVH3D")
+    py::class_<BVH, std::shared_ptr<BVH>>(s, "BVH")
         .def(py::init<types::Trimesh3D &>(), "Boundary volume hierarchy",
              "trimesh"_a)
-        .def("__str__", &BVH3D::to_string, "String representation",
+        .def("__str__", &BVH::to_string, "String representation",
              py::is_operator())
-        .def("__repr__", &BVH3D::to_string, "String representation",
+        .def("__repr__", &BVH::to_string, "String representation",
              py::is_operator())
-        .def("intersections", &BVH3D::intersections, "Intersections", "line"_a)
-        .def_property_readonly("trimesh", &BVH3D::get_trimesh, "Trimesh")
-        .def_property_readonly("tree", &BVH3D::get_tree, "Tree");
+        .def("intersections", &BVH::intersections, "Intersections", "line"_a)
+        .def_property_readonly("trimesh", &BVH::get_trimesh, "Trimesh")
+        .def_property_readonly("tree", &BVH::get_tree, "Tree");
 
     py::class_<IntersectionSet, std::shared_ptr<IntersectionSet>>(
         s, "IntersectionSet")
@@ -349,5 +335,6 @@ void add_modules(py::module &m) {
 }
 
 }  // namespace bvh
+}  // namespace three
 }  // namespace cpu
 }  // namespace fast_trimesh

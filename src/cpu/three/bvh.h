@@ -3,12 +3,15 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "types.h"
+#include <unordered_map>
+
+#include "../types.h"
 
 namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
+namespace three {
 namespace bvh {
 
 typedef std::tuple<size_t, size_t> edge_t;
@@ -55,30 +58,24 @@ struct TrimeshAdjacency {
 // triangles in the box.
 typedef std::vector<std::tuple<size_t, int, int, types::BoundingBox3D>> tree_t;
 
-struct BVH3D {
+struct BVH {
     const std::shared_ptr<types::Trimesh3D> trimesh;
     tree_t tree;
 
-    BVH3D(const types::Trimesh3D &t);
-    ~BVH3D() = default;
-
-    // Accessors.
+    BVH(const types::Trimesh3D &t);
+    ~BVH() = default;
     const std::shared_ptr<types::Trimesh3D> get_trimesh() const {
         return this->trimesh;
     }
     tree_t get_tree() const { return this->tree; }
-
-    // Functions for computing the intersection of various geometric shapes
-    // with the mesh represented by the BVH. Returns the face ID, the face,
-    // and the intersection point.
     std::vector<std::tuple<size_t, types::face_t, types::Point3D>>
     intersections(const types::Line3D &l) const;
-
     std::string to_string() const;
 };
 
 void add_modules(py::module &m);
 
 }  // namespace bvh
+}  // namespace three
 }  // namespace cpu
 }  // namespace fast_trimesh
