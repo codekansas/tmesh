@@ -4,6 +4,7 @@
 #include <pybind11/stl.h>
 
 #include "../types.h"
+#include "types.h"
 
 namespace py = pybind11;
 
@@ -12,26 +13,39 @@ namespace cpu {
 namespace two {
 namespace bvh {
 
+using namespace fast_trimesh::cpu::types;
+using namespace fast_trimesh::cpu::two::types;
+
 typedef std::tuple<size_t, size_t> edge_t;
 
-typedef std::vector<std::tuple<size_t, int, int, types::BoundingBox2D>> tree_t;
+struct IntersectionSet {
+    // Points from the first mesh which intersect lines of
+    std::vector<std::tuple<size_t, edge_t>> point_to_edge;
+};
 
-struct BVH {
-    const std::shared_ptr<types::Trimesh2D> trimesh;
+// Defines the hierarchical box tree structure to support 2D queries.
+// Each element in the vector is (triangle_id, left_child, right_child, box)
+// where triangle_id is the index of the triangle in the trimesh, left_child
+// and right_child are the indices of the left and right children in the tree
+// (-1 if there is no child), and box is the bounding box for the current
+// node.
+typedef std::vector<std::tuple<size_t, int, int, BoundingBox2D>> tree_t;
+
+struct BVH2D {
+    const std::shared_ptr<Trimesh2D> trimesh;
     tree_t tree;
 
-    BVH(const types::Trimesh2D &t);
-    ~BVH() = default;
-    const std::shared_ptr<types::Trimesh2D> get_trimesh() const {
+    BVH2D(const Trimesh2D &t);
+    ~BVH2D() = default;
+    const std::shared_ptr<Trimesh2D> get_trimesh() const {
         return this->trimesh;
     }
     tree_t get_tree() const { return this->tree; }
-    std::vector<std::tuple<size_t, types::face_t, types::Point2D>>
-    intersections(const types::Line2D &l) const;
+    std::vector<face_t> intersections(const Triangle2D &t) const;
     std::string to_string() const;
 };
 
-void add_modules(py::module &m);
+void add_2d_bvh_modules(py::module &m);
 
 }  // namespace bvh
 }  // namespace two

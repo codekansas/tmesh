@@ -1,30 +1,33 @@
 #include "shapes.h"
 
+#include "three/types.h"
+#include "two/types.h"
+
 using namespace pybind11::literals;
 
 namespace fast_trimesh {
 namespace cpu {
 namespace shapes {
 
-types::Polygon2D rectangle(float width, float height, bool center) {
+Polygon2D rectangle(float width, float height, bool center) {
     if (center) {
-        std::vector<types::Point2D> vertices = {{-width / 2, -height / 2},
-                                                {width / 2, -height / 2},
-                                                {width / 2, height / 2},
-                                                {-width / 2, height / 2}};
+        std::vector<Point2D> vertices = {{-width / 2, -height / 2},
+                                         {width / 2, -height / 2},
+                                         {width / 2, height / 2},
+                                         {-width / 2, height / 2}};
         return {vertices};
     } else {
-        std::vector<types::Point2D> vertices = {
+        std::vector<Point2D> vertices = {
             {0, 0}, {width, 0}, {width, height}, {0, height}};
         return {vertices};
     }
 }
 
-types::Polygon2D regular_polygon(float radius, int n) {
+Polygon2D regular_polygon(float radius, int n) {
     if (radius < 0)
         throw std::runtime_error("Polygon radius must be positive.");
     if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
-    std::vector<types::Point2D> vertices;
+    std::vector<Point2D> vertices;
     for (int i = 0; i < n; i++) {
         float theta = 2 * M_PI * i / n;
         vertices.push_back({radius * cos(theta), radius * sin(theta)});
@@ -32,11 +35,11 @@ types::Polygon2D regular_polygon(float radius, int n) {
     return {vertices};
 }
 
-types::Trimesh2D regular_polygon_mesh(float radius, int n) {
+Trimesh2D regular_polygon_mesh(float radius, int n) {
     if (radius < 0)
         throw std::runtime_error("Polygon radius must be positive.");
     if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
-    types::vertices2d_t vertices;
+    std::vector<Point2D> vertices;
     types::face_list_t faces;
     vertices.push_back({0, 0});
     for (int i = 0; i < n; i++) {
@@ -47,12 +50,12 @@ types::Trimesh2D regular_polygon_mesh(float radius, int n) {
     return {vertices, faces};
 }
 
-types::Trimesh3D cuboid(float width, float height, float depth, bool center) {
+Trimesh3D cuboid(float width, float height, float depth, bool center) {
     if (width < 0 || height < 0 || depth < 0)
         throw std::runtime_error("Cuboid dimensions must be positive.");
 
     // Gets cuboid bounding box.
-    types::BoundingBox3D bbox;
+    BoundingBox3D bbox;
     if (center) {
         bbox = {{-width / 2, -height / 2, -depth / 2},
                 {width / 2, height / 2, depth / 2}};
@@ -60,18 +63,18 @@ types::Trimesh3D cuboid(float width, float height, float depth, bool center) {
         bbox = {{0, 0, 0}, {width, height, depth}};
     }
 
-    types::vertices3d_t vertices = bbox.corners();
+    std::vector<Point3D> vertices = bbox.corners();
     types::face_set_t faces;
     for (auto &face : bbox.triangle_indices()) faces.insert(face);
 
     return {vertices, faces};
 }
 
-types::Trimesh3D tetrahedron(float radius) {
+Trimesh3D tetrahedron(float radius) {
     if (radius <= 0)
         throw std::runtime_error("Tetrahedron radius must be positive.");
 
-    types::vertices3d_t vertices = {
+    std::vector<Point3D> vertices = {
         {std::sqrt(8.0f / 9.0f), 0.0f, -1.0f / 3.0f},
         {-std::sqrt(2.0f / 9.0f), std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
         {-std::sqrt(2.0f / 9.0f), -std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
@@ -81,7 +84,7 @@ types::Trimesh3D tetrahedron(float radius) {
     return {vertices, faces};
 }
 
-types::Trimesh3D icosphere(float radius, int n) {
+Trimesh3D icosphere(float radius, int n) {
     if (radius <= 0)
         throw std::runtime_error("Sphere radius must be positive.");
     if (n < 0) throw std::runtime_error("Sphere subdivision must be positive.");
@@ -89,7 +92,7 @@ types::Trimesh3D icosphere(float radius, int n) {
     // Gets icosahedron vertices.
     float t = (1.0f + std::sqrt(5.0f)) / 2.0f;
 
-    types::vertices3d_t vertices = {
+    std::vector<Point3D> vertices = {
         {-1.0f, t, 0.0f}, {1.0f, t, 0.0f}, {-1.0f, -t, 0.0f}, {1.0f, -t, 0.0f},
         {0.0f, -1.0f, t}, {0.0f, 1.0f, t}, {0.0f, -1.0f, -t}, {0.0f, 1.0f, -t},
         {t, 0.0f, -1.0f}, {t, 0.0f, 1.0f}, {-t, 0.0f, -1.0f}, {-t, 0.0f, 1.0f}};
@@ -108,14 +111,14 @@ types::Trimesh3D icosphere(float radius, int n) {
             auto &[p0, p1, p2] = face;
 
             // Gets face vertices.
-            types::Point3D v0 = vertices[p0];
-            types::Point3D v1 = vertices[p1];
-            types::Point3D v2 = vertices[p2];
+            Point3D v0 = vertices[p0];
+            Point3D v1 = vertices[p1];
+            Point3D v2 = vertices[p2];
 
             // Gets face midpoints.
-            types::Point3D v01 = (v0 + v1) / 2.0f;
-            types::Point3D v12 = (v1 + v2) / 2.0f;
-            types::Point3D v20 = (v2 + v0) / 2.0f;
+            Point3D v01 = (v0 + v1) / 2.0f;
+            Point3D v12 = (v1 + v2) / 2.0f;
+            Point3D v20 = (v2 + v0) / 2.0f;
 
             // Adds new vertices.
             int v01_index = vertices.size();
@@ -140,14 +143,14 @@ types::Trimesh3D icosphere(float radius, int n) {
     return {vertices, faces};
 }
 
-types::Trimesh3D uv_sphere(float radius, int n, int m) {
+Trimesh3D uv_sphere(float radius, int n, int m) {
     if (radius <= 0)
         throw std::runtime_error("Sphere radius must be positive.");
     if (n < 0) throw std::runtime_error("Sphere subdivision must be positive.");
     if (m < 0) throw std::runtime_error("Sphere subdivision must be positive.");
 
     // Gets vertices.
-    types::vertices3d_t vertices;
+    std::vector<Point3D> vertices;
     for (int i = 0; i <= n; i++) {
         float theta = M_PI * i / n;
         for (int j = 0; j <= m; j++) {
@@ -175,22 +178,19 @@ types::Trimesh3D uv_sphere(float radius, int n, int m) {
     return {vertices, faces};
 }
 
-void add_modules(py::module &m) {
-    py::module s = m.def_submodule("shapes");
-    s.doc() = "Shape constructor functions.";
-
-    s.def("rectangle", &rectangle, "Gets a 2D rectangle", "width"_a, "height"_a,
+void add_shapes_modules(py::module &m) {
+    m.def("rectangle", &rectangle, "Gets a 2D rectangle", "width"_a, "height"_a,
           "center"_a = false);
-    s.def("regular_polygon", &regular_polygon, "Gets a 2D regular polygon",
+    m.def("regular_polygon", &regular_polygon, "Gets a 2D regular polygon",
           "radius"_a, "n"_a);
-    s.def("regular_polygon_mesh", &regular_polygon_mesh,
+    m.def("regular_polygon_mesh", &regular_polygon_mesh,
           "Gets a 2D regular polygon mesh", "radius"_a, "n"_a);
-    s.def("cuboid", &cuboid, "Gets a 3D cuboid mesh", "width"_a, "height"_a,
+    m.def("cuboid", &cuboid, "Gets a 3D cuboid mesh", "width"_a, "height"_a,
           "depth"_a, "center"_a = false);
-    s.def("tetrahedron", &tetrahedron, "Gets a 3D tetrahedron mesh",
+    m.def("tetrahedron", &tetrahedron, "Gets a 3D tetrahedron mesh",
           "radius"_a);
-    s.def("icosphere", &icosphere, "Gets a 3D sphere mesh", "radius"_a, "n"_a);
-    s.def("uv_sphere", &uv_sphere, "Gets a 3D sphere mesh", "radius"_a, "n"_a,
+    m.def("icosphere", &icosphere, "Gets a 3D sphere mesh", "radius"_a, "n"_a);
+    m.def("uv_sphere", &uv_sphere, "Gets a 3D sphere mesh", "radius"_a, "n"_a,
           "m"_a);
 }
 

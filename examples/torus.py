@@ -1,9 +1,6 @@
 import math
 
-from fast_trimesh.cpu.io import save_stl
-from fast_trimesh.cpu.ops import rotate_extrude
-from fast_trimesh.cpu.shapes import regular_polygon
-from fast_trimesh.cpu.types import Affine2D
+from fast_trimesh import Affine2D, regular_polygon, rotate_extrude, save_stl
 
 # Create a circle (approximated as a 20 sided polygon).
 circ = regular_polygon(radius=1.0, n=20) << Affine2D(trans=(0.0, 2.0))

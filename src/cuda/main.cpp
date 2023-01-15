@@ -3,10 +3,7 @@
 namespace fast_trimesh {
 namespace cuda {
 
-void add_modules(py::module &m) {
-    py::module s = m.def_submodule("cuda");
-    s.doc() = "CUDA backend";
-}
+void add_cuda_modules(py::module &m) {}
 
 }  // namespace cuda
 }  // namespace fast_trimesh

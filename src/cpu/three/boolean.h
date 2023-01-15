@@ -4,6 +4,7 @@
 #include <pybind11/stl.h>
 
 #include "../types.h"
+#include "types.h"
 
 namespace py = pybind11;
 
@@ -12,17 +13,17 @@ namespace cpu {
 namespace three {
 namespace boolean {
 
-types::Trimesh3D triangulation(const types::Triangle3D &triangle,
-                               const std::vector<types::Point3D> &points);
+using namespace fast_trimesh::cpu::types;
+using namespace fast_trimesh::cpu::three::types;
 
-types::Trimesh3D mesh_union(const types::Trimesh3D &a,
-                            const types::Trimesh3D &b);
-types::Trimesh3D mesh_intersection(const types::Trimesh3D &a,
-                                   const types::Trimesh3D &b);
-types::Trimesh3D mesh_difference(const types::Trimesh3D &a,
-                                 const types::Trimesh3D &b);
+Trimesh3D triangulation(const Triangle3D &triangle,
+                        const std::vector<Point3D> &points);
 
-void add_modules(py::module &m);
+Trimesh3D mesh_union(const Trimesh3D &a, const Trimesh3D &b);
+Trimesh3D mesh_intersection(const Trimesh3D &a, const Trimesh3D &b);
+Trimesh3D mesh_difference(const Trimesh3D &a, const Trimesh3D &b);
+
+void add_3d_boolean_modules(py::module &m);
 
 }  // namespace boolean
 }  // namespace three

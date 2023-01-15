@@ -100,7 +100,7 @@ format: initialize
 # -----
 
 clean:
-	rm -rf build dist *.so **/*.so **/*.pyi **/*.pyc **/*.pyd **/*.pyo **/__pycache__ *.egg-info .eggs/
+	rm -rf build dist *.so **/*.so **/*.pyi **/*.pyc **/*.pyd **/*.pyo **/__pycache__ *.egg-info .eggs/ fast_trimesh/
 .PHONY: clean
 
 # ------------

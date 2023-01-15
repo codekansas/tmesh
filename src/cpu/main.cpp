@@ -1,18 +1,20 @@
 #include "main.h"
 
+#include "ops.h"
+#include "shapes.h"
+#include "three/main.h"
+#include "two/main.h"
+#include "types.h"
+
 namespace fast_trimesh {
 namespace cpu {
 
-void add_modules(py::module &m) {
-    py::module s = m.def_submodule("cpu");
-    s.doc() = "CPU backend";
-
-    types::add_modules(s);
-    io::add_modules(s);
-    shapes::add_modules(s);
-    two::add_modules(s);
-    three::add_modules(s);
-    ops::add_modules(s);
+void add_cpu_modules(py::module &m) {
+    types::add_types_modules(m);
+    two::add_2d_modules(m);
+    three::add_3d_modules(m);
+    shapes::add_shapes_modules(m);
+    ops::add_ops_modules(m);
 }
 
 }  // namespace cpu

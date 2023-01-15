@@ -1,7 +1,4 @@
-from fast_trimesh.cpu.io import save_stl
-from fast_trimesh.cpu.ops import linear_extrude
-from fast_trimesh.cpu.shapes import regular_polygon
-from fast_trimesh.cpu.types import Affine2D
+from fast_trimesh import Affine2D, linear_extrude, regular_polygon, save_stl
 
 a = regular_polygon(radius=1.0, n=5)
 b = regular_polygon(radius=1.0, n=6) << Affine2D(trans=(0.0, 4.0))

@@ -7,10 +7,10 @@ namespace fast_trimesh {
 PYBIND11_MODULE(fast_trimesh, m) {
     m.doc() = "Fast trimesh implementation";
 
-    cpu::add_modules(m);
+    cpu::add_cpu_modules(m);
 
 #ifdef WITH_CUDA
-    cuda::add_modules(m);
+    cuda::add_cuda_modules(m);
 #endif
 }
 

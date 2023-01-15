@@ -1,15 +1,17 @@
 #include "main.h"
 
+#include "boolean.h"
+#include "bvh.h"
+#include "types.h"
+
 namespace fast_trimesh {
 namespace cpu {
 namespace two {
 
-void add_modules(py::module &m) {
-    py::module s = m.def_submodule("two");
-    s.doc() = "Two-dimensional components";
-
-    bvh::add_modules(s);
-    boolean::add_modules(s);
+void add_2d_modules(py::module &m) {
+    types::add_2d_types_modules(m);
+    bvh::add_2d_bvh_modules(m);
+    boolean::add_2d_boolean_modules(m);
 }
 
 }  // namespace two

@@ -5,16 +5,13 @@
 
 #include <vector>
 
-#include "boolean.h"
-#include "bvh.h"
-
 namespace py = pybind11;
 
 namespace fast_trimesh {
 namespace cpu {
 namespace two {
 
-void add_modules(py::module &m);
+void add_2d_modules(py::module &m);
 
 }
 }  // namespace cpu

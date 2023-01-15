@@ -5,7 +5,7 @@ import random
 
 import pytest
 
-from fast_trimesh.cpu.types import Point2D, Polygon2D
+from fast_trimesh import Point2D, Polygon2D
 
 
 @pytest.mark.parametrize("random_points", [True, False])

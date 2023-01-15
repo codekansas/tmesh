@@ -4,9 +4,8 @@ import math
 
 import pytest
 
-from fast_trimesh.cpu.types import (
+from fast_trimesh import (
     Affine3D,
-    Angle,
     BoundingBox2D,
     Line2D,
     Line3D,
@@ -365,50 +364,6 @@ def test_line_triangle_intersection_3d(lhs: Line3D, rhs: Triangle3D, expected: P
 
 
 @pytest.mark.parametrize(
-    "points,expected",
-    [
-        ((Point2D(0, 0), Point2D(1, 0), Point2D(1, 1)), math.pi / 2),
-        ((Point2D(0, 0), Point2D(1, 0), Point2D(2, 0)), math.pi),
-    ],
-)
-def test_angles_2d(points: tuple[Point2D, Point2D, Point2D], expected: float) -> None:
-    """Tests the angle calculation.
-
-    Args:
-        points: The points to test.
-        expected: The expected angle.
-    """
-
-    aval = abs(Angle(points[0], points[1], points[2]).value)
-    assert aval == pytest.approx(expected), aval
-
-    aval = abs(Angle(points[2], points[1], points[0]).value)
-    assert aval == pytest.approx(expected), aval
-
-
-@pytest.mark.parametrize(
-    "points,expected",
-    [
-        ((Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(1, 1, 1)), math.pi / 2),
-        ((Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(2, 0, 0)), math.pi),
-    ],
-)
-def test_angles_3d(points: tuple[Point3D, Point3D, Point3D], expected: float) -> None:
-    """Tests the angle calculation.
-
-    Args:
-        points: The points to test.
-        expected: The expected angle.
-    """
-
-    aval = abs(Angle(points[0], points[1], points[2]).value)
-    assert aval == pytest.approx(expected), aval
-
-    aval = abs(Angle(points[2], points[1], points[0]).value)
-    assert aval == pytest.approx(expected), aval
-
-
-@pytest.mark.parametrize(
     "vertices,area,clockwise",
     [
         ([Point2D(0, 0), Point2D(1, 0), Point2D(1, 1), Point2D(0, 1)], 1.0, False),
@@ -671,7 +626,7 @@ def test_barycentric_coordinates_2d(lhs: Point2D, rhs: Triangle2D) -> None:
     assert bary.v >= 0
     assert bary.w >= 0
     assert bary.u + bary.v + bary.w == pytest.approx(1)
-    assert bary.get_point_2d(rhs) == lhs
+    assert rhs.point_from_barycentric_coords(bary) == lhs
 
 
 @pytest.mark.parametrize(
@@ -696,6 +651,6 @@ def test_barycentric_coordinates_3d(lhs: Point3D, rhs: Triangle3D) -> None:
     assert bary.w >= 0
     assert bary.u + bary.v + bary.w == pytest.approx(1)
     if lhs.is_coplanar(rhs):
-        assert bary.get_point_3d(rhs) == lhs
+        assert rhs.point_from_barycentric_coords(bary) == lhs
     else:
-        assert bary.get_point_3d(rhs) != lhs
+        assert rhs.point_from_barycentric_coords(bary) != lhs

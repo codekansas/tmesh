@@ -1,18 +1,16 @@
 """Tests axis aligned bounding box data structure for CPU."""
 
-from fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.cpu.three.bvh import BVH
-from fast_trimesh.cpu.types import Line3D, Point3D
+from fast_trimesh import BVH3D, Line3D, Point3D, cuboid
 
 
-def test_simple_aabb_tree_3d() -> None:
-    """Creates a cuboid, builds AABB tree, and tests ray intersection."""
+def test_simple_bvh_tree_3d() -> None:
+    """Creates a cuboid, builds BVH tree, and tests ray intersection."""
 
     # Creates a cuboid.
     trimesh = cuboid(1.0, 2.0, 3.0)
 
-    # Builds AABB tree.
-    bvh = BVH(trimesh)
+    # Builds BVH tree.
+    bvh = BVH3D(trimesh)
 
     assert trimesh.vertices == [
         Point3D(0, 0, 0),

@@ -1,7 +1,4 @@
-from fast_trimesh.cpu.io import save_stl
-from fast_trimesh.cpu.ops import linear_extrude
-from fast_trimesh.cpu.shapes import regular_polygon_mesh
-from fast_trimesh.cpu.types import Affine3D
+from fast_trimesh import Affine3D, linear_extrude, regular_polygon_mesh, save_stl
 
 # Create a circle (approximated as a 20 sided polygon).
 circ = regular_polygon_mesh(radius=1.0, n=20)
