@@ -7,10 +7,7 @@
 
 using namespace pybind11::literals;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace two {
-namespace bvh {
+namespace trimesh {
 
 void sort_bounding_boxes(const std::vector<BoundingBox2D> &boxes,
                          std::vector<size_t> &indices, tree_t &tree, size_t lo,
@@ -132,7 +129,4 @@ void add_2d_bvh_modules(py::module &m) {
         .def_property_readonly("tree", &BVH2D::get_tree, "Tree");
 }
 
-}  // namespace bvh
-}  // namespace two
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

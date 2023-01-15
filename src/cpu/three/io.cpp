@@ -6,10 +6,7 @@
 
 using namespace pybind11::literals;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace three {
-namespace io {
+namespace trimesh {
 
 face_list_t get_sorted_faces(const face_list_t &faces) {
     face_list_t sorted_faces(faces.begin(), faces.end());
@@ -358,7 +355,4 @@ void add_3d_io_modules(py::module &m) {
     m.def("load_ply", &load_ply, "Loads a mesh from a PLY file", "filename"_a);
 }
 
-}  // namespace io
-}  // namespace three
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

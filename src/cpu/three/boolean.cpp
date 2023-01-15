@@ -8,17 +8,9 @@
 
 using namespace pybind11::literals;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace three {
-namespace boolean {
+namespace trimesh {
 
-std::vector<std::tuple<size_t, size_t>> get_edges(const face_t &face) {
-    auto &[a, b, c] = face;
-    return {{a, b}, {b, c}, {c, a}};
-}
-
-enum boolean_op { UNION, INTERSECTION, DIFFERENCE };
+enum boolean_3d_op { UNION, INTERSECTION, DIFFERENCE };
 
 Trimesh3D triangulation(const Triangle3D &triangle,
                         const std::vector<Point3D> &points) {
@@ -112,7 +104,7 @@ std::tuple<Trimesh3D, Trimesh3D> split_at_all_intersections(
                       b.vertices().end());
 
     // Gets BVH for each mesh.
-    bvh::BVH3D a_bvh(a), b_bvh(b);
+    BVH3D a_bvh(a), b_bvh(b);
 
     // Stores IDs of vertices which are shared between meshes.
     std::vector<std::tuple<size_t, size_t>> vertex_pairs;
@@ -120,7 +112,7 @@ std::tuple<Trimesh3D, Trimesh3D> split_at_all_intersections(
     return {{a_vertices, a_faces}, {b_vertices, b_faces}};
 }
 
-Trimesh3D mesh_op(const Trimesh3D &a, const Trimesh3D &b, boolean_op op) {
+Trimesh3D mesh_op(const Trimesh3D &a, const Trimesh3D &b, boolean_3d_op op) {
     throw std::runtime_error("Not implemented yet.");
 }
 
@@ -147,7 +139,4 @@ void add_3d_boolean_modules(py::module &m) {
           "b"_a);
 }
 
-}  // namespace boolean
-}  // namespace three
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

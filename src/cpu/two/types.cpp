@@ -7,12 +7,9 @@
 
 using namespace pybind11::literals;
 
-#define TOLERANCE 1e-6
+namespace trimesh {
 
-namespace fast_trimesh {
-namespace cpu {
-namespace two {
-namespace types {
+#define TOLERANCE 1e-6
 
 /* ------- *
  * Point2D *
@@ -1119,15 +1116,15 @@ Trimesh2D Trimesh2D::operator<<(const Affine2D &tf) const {
 }
 
 Trimesh2D Trimesh2D::operator|(const Trimesh2D &other) const {
-    return two::boolean::mesh_intersection(*this, other);
+    return mesh_intersection(*this, other);
 }
 
 Trimesh2D Trimesh2D::operator&(const Trimesh2D &other) const {
-    return two::boolean::mesh_union(*this, other);
+    return mesh_union(*this, other);
 }
 
 Trimesh2D Trimesh2D::operator-(const Trimesh2D &other) const {
-    return two::boolean::mesh_difference(*this, other);
+    return mesh_difference(*this, other);
 }
 
 void add_2d_types_modules(py::module &m) {
@@ -1473,7 +1470,4 @@ void add_2d_types_modules(py::module &m) {
              py::is_operator());
 }
 
-}  // namespace types
-}  // namespace two
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

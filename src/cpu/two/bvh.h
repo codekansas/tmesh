@@ -8,13 +8,7 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace two {
-namespace bvh {
-
-using namespace fast_trimesh::cpu::types;
-using namespace fast_trimesh::cpu::two::types;
+namespace trimesh {
 
 typedef std::tuple<size_t, size_t> edge_t;
 
@@ -47,7 +41,4 @@ struct BVH2D {
 
 void add_2d_bvh_modules(py::module &m);
 
-}  // namespace bvh
-}  // namespace two
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

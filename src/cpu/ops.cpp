@@ -7,9 +7,7 @@
 
 using namespace pybind11::literals;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace ops {
+namespace trimesh {
 
 Trimesh3D linear_extrude(const Polygon2D &polygon, float height) {
     std::function<float(float, float)> height_func =
@@ -259,6 +257,4 @@ void add_ops_modules(py::module &m) {
           "Rotates a 2D mesh", "mesh"_a, "n"_a, "axis"_a = 0);
 }
 
-}  // namespace ops
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

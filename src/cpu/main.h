@@ -7,10 +7,8 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
+namespace trimesh {
 
 void add_cpu_modules(py::module &m);
 
-}  // namespace cpu
-}  // namespace fast_trimesh
+}

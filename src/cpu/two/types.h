@@ -10,12 +10,7 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace two {
-namespace types {
-
-using namespace fast_trimesh::cpu::types;
+namespace trimesh {
 
 struct Point2D;
 struct Line2D;
@@ -226,7 +221,4 @@ struct Trimesh2D {
 
 void add_2d_types_modules(py::module &m);
 
-}  // namespace types
-}  // namespace two
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

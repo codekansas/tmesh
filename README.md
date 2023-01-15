@@ -18,9 +18,7 @@ STL or OBJ file from a simple mesh:
 ```python
 import math
 
-from fast_trimesh import save_stl_text, save_stl, save_obj, save_ply
-from fast_trimesh import cuboid
-from fast_trimesh import Affine3D
+from fast_trimesh import *
 
 # Create some cuboids.
 a = cuboid(1.0, 1.0, 1.0, center=True)

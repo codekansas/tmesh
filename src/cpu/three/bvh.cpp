@@ -7,16 +7,13 @@
 
 using namespace pybind11::literals;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace three {
-namespace bvh {
+namespace trimesh {
 
 /* ---------------- *
  * TrimeshAdjacency *
  * ---------------- */
 
-TrimeshAdjacency::TrimeshAdjacency(const Trimesh3D &mesh) {
+TrimeshAdjacency3D::TrimeshAdjacency3D(const Trimesh3D &mesh) {
     // Initializes adjacency lists.
     vertex_to_faces.resize(mesh.vertices().size());
     vertex_to_vertices.resize(mesh.vertices().size());
@@ -60,7 +57,7 @@ TrimeshAdjacency::TrimeshAdjacency(const Trimesh3D &mesh) {
     }
 }
 
-void TrimeshAdjacency::validate() const {
+void TrimeshAdjacency3D::validate() const {
     // Checks that all vertices are connected.
     std::vector<bool> visited(vertex_to_vertices.size(), false);
     std::queue<size_t> queue;
@@ -90,7 +87,7 @@ void TrimeshAdjacency::validate() const {
  *  BVH *
  * ---- */
 
-void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
+void sort_bounding_boxes(const std::vector<BoundingBox3D> &boxes,
                          std::vector<size_t> &indices, tree_t &tree, size_t lo,
                          size_t hi) {
     // If the number of boxes is less than 2, then there is nothing to sort.
@@ -165,15 +162,14 @@ void sort_bounding_boxes(const std::vector<types::BoundingBox3D> &boxes,
     sort_bounding_boxes(boxes, indices, tree, lo + mid, hi);
 }
 
-BVH3D::BVH3D(const Trimesh3D &t)
-    : trimesh(std::make_shared<types::Trimesh3D>(t)) {
+BVH3D::BVH3D(const Trimesh3D &t) : trimesh(std::make_shared<Trimesh3D>(t)) {
     // Builds the boundaary volume hierachy tree.
     // First, we build a vector of boxes, where each box is represented as a
     // tuple of (min, max), where min and max are the minimum and maximum
     // coordinates of the box, respectively.
-    std::vector<types::BoundingBox3D> boxes;
+    std::vector<BoundingBox3D> boxes;
     for (auto &face : t.faces())
-        boxes.push_back(types::BoundingBox3D({t.get_triangle(face)}));
+        boxes.push_back(BoundingBox3D({t.get_triangle(face)}));
 
     // Insert the boxes into the tree.
     //
@@ -201,7 +197,7 @@ BVH3D::BVH3D(const Trimesh3D &t)
 }
 
 void intersections_helper(
-    const tree_t tree, const std::shared_ptr<types::Trimesh3D> &trimesh, int id,
+    const tree_t tree, const std::shared_ptr<Trimesh3D> &trimesh, int id,
     const Line3D &l, std::vector<std::tuple<size_t, face_t, Point3D>> &intrs) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
 
@@ -244,8 +240,7 @@ std::string BVH3D::to_string() const {
 
 void add_3d_bvh_modules(py::module &m) {
     py::class_<BVH3D, std::shared_ptr<BVH3D>>(m, "BVH3D")
-        .def(py::init<types::Trimesh3D &>(), "Boundary volume hierarchy",
-             "trimesh"_a)
+        .def(py::init<Trimesh3D &>(), "Boundary volume hierarchy", "trimesh"_a)
         .def("__str__", &BVH3D::to_string, "String representation",
              py::is_operator())
         .def("__repr__", &BVH3D::to_string, "String representation",
@@ -254,18 +249,15 @@ void add_3d_bvh_modules(py::module &m) {
         .def_property_readonly("trimesh", &BVH3D::get_trimesh, "Trimesh")
         .def_property_readonly("tree", &BVH3D::get_tree, "Tree");
 
-    py::class_<TrimeshAdjacency>(m, "TrimeshAdjacency")
+    py::class_<TrimeshAdjacency3D>(m, "TrimeshAdjacency3D")
         .def(py::init<const Trimesh3D &>(), "Trimesh adjacency", "trimesh"_a)
-        .def_readonly("vertex_to_faces", &TrimeshAdjacency::vertex_to_faces)
+        .def_readonly("vertex_to_faces", &TrimeshAdjacency3D::vertex_to_faces)
         .def_readonly("vertex_to_vertices",
-                      &TrimeshAdjacency::vertex_to_vertices)
-        .def_readonly("face_to_vertices", &TrimeshAdjacency::face_to_vertices)
-        .def_readonly("face_to_faces", &TrimeshAdjacency::face_to_faces)
-        .def_readonly("edge_to_faces", &TrimeshAdjacency::edge_to_faces)
-        .def("validate", &TrimeshAdjacency::validate);
+                      &TrimeshAdjacency3D::vertex_to_vertices)
+        .def_readonly("face_to_vertices", &TrimeshAdjacency3D::face_to_vertices)
+        .def_readonly("face_to_faces", &TrimeshAdjacency3D::face_to_faces)
+        .def_readonly("edge_to_faces", &TrimeshAdjacency3D::edge_to_faces)
+        .def("validate", &TrimeshAdjacency3D::validate);
 }
 
-}  // namespace bvh
-}  // namespace three
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

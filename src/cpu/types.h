@@ -7,9 +7,7 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace types {
+namespace trimesh {
 
 struct BarycentricCoordinates;
 
@@ -25,6 +23,8 @@ struct __face_hash_fn {
 typedef std::vector<face_t> face_list_t;
 typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
 
+std::vector<std::tuple<size_t, size_t>> get_edges(const face_t &face);
+
 struct BarycentricCoordinates {
     float u, v, w;
 
@@ -38,6 +38,4 @@ struct BarycentricCoordinates {
 
 void add_types_modules(py::module &m);
 
-}  // namespace types
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

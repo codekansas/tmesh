@@ -8,9 +8,7 @@ using namespace pybind11::literals;
 
 #define TOLERANCE 1e-6
 
-namespace fast_trimesh {
-namespace cpu {
-namespace types {
+namespace trimesh {
 
 /* ---------------------- *
  * BarycentricCoordinates *
@@ -60,6 +58,4 @@ void add_types_modules(py::module &m) {
              py::is_operator());
 }
 
-}  // namespace types
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

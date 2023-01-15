@@ -10,13 +10,7 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace three {
-namespace bvh {
-
-using namespace fast_trimesh::cpu::types;
-using namespace fast_trimesh::cpu::three::types;
+namespace trimesh {
 
 typedef std::tuple<size_t, size_t> edge_t;
 
@@ -27,14 +21,14 @@ struct __edge_hash_fn {
     }
 };
 
-struct TrimeshAdjacency {
+struct TrimeshAdjacency3D {
     std::vector<std::vector<size_t>> vertex_to_faces;
     std::vector<std::vector<size_t>> vertex_to_vertices;
     std::vector<face_t> face_to_vertices;
     std::vector<face_t> face_to_faces;
     std::unordered_map<edge_t, size_t, __edge_hash_fn> edge_to_faces;
 
-    TrimeshAdjacency(const Trimesh3D &mesh);
+    TrimeshAdjacency3D(const Trimesh3D &mesh);
 
     void validate() const;
 };
@@ -66,7 +60,4 @@ struct BVH3D {
 
 void add_3d_bvh_modules(py::module &m);
 
-}  // namespace bvh
-}  // namespace three
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

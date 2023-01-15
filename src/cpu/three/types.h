@@ -10,12 +10,7 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace three {
-namespace types {
-
-using namespace fast_trimesh::cpu::types;
+namespace trimesh {
 
 struct Point3D;
 struct Line3D;
@@ -232,7 +227,4 @@ struct Trimesh3D {
 
 void add_3d_types_modules(py::module &m);
 
-}  // namespace types
-}  // namespace three
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

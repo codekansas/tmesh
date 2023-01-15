@@ -5,17 +5,13 @@
 #include "io.h"
 #include "types.h"
 
-namespace fast_trimesh {
-namespace cpu {
-namespace three {
+namespace trimesh {
 
 void add_3d_modules(py::module &m) {
-    types::add_3d_types_modules(m);
-    bvh::add_3d_bvh_modules(m);
-    boolean::add_3d_boolean_modules(m);
-    io::add_3d_io_modules(m);
+    add_3d_types_modules(m);
+    add_3d_bvh_modules(m);
+    add_3d_boolean_modules(m);
+    add_3d_io_modules(m);
 }
 
-}  // namespace three
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

@@ -8,17 +8,14 @@
 
 using namespace pybind11::literals;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace two {
-namespace boolean {
+namespace trimesh {
 
 std::vector<std::tuple<size_t, size_t>> get_edges(const face_t &face) {
     auto &[a, b, c] = face;
     return {{a, b}, {b, c}, {c, a}};
 }
 
-enum boolean_op { UNION, INTERSECTION, DIFFERENCE };
+enum boolean_2d_op { UNION, INTERSECTION, DIFFERENCE };
 
 Trimesh2D triangulation(const Triangle2D &triangle,
                         const std::vector<Point2D> &points) {
@@ -67,7 +64,7 @@ Trimesh2D triangulation(const Triangle2D &triangle,
     return {vertices, faces};
 }
 
-Trimesh2D mesh_op(const Trimesh2D &a, const Trimesh2D &b, boolean_op op) {
+Trimesh2D mesh_op(const Trimesh2D &a, const Trimesh2D &b, boolean_2d_op op) {
     throw std::runtime_error("Not implemented yet.");
 }
 
@@ -94,7 +91,4 @@ void add_2d_boolean_modules(py::module &m) {
           "b"_a);
 }
 
-}  // namespace boolean
-}  // namespace two
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

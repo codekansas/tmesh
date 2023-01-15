@@ -5,9 +5,7 @@
 
 using namespace pybind11::literals;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace shapes {
+namespace trimesh {
 
 Polygon2D rectangle(float width, float height, bool center) {
     if (center) {
@@ -40,7 +38,7 @@ Trimesh2D regular_polygon_mesh(float radius, int n) {
         throw std::runtime_error("Polygon radius must be positive.");
     if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
     std::vector<Point2D> vertices;
-    types::face_list_t faces;
+    face_list_t faces;
     vertices.push_back({0, 0});
     for (int i = 0; i < n; i++) {
         float theta = 2 * M_PI * i / n;
@@ -64,7 +62,7 @@ Trimesh3D cuboid(float width, float height, float depth, bool center) {
     }
 
     std::vector<Point3D> vertices = bbox.corners();
-    types::face_set_t faces;
+    face_set_t faces;
     for (auto &face : bbox.triangle_indices()) faces.insert(face);
 
     return {vertices, faces};
@@ -79,7 +77,7 @@ Trimesh3D tetrahedron(float radius) {
         {-std::sqrt(2.0f / 9.0f), std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
         {-std::sqrt(2.0f / 9.0f), -std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
         {0.0f, 0.0f, 1.0f}};
-    types::face_set_t faces = {{0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {2, 0, 3}};
+    face_set_t faces = {{0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {2, 0, 3}};
 
     return {vertices, faces};
 }
@@ -98,15 +96,15 @@ Trimesh3D icosphere(float radius, int n) {
         {t, 0.0f, -1.0f}, {t, 0.0f, 1.0f}, {-t, 0.0f, -1.0f}, {-t, 0.0f, 1.0f}};
 
     // Gets icosahedron faces.
-    types::face_list_t faces = {
-        {0, 11, 5}, {0, 5, 1},  {0, 1, 7},   {0, 7, 10}, {0, 10, 11},
-        {1, 5, 9},  {5, 11, 4}, {11, 10, 2}, {10, 7, 6}, {7, 1, 8},
-        {3, 9, 4},  {3, 4, 2},  {3, 2, 6},   {3, 6, 8},  {3, 8, 9},
-        {4, 9, 5},  {2, 4, 11}, {6, 2, 10},  {8, 6, 7},  {9, 8, 1}};
+    face_list_t faces = {{0, 11, 5},  {0, 5, 1},  {0, 1, 7},  {0, 7, 10},
+                         {0, 10, 11}, {1, 5, 9},  {5, 11, 4}, {11, 10, 2},
+                         {10, 7, 6},  {7, 1, 8},  {3, 9, 4},  {3, 4, 2},
+                         {3, 2, 6},   {3, 6, 8},  {3, 8, 9},  {4, 9, 5},
+                         {2, 4, 11},  {6, 2, 10}, {8, 6, 7},  {9, 8, 1}};
 
     // Subdivides faces.
     for (int i = 0; i < n; i++) {
-        types::face_list_t new_faces;
+        face_list_t new_faces;
         for (auto &face : faces) {
             auto &[p0, p1, p2] = face;
 
@@ -163,7 +161,7 @@ Trimesh3D uv_sphere(float radius, int n, int m) {
     }
 
     // Gets faces.
-    types::face_list_t faces;
+    face_list_t faces;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++) {
             int p0 = i * (m + 1) + j;
@@ -194,6 +192,4 @@ void add_shapes_modules(py::module &m) {
           "m"_a);
 }
 
-}  // namespace shapes
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

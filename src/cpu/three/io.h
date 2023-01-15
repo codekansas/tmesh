@@ -10,13 +10,7 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace three {
-namespace io {
-
-using namespace fast_trimesh::cpu::types;
-using namespace fast_trimesh::cpu::three::types;
+namespace trimesh {
 
 // Functions for saving and loading STLs.
 void save_stl(const std::string &filename, const Trimesh3D &mesh);
@@ -36,7 +30,4 @@ Trimesh3D load_ply(const std::string &filename);
 
 void add_3d_io_modules(py::module &m);
 
-}  // namespace io
-}  // namespace three
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

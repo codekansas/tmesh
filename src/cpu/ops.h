@@ -10,13 +10,7 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace ops {
-
-using namespace fast_trimesh::cpu::types;
-using namespace fast_trimesh::cpu::two::types;
-using namespace fast_trimesh::cpu::three::types;
+namespace trimesh {
 
 Trimesh3D linear_extrude(const Polygon2D &polygon, float height);
 Trimesh3D linear_extrude(const Polygon2D &polygon,
@@ -31,6 +25,4 @@ Trimesh3D rotate_extrude(const Polygon2D &polygon, int n, int axis = 0);
 
 void add_ops_modules(py::module &m);
 
-}  // namespace ops
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

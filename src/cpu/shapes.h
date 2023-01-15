@@ -9,13 +9,7 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
-namespace cpu {
-namespace shapes {
-
-using namespace fast_trimesh::cpu::types;
-using namespace fast_trimesh::cpu::two::types;
-using namespace fast_trimesh::cpu::three::types;
+namespace trimesh {
 
 Polygon2D rectangle(float width, float height, bool center = false);
 
@@ -33,6 +27,4 @@ Trimesh3D uv_sphere(float radius, int n, int m);
 
 void add_shapes_modules(py::module &m);
 
-}  // namespace shapes
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh
