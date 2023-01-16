@@ -4,7 +4,7 @@ namespace py = pybind11;
 
 namespace trimesh {
 
-PYBIND11_MODULE(fast_trimesh, m) {
+PYBIND11_MODULE(tmesh, m) {
     m.doc() = "Fast trimesh implementation";
 
     add_cpu_modules(m);

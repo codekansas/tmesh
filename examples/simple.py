@@ -1,6 +1,6 @@
 import math
 
-from fast_trimesh import Affine3D, cuboid, save_stl
+from tmesh import Affine3D, cuboid, save_stl
 
 # Create some cuboids.
 a = cuboid(1.0, 1.0, 1.0, center=True)

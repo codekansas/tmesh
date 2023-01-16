@@ -76,7 +76,7 @@ develop: initialize
 
 build: initialize
 	mkdir -p build
-	cd build && cmake ../fast_trimesh && make -j
+	cd build && cmake ../ && make -j
 .PHONY: build
 
 build-ext-inplace: initialize
@@ -100,7 +100,7 @@ format: initialize
 # -----
 
 clean:
-	rm -rf build dist *.so **/*.so **/*.pyi **/*.pyc **/*.pyd **/*.pyo **/__pycache__ *.egg-info .eggs/ fast_trimesh/
+	rm -rf build dist *.so **/*.so **/*.pyi **/*.pyc **/*.pyd **/*.pyo **/__pycache__ *.egg-info .eggs/ tmesh/
 .PHONY: clean
 
 # ------------

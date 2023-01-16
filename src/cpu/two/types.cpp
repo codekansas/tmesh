@@ -115,7 +115,7 @@ BarycentricCoordinates Point2D::barycentric_coordinates(
 
 bool Point2D::is_inside_triangle(const Triangle2D &t) const {
     BarycentricCoordinates bary = barycentric_coordinates(t);
-    return bary.u >= 0.0f && bary.v >= 0.0f && bary.w >= 0.0f;
+    return bary.u >= -TOLERANCE && bary.v >= -TOLERANCE && bary.w >= -TOLERANCE;
 }
 
 bool Point2D::is_inside_bounding_box(const BoundingBox2D &bb) const {
@@ -220,7 +220,9 @@ std::optional<Point2D> Line2D::line_intersection(const Line2D &l) const {
     float t = qmp1.cross(s) / rxs;
     float u = qmp1.cross(r) / rxs;
 
-    if (t < 0.0f || t > 1.0f || u < 0.0f || u > 1.0f) return std::nullopt;
+    if (t < -TOLERANCE || t > 1.0f + TOLERANCE || u < -TOLERANCE ||
+        u > 1.0f + TOLERANCE)
+        return std::nullopt;
 
     return p1 + r * t;
 }

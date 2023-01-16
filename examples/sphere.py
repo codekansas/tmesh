@@ -1,4 +1,4 @@
-from fast_trimesh import Affine3D, cuboid, icosphere, save_stl, uv_sphere
+from tmesh import Affine3D, cuboid, icosphere, save_stl, uv_sphere
 
 num_iters = 4
 

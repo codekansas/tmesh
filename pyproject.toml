@@ -7,7 +7,7 @@ include = '\.pyi?$'
 [tool.isort]
 
 profile = "black"
-known_first_party = ["fast_trimesh", "tests"]
+known_first_party = ["tmesh", "tests"]
 forced_separate = ["tests"]
 combine_as_imports = true
 
@@ -22,6 +22,6 @@ markers = [
 
 [tool.pylint.general]
 
-# Disables the "Unable to import" PyLint warning for "fast_trimesh", since
+# Disables the "Unable to import" PyLint warning for "tmesh", since
 # it is a C extension module.
-ignored-modules = ["fast_trimesh"]
+ignored-modules = ["tmesh"]

@@ -1,6 +1,6 @@
 import math
 
-from fast_trimesh import Affine3D, save_stl, tetrahedron
+from tmesh import Affine3D, save_stl, tetrahedron
 
 scale = Affine3D(scale=1.5)
 trans = Affine3D(trans=(0.0, 0.0, -1.5))

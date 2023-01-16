@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from fast_trimesh import (
+from tmesh import (
     Affine3D,
     BoundingBox2D,
     Line2D,

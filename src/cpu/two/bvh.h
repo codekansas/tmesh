@@ -10,11 +10,21 @@ namespace py = pybind11;
 
 namespace trimesh {
 
-typedef std::tuple<size_t, size_t> edge_t;
+struct TriangleSplitTree2D {
+    std::vector<std::vector<size_t>> children;
+    std::vector<Triangle2D> triangles;
 
-struct IntersectionSet {
-    // Points from the first mesh which intersect lines of
-    std::vector<std::tuple<size_t, edge_t>> point_to_edge;
+    TriangleSplitTree2D(const Triangle2D &root);
+    ~TriangleSplitTree2D() = default;
+
+    void add_triangle(const Triangle2D &t, size_t parent);
+    bool is_leaf(size_t i);
+    std::vector<std::tuple<const Triangle2D &, const std::vector<size_t> &>>
+    get_children(size_t i);
+    const std::tuple<const Triangle2D &, const std::vector<size_t> &> get(
+        size_t i) const;
+    size_t size() const;
+    std::string to_string() const;
 };
 
 // Defines the hierarchical box tree structure to support 2D queries.

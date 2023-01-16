@@ -3,7 +3,7 @@
 import argparse
 import math
 
-from fast_trimesh import Affine3D, cuboid, save_obj, save_stl
+from tmesh import Affine3D, cuboid, save_obj, save_stl
 
 
 def main() -> None:

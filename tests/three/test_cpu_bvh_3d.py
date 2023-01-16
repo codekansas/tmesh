@@ -1,6 +1,6 @@
 """Tests axis aligned bounding box data structure for CPU."""
 
-from fast_trimesh import BVH3D, Line3D, Point3D, cuboid
+from tmesh import BVH3D, Line3D, Point3D, cuboid
 
 
 def test_simple_bvh_tree_3d() -> None:

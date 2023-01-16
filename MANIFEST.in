@@ -1,2 +1,2 @@
 recursive-include src/ *.txt *.cpp *.h *.cu *.cuh MANIFEST.in
-recursive-include fast_trimesh/ *.pyi
+recursive-include tmesh/ *.pyi

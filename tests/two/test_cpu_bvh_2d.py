@@ -1,6 +1,6 @@
 """Tests axis aligned bounding box data structure for CPU."""
 
-from fast_trimesh import BVH2D, Point2D, Triangle2D, regular_polygon_mesh
+from tmesh import BVH2D, Point2D, Triangle2D, regular_polygon_mesh
 
 
 def test_simple_bvh_tree_2d() -> None:
@@ -43,6 +43,4 @@ def test_simple_bvh_tree_2d() -> None:
     # Tests intersection at two corners.
     triangle = Triangle2D(Point2D(-1.0, 2.0), Point2D(1.0, 2.0), Point2D(0.0, 1.0))
     intrs = sorted(bvh.intersections(triangle))
-    # breakpoint()
-    # TODO: Fix this.
-    # assert intrs == [(0, 1, 2), (0, 2, 3)]
+    assert intrs == [(0, 1, 2), (0, 2, 3)]

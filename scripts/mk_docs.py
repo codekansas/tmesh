@@ -6,7 +6,7 @@ import sys
 from types import ModuleType
 from typing import Any, TextIO
 
-import fast_trimesh
+import tmesh
 
 
 def get_docs_for_level(mod: ModuleType, level: int) -> dict[str, Any]:
@@ -158,7 +158,7 @@ def main() -> None:
     parser.add_argument("-s", "--start-indent-level", default=0, type=int, help="The starting indent level.")
     args = parser.parse_args()
 
-    docs = get_docs_for_level(fast_trimesh, 0)
+    docs = get_docs_for_level(tmesh, 0)
 
     file_ptr = open(args.output, "w", encoding="utf-8") if not args.print else sys.stdout
 

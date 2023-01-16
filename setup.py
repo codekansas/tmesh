@@ -174,7 +174,7 @@ setup(
     description="A fast trimesh implementation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    ext_modules=[CMakeExtension("fast_trimesh")],
+    ext_modules=[CMakeExtension("tmesh")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     setup_requires=["cmake", "mypy", "pybind11"],

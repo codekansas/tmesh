@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from fast_trimesh import (
+from tmesh import (
     Affine3D,
     Point2D,
     Polygon2D,

@@ -2,14 +2,17 @@ from typing import List, Union
 
 import matplotlib.pyplot as plt
 
-from fast_trimesh import Line2D, Point2D, Triangle2D, Trimesh2D, regular_polygon_mesh
+from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
 
 Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
 
 # To plot things, add them to this list.
 THINGS_TO_PLOT: List[Thing] = [
-    Triangle2D(Point2D(-1.0, 2.0), Point2D(1.0, 2.0), Point2D(0.0, 1.0)),
-    regular_polygon_mesh(1.0, 4),
+    Triangle2D(Point2D(0.0, 0.0), Point2D(1.0, 0.0), Point2D(0.0, 1.0)),
+    Triangle2D(Point2D(0.0, 0.0), Point2D(0.5, 0.0), Point2D(0.0, 0.5)),
+    Triangle2D(Point2D(0.5, 0.0), Point2D(1.0, 0.0), Point2D(0.5, 0.5)),
+    Triangle2D(Point2D(0.0, 0.5), Point2D(0.5, 0.5), Point2D(0.0, 1.0)),
+    Triangle2D(Point2D(0.5, 0.5), Point2D(0.0, 0.5), Point2D(0.5, 0.0)),
 ]
 
 

@@ -9,6 +9,53 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
+/* ------------------- *
+ * TriangleSplitTree2D *
+ * ------------------- */
+
+TriangleSplitTree2D::TriangleSplitTree2D(const Triangle2D &root) {
+    this->children.push_back(std::vector<size_t>{});
+    this->triangles.push_back(root);
+}
+
+void TriangleSplitTree2D::add_triangle(const Triangle2D &t, size_t parent) {
+    this->children.push_back(std::vector<size_t>{});
+    this->triangles.push_back(t);
+    this->children[parent].push_back(this->children.size() - 1);
+}
+
+bool TriangleSplitTree2D::is_leaf(size_t i) {
+    return this->children[i].size() == 0;
+}
+
+std::vector<std::tuple<const Triangle2D &, const std::vector<size_t> &>>
+TriangleSplitTree2D::get_children(size_t i) {
+    std::vector<std::tuple<const Triangle2D &, const std::vector<size_t> &>>
+        children;
+    for (auto &child : this->children[i]) {
+        children.push_back(std::make_tuple(std::ref(this->triangles[child]),
+                                           std::ref(this->children[child])));
+    }
+    return children;
+}
+
+const std::tuple<const Triangle2D &, const std::vector<size_t> &>
+TriangleSplitTree2D::get(size_t i) const {
+    return {std::ref(this->triangles[i]), std::ref(this->children[i])};
+}
+
+size_t TriangleSplitTree2D::size() const { return this->children.size(); }
+
+std::string TriangleSplitTree2D::to_string() const {
+    std::stringstream ss;
+    ss << "TriangleSplitTree2D(" << this->children.size() << " triangle(s))";
+    return ss.str();
+}
+
+/* ----- *
+ * BVH2D *
+ * ----- */
+
 void sort_bounding_boxes(const std::vector<BoundingBox2D> &boxes,
                          std::vector<size_t> &indices, tree_t &tree, size_t lo,
                          size_t hi) {
@@ -117,6 +164,23 @@ std::string BVH2D::to_string() const {
 }
 
 void add_2d_bvh_modules(py::module &m) {
+    py::class_<TriangleSplitTree2D, std::shared_ptr<TriangleSplitTree2D>>(
+        m, "TriangleSplitTree2D")
+        .def(py::init<const Triangle2D &>(), "Triangle split tree", "root"_a)
+        .def("__str__", &TriangleSplitTree2D::to_string,
+             "String representation", py::is_operator())
+        .def("__repr__", &TriangleSplitTree2D::to_string,
+             "String representation", py::is_operator())
+        .def("__len__", &TriangleSplitTree2D::size, "Size of the tree")
+        .def("__getitem__", &TriangleSplitTree2D::get,
+             "Gets the triangle and it's children", "id"_a)
+        .def("add_triangle", &TriangleSplitTree2D::add_triangle,
+             "Adds a triangle to the tree", "t"_a, "parent"_a)
+        .def("is_leaf", &TriangleSplitTree2D::is_leaf, "Is the ID a leaf",
+             "id"_a)
+        .def("get_children", &TriangleSplitTree2D::get_children,
+             "Gets the children of the ID", "id"_a);
+
     py::class_<BVH2D, std::shared_ptr<BVH2D>>(m, "BVH2D")
         .def(py::init<Trimesh2D &>(), "Boundary volume hierarchy", "trimesh"_a)
         .def("__str__", &BVH2D::to_string, "String representation",

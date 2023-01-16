@@ -19,7 +19,7 @@ void save_stl(const std::string &filename, const Trimesh3D &mesh) {
     f.open(filename, std::ios::out | std::ios::binary);
 
     // 80 byte header.
-    f.write("fast_trimesh STL file", 80);
+    f.write("tmesh STL file", 80);
 
     // Number of triangles.
     uint32_t num_triangles = mesh.faces().size();
@@ -114,7 +114,7 @@ void save_stl_text(const std::string &filename, const Trimesh3D &mesh) {
     f.open(filename, std::ios::out);
 
     // Write the header.
-    f << "solid fast_trimesh STL file" << std::endl;
+    f << "solid tmesh STL file" << std::endl;
 
     // Write each triangle.
     for (auto &face : get_sorted_faces(mesh.faces())) {
@@ -140,7 +140,7 @@ void save_stl_text(const std::string &filename, const Trimesh3D &mesh) {
     }
 
     // Write the footer.
-    f << "endsolid fast_trimesh STL file" << std::endl;
+    f << "endsolid tmesh STL file" << std::endl;
 
     f.close();
 }

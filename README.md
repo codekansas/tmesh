@@ -18,7 +18,7 @@ STL or OBJ file from a simple mesh:
 ```python
 import math
 
-from fast_trimesh import *
+from tmesh import *
 
 # Create some cuboids.
 a = cuboid(1.0, 1.0, 1.0, center=True)
