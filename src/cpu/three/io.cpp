@@ -28,16 +28,14 @@ void save_stl(const std::string &filename, const Trimesh3D &mesh) {
     // Write each triangle.
     for (auto &face : get_sorted_faces(mesh.faces())) {
         // Normal.
-        Triangle3D triangle{mesh.vertices()[std::get<0>(face)],
-                            mesh.vertices()[std::get<1>(face)],
-                            mesh.vertices()[std::get<2>(face)]};
+        Triangle3D triangle{mesh.vertices()[face.a], mesh.vertices()[face.b],
+                            mesh.vertices()[face.c]};
         Point3D normal = triangle.normal();
         f.write(reinterpret_cast<const char *>(&normal), 3 * sizeof(float));
 
         // Vertices.
-        Point3D v1 = mesh.vertices()[std::get<0>(face)],
-                v2 = mesh.vertices()[std::get<1>(face)],
-                v3 = mesh.vertices()[std::get<2>(face)];
+        Point3D v1 = mesh.vertices()[face.a], v2 = mesh.vertices()[face.b],
+                v3 = mesh.vertices()[face.c];
         f.write(reinterpret_cast<const char *>(&v1), 3 * sizeof(float));
         f.write(reinterpret_cast<const char *>(&v2), 3 * sizeof(float));
         f.write(reinterpret_cast<const char *>(&v3), 3 * sizeof(float));
@@ -119,18 +117,16 @@ void save_stl_text(const std::string &filename, const Trimesh3D &mesh) {
     // Write each triangle.
     for (auto &face : get_sorted_faces(mesh.faces())) {
         // Normal.
-        Triangle3D triangle{mesh.vertices()[std::get<0>(face)],
-                            mesh.vertices()[std::get<1>(face)],
-                            mesh.vertices()[std::get<2>(face)]};
+        Triangle3D triangle{mesh.vertices()[face.a], mesh.vertices()[face.b],
+                            mesh.vertices()[face.c]};
         Point3D normal = triangle.normal();
         f << "facet normal " << normal.x << " " << normal.y << " " << normal.z
           << std::endl;
         f << "outer loop" << std::endl;
 
         // Vertices.
-        Point3D v1 = mesh.vertices()[std::get<0>(face)],
-                v2 = mesh.vertices()[std::get<1>(face)],
-                v3 = mesh.vertices()[std::get<2>(face)];
+        Point3D v1 = mesh.vertices()[face.a], v2 = mesh.vertices()[face.b],
+                v3 = mesh.vertices()[face.c];
         f << "vertex " << v1.x << " " << v1.y << " " << v1.z << std::endl;
         f << "vertex " << v2.x << " " << v2.y << " " << v2.z << std::endl;
         f << "vertex " << v3.x << " " << v3.y << " " << v3.z << std::endl;
@@ -226,8 +222,8 @@ void save_obj(const std::string &filename, const Trimesh3D &mesh) {
 
     // Write the faces.
     for (auto &face : get_sorted_faces(mesh.faces())) {
-        f << "f " << std::get<0>(face) + 1 << " " << std::get<1>(face) + 1
-          << " " << std::get<2>(face) + 1 << std::endl;
+        f << "f " << face.a + 1 << " " << face.b + 1 << " " << face.c + 1
+          << std::endl;
     }
 
     f.close();
@@ -256,7 +252,7 @@ Trimesh3D load_obj(const std::string &filename) {
             vertices.push_back({x, y, z});
         } else if (type == "f") {
             // Face.
-            int v1, v2, v3;
+            size_t v1, v2, v3;
             ss >> v1 >> v2 >> v3;
             faces.insert({v1 - 1, v2 - 1, v3 - 1});
         }
@@ -289,8 +285,7 @@ void save_ply(const std::string &filename, const Trimesh3D &mesh) {
 
     // Write the faces.
     for (auto &face : get_sorted_faces(mesh.faces())) {
-        f << "3 " << std::get<0>(face) << " " << std::get<1>(face) << " "
-          << std::get<2>(face) << std::endl;
+        f << "3 " << face.a << " " << face.b << " " << face.c << std::endl;
     }
 
     f.close();
@@ -325,7 +320,7 @@ Trimesh3D load_ply(const std::string &filename) {
             vertices.push_back({x, y, z});
         } else if (num_spaces == 3 && line.substr(0, 2) == "3 ") {
             // Face.
-            int start, v1, v2, v3;
+            size_t start, v1, v2, v3;
             ss >> start >> v1 >> v2 >> v3;
             faces.insert({v1, v2, v3});
         }

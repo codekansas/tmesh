@@ -10,6 +10,27 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
+face_t::face_t(size_t a, size_t b, size_t c) : a(a), b(b), c(c) {}
+
+bool face_t::operator==(const face_t &f) const {
+    return a == f.a && b == f.b && c == f.c;
+}
+
+bool face_t::operator!=(const face_t &f) const { return !(*this == f); }
+
+bool face_t::operator<(const face_t &f) const {
+    return std::tie(a, b, c) < std::tie(f.a, f.b, f.c);
+}
+
+std::vector<std::tuple<size_t, size_t>> face_t::get_edges() const {
+    return {{a, b}, {b, c}, {c, a}};
+}
+
+std::string face_t::to_string() const {
+    return "(" + std::to_string(a) + ", " + std::to_string(b) + ", " +
+           std::to_string(c) + ")";
+}
+
 /* ---------------------- *
  * BarycentricCoordinates *
  * ---------------------- */

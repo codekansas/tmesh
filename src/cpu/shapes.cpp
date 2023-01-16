@@ -21,26 +21,26 @@ Polygon2D rectangle(float width, float height, bool center) {
     }
 }
 
-Polygon2D regular_polygon(float radius, int n) {
+Polygon2D regular_polygon(float radius, size_t n) {
     if (radius < 0)
         throw std::runtime_error("Polygon radius must be positive.");
     if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
     std::vector<Point2D> vertices;
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         float theta = 2 * M_PI * i / n;
         vertices.push_back({radius * cos(theta), radius * sin(theta)});
     }
     return {vertices};
 }
 
-Trimesh2D regular_polygon_mesh(float radius, int n) {
+Trimesh2D regular_polygon_mesh(float radius, size_t n) {
     if (radius < 0)
         throw std::runtime_error("Polygon radius must be positive.");
     if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
     std::vector<Point2D> vertices;
     face_list_t faces;
     vertices.push_back({0, 0});
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         float theta = 2 * M_PI * i / n;
         vertices.push_back({radius * cos(theta), radius * sin(theta)});
         faces.push_back({0, i + 1, (i + 1) % n + 1});
@@ -82,10 +82,9 @@ Trimesh3D tetrahedron(float radius) {
     return {vertices, faces};
 }
 
-Trimesh3D icosphere(float radius, int n) {
+Trimesh3D icosphere(float radius, size_t n) {
     if (radius <= 0)
         throw std::runtime_error("Sphere radius must be positive.");
-    if (n < 0) throw std::runtime_error("Sphere subdivision must be positive.");
 
     // Gets icosahedron vertices.
     float t = (1.0f + std::sqrt(5.0f)) / 2.0f;
@@ -103,7 +102,7 @@ Trimesh3D icosphere(float radius, int n) {
                          {2, 4, 11},  {6, 2, 10}, {8, 6, 7},  {9, 8, 1}};
 
     // Subdivides faces.
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         face_list_t new_faces;
         for (auto &face : faces) {
             auto &[p0, p1, p2] = face;
@@ -119,11 +118,11 @@ Trimesh3D icosphere(float radius, int n) {
             Point3D v20 = (v2 + v0) / 2.0f;
 
             // Adds new vertices.
-            int v01_index = vertices.size();
+            size_t v01_index = vertices.size();
             vertices.push_back(v01);
-            int v12_index = vertices.size();
+            size_t v12_index = vertices.size();
             vertices.push_back(v12);
-            int v20_index = vertices.size();
+            size_t v20_index = vertices.size();
             vertices.push_back(v20);
 
             // Adds new faces.
@@ -141,7 +140,7 @@ Trimesh3D icosphere(float radius, int n) {
     return {vertices, faces};
 }
 
-Trimesh3D uv_sphere(float radius, int n, int m) {
+Trimesh3D uv_sphere(float radius, size_t n, size_t m) {
     if (radius <= 0)
         throw std::runtime_error("Sphere radius must be positive.");
     if (n < 0) throw std::runtime_error("Sphere subdivision must be positive.");
@@ -149,9 +148,9 @@ Trimesh3D uv_sphere(float radius, int n, int m) {
 
     // Gets vertices.
     std::vector<Point3D> vertices;
-    for (int i = 0; i <= n; i++) {
+    for (size_t i = 0; i <= n; i++) {
         float theta = M_PI * i / n;
-        for (int j = 0; j <= m; j++) {
+        for (size_t j = 0; j <= m; j++) {
             float phi = 2 * M_PI * j / m;
             float x = radius * std::sin(theta) * std::cos(phi);
             float y = radius * std::sin(theta) * std::sin(phi);
@@ -162,12 +161,12 @@ Trimesh3D uv_sphere(float radius, int n, int m) {
 
     // Gets faces.
     face_list_t faces;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            int p0 = i * (m + 1) + j;
-            int p1 = p0 + 1;
-            int p2 = p0 + m + 1;
-            int p3 = p2 + 1;
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < m; j++) {
+            size_t p0 = i * (m + 1) + j;
+            size_t p1 = p0 + 1;
+            size_t p2 = p0 + m + 1;
+            size_t p3 = p2 + 1;
             faces.push_back({p0, p2, p1});
             faces.push_back({p1, p2, p3});
         }

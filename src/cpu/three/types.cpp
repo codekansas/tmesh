@@ -385,6 +385,19 @@ float Triangle3D::distance_to_point(const Point3D &p) const {
                      p.distance_to_line({p3, p1})});
 }
 
+bool Triangle3D::contains(const Point3D &p) const {
+    std::optional<Point3D> tp = p.project_to_triangle(*this);
+    if (!tp) return false;
+    return p.distance_to_point(*tp) < TOLERANCE;
+}
+
+bool Triangle3D::is_coplanar(const Triangle3D &t) const {
+    Point3D n = normal();
+    return std::abs(n.dot(t.p1 - p1)) < TOLERANCE &&
+           std::abs(n.dot(t.p2 - p1)) < TOLERANCE &&
+           std::abs(n.dot(t.p3 - p1)) < TOLERANCE;
+}
+
 Circumcircle3D Triangle3D::circumcircle() const {
     Point3D v1 = p2 - p1;
     Point3D v2 = p3 - p1;
@@ -404,17 +417,31 @@ Point3D Triangle3D::point_from_barycentric_coords(
     return p1 * b.u + p2 * b.v + p3 * b.w;
 }
 
-bool Triangle3D::contains(const Point3D &p) const {
-    std::optional<Point3D> tp = p.project_to_triangle(*this);
-    if (!tp) return false;
-    return p.distance_to_point(*tp) < TOLERANCE;
-}
-
-bool Triangle3D::is_coplanar(const Triangle3D &t) const {
-    Point3D n = normal();
-    return std::abs(n.dot(t.p1 - p1)) < TOLERANCE &&
-           std::abs(n.dot(t.p2 - p1)) < TOLERANCE &&
-           std::abs(n.dot(t.p3 - p1)) < TOLERANCE;
+std::vector<Point3D> Triangle3D::triangle_intersection(
+    const Triangle3D &t) const {
+    std::vector<Point3D> points;
+    if (is_coplanar(t)) {
+        for (const Point3D &p : t.vertices()) {
+            if (contains(p)) points.push_back(p);
+        }
+        for (const Point3D &p : vertices()) {
+            if (t.contains(p)) points.push_back(p);
+        }
+        for (const Line3D &e : edges()) {
+            for (const Line3D &f : t.edges()) {
+                std::optional<Point3D> p = e.line_intersection(f);
+                if (p) points.push_back(*p);
+            }
+        }
+    } else {
+        for (const Point3D &p : t.vertices()) {
+            if (contains(p)) points.push_back(p);
+        }
+        for (const Point3D &p : vertices()) {
+            if (t.contains(p)) points.push_back(p);
+        }
+    }
+    return points;
 }
 
 std::string Triangle3D::to_string() const {
@@ -584,9 +611,8 @@ std::vector<Triangle3D> BoundingBox3D::triangles() const {
     auto indices = this->triangle_indices();
     auto corners = this->corners();
     for (auto &index : indices) {
-        triangles.push_back({corners[std::get<0>(index)],
-                             corners[std::get<1>(index)],
-                             corners[std::get<2>(index)]});
+        triangles.push_back(
+            {corners[index.a], corners[index.b], corners[index.c]});
     }
     return triangles;
 }
@@ -936,9 +962,7 @@ Trimesh3D Trimesh3D::flip_inside_out() const {
     face_list_t faces;
     std::transform(this->_faces.begin(), this->_faces.end(),
                    std::inserter(faces, faces.begin()), [](const face_t &face) {
-                       return std::make_tuple(std::get<0>(face),
-                                              std::get<2>(face),
-                                              std::get<1>(face));
+                       return face_t(face.a, face.c, face.b);
                    });
     return {vertices, faces};
 }
@@ -961,9 +985,9 @@ Trimesh3D Trimesh3D::subdivide(bool at_edges) const {
             }
         };
         for (auto &face : _faces) {
-            add_edge(std::get<0>(face), std::get<1>(face));
-            add_edge(std::get<1>(face), std::get<2>(face));
-            add_edge(std::get<2>(face), std::get<0>(face));
+            add_edge(face.a, face.b);
+            add_edge(face.b, face.c);
+            add_edge(face.c, face.a);
         }
 
         // Add new faces.
@@ -1016,8 +1040,8 @@ std::string Trimesh3D::to_string() const {
     ss << "  " << _faces.size() << " faces = [" << std::endl;
     i = 0;
     for (auto &face : _faces) {
-        ss << "    (" << std::get<0>(face) << ", " << std::get<1>(face) << ", "
-           << std::get<2>(face) << ")," << std::endl;
+        ss << "    (" << face.a << ", " << face.b << ", " << face.c << "),"
+           << std::endl;
         if (i++ > 10) {
             ss << "    ..." << std::endl;
             break;

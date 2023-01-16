@@ -21,18 +21,6 @@ struct __edge_hash_fn {
     }
 };
 
-struct TrimeshAdjacency3D {
-    std::vector<std::vector<size_t>> vertex_to_faces;
-    std::vector<std::vector<size_t>> vertex_to_vertices;
-    std::vector<face_t> face_to_vertices;
-    std::vector<face_t> face_to_faces;
-    std::unordered_map<edge_t, size_t, __edge_hash_fn> edge_to_faces;
-
-    TrimeshAdjacency3D(const Trimesh3D &mesh);
-
-    void validate() const;
-};
-
 // Defines the hierarchical box tree structure to support 3D queries.
 // The tree is represented as a vector of nodes, where each node is
 // represented as a tuple of (triangle_id, left_child, right_child, box).

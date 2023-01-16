@@ -61,9 +61,9 @@ Trimesh3D linear_extrude(
 
     // Adds top and bottom faces.
     for (size_t i = 0; i < tf; i++) {
-        size_t v0 = std::get<0>(mesh.faces()[i]);
-        size_t v1 = std::get<1>(mesh.faces()[i]);
-        size_t v2 = std::get<2>(mesh.faces()[i]);
+        size_t v0 = mesh.faces()[i].a;
+        size_t v1 = mesh.faces()[i].b;
+        size_t v2 = mesh.faces()[i].c;
         faces.insert({v0, v2, v1});
         faces.insert({v0 + tv, v1 + tv, v2 + tv});
     }

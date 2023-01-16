@@ -13,43 +13,170 @@ namespace trimesh {
  * TriangleSplitTree2D *
  * ------------------- */
 
-TriangleSplitTree2D::TriangleSplitTree2D(const Triangle2D &root) {
-    this->children.push_back(std::vector<size_t>{});
-    this->triangles.push_back(root);
+TriangleSplitTree2D::TriangleSplitTree2D(const face_t &root,
+                                         const std::vector<Point2D> &vertices)
+    : original_vertices(vertices) {
+    this->faces = {root};
+    this->children = {{}};
+    this->vertices = {};
 }
 
-void TriangleSplitTree2D::add_triangle(const Triangle2D &t, size_t parent) {
+void TriangleSplitTree2D::add_triangle(const face_t &f, const size_t parent) {
+    if (f.a > 100000 || f.b > 100000 || f.c > 100000)
+        throw std::runtime_error("Invalid face: " + f.to_string() + ".");
+    this->faces.push_back({f.a, f.b, f.c});
     this->children.push_back(std::vector<size_t>{});
-    this->triangles.push_back(t);
     this->children[parent].push_back(this->children.size() - 1);
 }
 
-bool TriangleSplitTree2D::is_leaf(size_t i) {
+size_t TriangleSplitTree2D::add_point(const Point2D &p) {
+    size_t rval = this->original_vertices.size() + this->vertices.size();
+    this->vertices.push_back(p);
+    return rval;
+}
+
+bool TriangleSplitTree2D::is_leaf(size_t i) const {
     return this->children[i].size() == 0;
 }
 
-std::vector<std::tuple<const Triangle2D &, const std::vector<size_t> &>>
-TriangleSplitTree2D::get_children(size_t i) {
-    std::vector<std::tuple<const Triangle2D &, const std::vector<size_t> &>>
-        children;
-    for (auto &child : this->children[i]) {
-        children.push_back(std::make_tuple(std::ref(this->triangles[child]),
-                                           std::ref(this->children[child])));
+std::unordered_set<size_t>
+TriangleSplitTree2D::get_leaf_triangles_which_intersect(
+    const Point2D &p) const {
+    std::unordered_set<size_t> leaf_triangles;
+    std::queue<size_t> q;
+    q.push(0);
+    while (!q.empty()) {
+        size_t i = q.front();
+        q.pop();
+        auto t = get_triangle(i);
+        if (t.contains(p)) {
+            if (is_leaf(i)) {
+                leaf_triangles.insert(i);
+            } else {
+                for (auto &child : this->children[i]) {
+                    q.push(child);
+                }
+            }
+        }
     }
-    return children;
+    return leaf_triangles;
 }
 
-const std::tuple<const Triangle2D &, const std::vector<size_t> &>
-TriangleSplitTree2D::get(size_t i) const {
-    return {std::ref(this->triangles[i]), std::ref(this->children[i])};
+std::unordered_set<size_t>
+TriangleSplitTree2D::get_leaf_triangles_which_intersect(const Line2D &l) const {
+    std::unordered_set<size_t> leaf_triangles;
+    std::queue<size_t> q;
+    q.push(0);
+    while (!q.empty()) {
+        size_t i = q.front();
+        q.pop();
+        auto t = get_triangle(i);
+        if (l.intersects_triangle(t)) {
+            if (is_leaf(i)) {
+                leaf_triangles.insert(i);
+            } else {
+                for (auto &child : this->children[i]) {
+                    q.push(child);
+                }
+            }
+        }
+    }
+    return leaf_triangles;
 }
 
-size_t TriangleSplitTree2D::size() const { return this->children.size(); }
+void TriangleSplitTree2D::split_triangle(const Point2D &p, size_t i) {
+    const auto f = faces[i];
+    const auto t = get_triangle(i);
 
-std::string TriangleSplitTree2D::to_string() const {
-    std::stringstream ss;
-    ss << "TriangleSplitTree2D(" << this->children.size() << " triangle(s))";
-    return ss.str();
+    // Ignore points which are close to vertices.
+    if (t.p1 == p || t.p2 == p | t.p3 == p) return;
+
+    // Adds a new point.
+    size_t p4 = add_point(p);
+
+    // Create three new triangles.
+    add_triangle({f.a, f.b, p4}, i);
+    add_triangle({f.b, f.c, p4}, i);
+    add_triangle({f.c, f.a, p4}, i);
+}
+
+void TriangleSplitTree2D::split_triangle(const Line2D &l, size_t i) {
+    const auto f = faces[i];
+    const auto t = get_triangle(i);
+
+    // Gets the intersection points the line and each edge of the triangle.
+    Line2D l1{t.p1, t.p2}, l2{t.p2, t.p3}, l3{t.p3, t.p1};
+    auto i1 = l1.line_intersection(l), i2 = l2.line_intersection(l),
+         i3 = l3.line_intersection(l);
+
+    // Checks if the line intersects at a vertex.
+    if (i1 == t.p1 || i3 == t.p1) {
+        if (i2 == std::nullopt || t.p1 == *i2) return;
+        auto new_point = add_point(*i2);
+        add_triangle({f.a, f.b, new_point}, i);
+        add_triangle({f.a, new_point, f.b}, i);
+        return;
+    }
+    if (i1 == t.p2 || i2 == t.p2) {
+        if (i3 == std::nullopt || t.p2 == *i3) return;
+        auto new_point = add_point(*i3);
+        add_triangle({f.b, f.c, new_point}, i);
+        add_triangle({f.b, new_point, f.a}, i);
+        return;
+    }
+    if (i2 == t.p3 || i3 == t.p3) {
+        if (i1 == std::nullopt || t.p3 == *i1) return;
+        auto new_point = add_point(*i1);
+        add_triangle({f.c, f.a, new_point}, i);
+        add_triangle({f.c, new_point, f.b}, i);
+        return;
+    }
+
+    // Does triangle cutting.
+    if (i1 != std::nullopt && i2 != std::nullopt) {
+        auto new_point_1 = add_point(*i1), new_point_2 = add_point(*i2);
+        add_triangle({f.a, new_point_1, new_point_2}, i);
+        add_triangle({f.b, f.c, new_point_2}, i);
+        add_triangle({new_point_1, f.b, new_point_2}, i);
+        return;
+    }
+    if (i2 != std::nullopt && i3 != std::nullopt) {
+        auto new_point_1 = add_point(*i2), new_point_2 = add_point(*i3);
+        add_triangle({f.b, new_point_1, new_point_2}, i);
+        add_triangle({f.c, f.a, new_point_2}, i);
+        add_triangle({new_point_1, f.c, new_point_2}, i);
+        return;
+    }
+    if (i3 != std::nullopt && i1 != std::nullopt) {
+        auto new_point_1 = add_point(*i3), new_point_2 = add_point(*i1);
+        add_triangle({f.c, new_point_1, new_point_2}, i);
+        add_triangle({f.a, f.b, new_point_2}, i);
+        add_triangle({new_point_1, f.a, new_point_2}, i);
+        return;
+    }
+}
+
+Triangle2D TriangleSplitTree2D::get_triangle(size_t i) const {
+    const auto &[p1, p2, p3] = faces[i];
+    const auto v1 = p1 < original_vertices.size()
+                        ? original_vertices[p1]
+                        : vertices[p1 - original_vertices.size()],
+               v2 = p2 < original_vertices.size()
+                        ? original_vertices[p2]
+                        : vertices[p2 - original_vertices.size()],
+               v3 = p3 < original_vertices.size()
+                        ? original_vertices[p3]
+                        : vertices[p3 - original_vertices.size()];
+    Triangle2D ret_val{v1, v2, v3};
+    return ret_val;
+}
+
+const std::vector<face_t> TriangleSplitTree2D::get_leaf_faces() const {
+    std::vector<face_t> leaf_faces;
+    for (size_t i = 0; i < faces.size(); i++) {
+        if (is_leaf(i)) leaf_faces.push_back(faces[i]);
+    }
+    return leaf_faces;
 }
 
 /* ----- *
@@ -139,9 +266,9 @@ void intersections_helper(const tree_t tree,
 
     // Checks if the line intersects the current triangle.
     auto &face_indices = trimesh->faces()[face_id];
-    Triangle2D face = {trimesh->vertices()[std::get<0>(face_indices)],
-                       trimesh->vertices()[std::get<1>(face_indices)],
-                       trimesh->vertices()[std::get<2>(face_indices)]};
+    Triangle2D face = {trimesh->vertices()[face_indices.a],
+                       trimesh->vertices()[face_indices.b],
+                       trimesh->vertices()[face_indices.c]};
     if (face.intersects_triangle(t)) {
         intrs.push_back(face_indices);
     }
@@ -164,23 +291,6 @@ std::string BVH2D::to_string() const {
 }
 
 void add_2d_bvh_modules(py::module &m) {
-    py::class_<TriangleSplitTree2D, std::shared_ptr<TriangleSplitTree2D>>(
-        m, "TriangleSplitTree2D")
-        .def(py::init<const Triangle2D &>(), "Triangle split tree", "root"_a)
-        .def("__str__", &TriangleSplitTree2D::to_string,
-             "String representation", py::is_operator())
-        .def("__repr__", &TriangleSplitTree2D::to_string,
-             "String representation", py::is_operator())
-        .def("__len__", &TriangleSplitTree2D::size, "Size of the tree")
-        .def("__getitem__", &TriangleSplitTree2D::get,
-             "Gets the triangle and it's children", "id"_a)
-        .def("add_triangle", &TriangleSplitTree2D::add_triangle,
-             "Adds a triangle to the tree", "t"_a, "parent"_a)
-        .def("is_leaf", &TriangleSplitTree2D::is_leaf, "Is the ID a leaf",
-             "id"_a)
-        .def("get_children", &TriangleSplitTree2D::get_children,
-             "Gets the children of the ID", "id"_a);
-
     py::class_<BVH2D, std::shared_ptr<BVH2D>>(m, "BVH2D")
         .def(py::init<Trimesh2D &>(), "Boundary volume hierarchy", "trimesh"_a)
         .def("__str__", &BVH2D::to_string, "String representation",

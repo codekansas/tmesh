@@ -3,6 +3,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <unordered_set>
+
 #include "../types.h"
 #include "types.h"
 
@@ -11,20 +13,29 @@ namespace py = pybind11;
 namespace trimesh {
 
 struct TriangleSplitTree2D {
+   private:
+    std::vector<face_t> faces;
     std::vector<std::vector<size_t>> children;
-    std::vector<Triangle2D> triangles;
+    const std::vector<Point2D> &original_vertices;
+    std::vector<Point2D> vertices;
 
-    TriangleSplitTree2D(const Triangle2D &root);
+   public:
+    TriangleSplitTree2D(const face_t &root,
+                        const std::vector<Point2D> &vertices);
     ~TriangleSplitTree2D() = default;
 
-    void add_triangle(const Triangle2D &t, size_t parent);
-    bool is_leaf(size_t i);
-    std::vector<std::tuple<const Triangle2D &, const std::vector<size_t> &>>
-    get_children(size_t i);
-    const std::tuple<const Triangle2D &, const std::vector<size_t> &> get(
-        size_t i) const;
-    size_t size() const;
-    std::string to_string() const;
+    void add_triangle(const face_t &f, size_t parent);
+    size_t add_point(const Point2D &p);
+    bool is_leaf(size_t i) const;
+    std::unordered_set<size_t> get_leaf_triangles_which_intersect(
+        const Point2D &p) const;
+    std::unordered_set<size_t> get_leaf_triangles_which_intersect(
+        const Line2D &l) const;
+    void split_triangle(const Point2D &p, size_t i);
+    void split_triangle(const Line2D &l, size_t i);
+    Triangle2D get_triangle(size_t i) const;
+    const std::vector<face_t> get_leaf_faces() const;
+    const std::vector<Point2D> &get_vertices() const { return this->vertices; }
 };
 
 // Defines the hierarchical box tree structure to support 2D queries.

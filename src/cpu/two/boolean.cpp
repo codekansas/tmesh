@@ -1,5 +1,6 @@
 #include "boolean.h"
 
+#include <algorithm>
 #include <iostream>
 
 #include "bvh.h"
@@ -9,11 +10,6 @@
 using namespace pybind11::literals;
 
 namespace trimesh {
-
-std::vector<std::tuple<size_t, size_t>> get_edges(const face_t &face) {
-    auto &[a, b, c] = face;
-    return {{a, b}, {b, c}, {c, a}};
-}
 
 enum boolean_2d_op { UNION, INTERSECTION, DIFFERENCE };
 
@@ -64,8 +60,98 @@ Trimesh2D triangulation(const Triangle2D &triangle,
     return {vertices, faces};
 }
 
-Trimesh2D mesh_op(const Trimesh2D &a, const Trimesh2D &b, boolean_2d_op op) {
-    throw std::runtime_error("Not implemented yet.");
+Trimesh2D split_at_all_intersections(const Trimesh2D &a_mesh,
+                                     const Trimesh2D &b_mesh) {
+    std::vector<Point2D> vertices = a_mesh.vertices();
+
+    // Keeps track of the faces that have been split.
+    std::vector<TriangleSplitTree2D> a_trees;
+    for (auto &a_face : a_mesh.faces()) {
+        a_trees.push_back({a_face, vertices});
+    }
+
+    // Checks each triangle in B against each triangle in A.
+    // This could be made more efficient by indexing the vertices of B to
+    // efficiently find the vertices which intersect a triangle in A.
+    for (size_t a_face_id = 0; a_face_id < a_mesh.faces().size(); a_face_id++) {
+        auto &a_tree = a_trees[a_face_id];
+
+        for (size_t b_face_id = 0; b_face_id < b_mesh.faces().size();
+             b_face_id++) {
+            auto &b_face = b_mesh.faces()[b_face_id];
+            auto &[b_a, b_b, b_c] = b_face;
+            auto &b_tri = b_mesh.get_triangle(b_face);
+
+            // Splits triangles at vertices.
+            for (auto &b_id : {b_a, b_b, b_c}) {
+                for (auto &t_id : a_tree.get_leaf_triangles_which_intersect(
+                         b_mesh.vertices()[b_id])) {
+                    a_tree.split_triangle(b_mesh.vertices()[b_id], t_id);
+                }
+            }
+
+            // Splits triangles at edges.
+            for (auto &[b_id_a, b_id_b] : b_face.get_edges()) {
+                Line2D b_edge{b_mesh.vertices()[b_id_a],
+                              b_mesh.vertices()[b_id_b]};
+                for (auto &t_id :
+                     a_tree.get_leaf_triangles_which_intersect(b_edge)) {
+                    a_tree.split_triangle(b_edge, t_id);
+                }
+            }
+        }
+    }
+
+    // Adds all faces from the split trees to the new mesh.
+    face_set_t faces;
+    size_t a_vertex_offset = a_mesh.vertices().size();
+    for (auto &a_tree : a_trees) {
+        vertices.insert(vertices.end(), a_tree.get_vertices().begin(),
+                        a_tree.get_vertices().end());
+
+        for (auto &face : a_tree.get_leaf_faces()) {
+            faces.insert({face.a - a_mesh.vertices().size() + a_vertex_offset,
+                          face.b - a_mesh.vertices().size() + a_vertex_offset,
+                          face.c - a_mesh.vertices().size() + a_vertex_offset});
+        }
+
+        a_vertex_offset += a_tree.get_vertices().size();
+    }
+
+    // Removes any unused vertices and remaps the faces.
+    std::unordered_map<size_t, size_t> vertex_id_map;
+    for (auto f : faces) {
+        vertex_id_map[f.a] = 0;
+        vertex_id_map[f.b] = 0;
+        vertex_id_map[f.c] = 0;
+    }
+    std::vector<Point2D> new_vertices;
+    for (auto &[old_id, new_id] : vertex_id_map) {
+        new_id = new_vertices.size();
+        new_vertices.push_back(vertices[old_id]);
+    }
+    face_set_t new_faces;
+    for (auto f : faces) {
+        const auto &a = new_vertices[vertex_id_map[f.a]],
+                   &b = new_vertices[vertex_id_map[f.b]],
+                   &c = new_vertices[vertex_id_map[f.c]];
+
+        if ((b - a).cross(c - a) < 0) {
+            new_faces.insert(
+                {vertex_id_map[f.a], vertex_id_map[f.c], vertex_id_map[f.b]});
+        } else {
+            new_faces.insert(
+                {vertex_id_map[f.a], vertex_id_map[f.b], vertex_id_map[f.c]});
+        }
+    }
+
+    return {new_vertices, new_faces};
+}
+
+Trimesh2D mesh_op(const Trimesh2D &a_mesh, const Trimesh2D &b_mesh,
+                  boolean_2d_op op) {
+    // TODO: This is just testing the splitting algorithm.
+    return split_at_all_intersections(a_mesh, b_mesh);
 }
 
 Trimesh2D mesh_union(const Trimesh2D &a, const Trimesh2D &b) {

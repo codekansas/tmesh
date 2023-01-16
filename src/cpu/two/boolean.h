@@ -15,10 +15,6 @@ namespace trimesh {
 Trimesh2D triangulation(const Triangle2D &triangle,
                         const std::vector<Point2D> &points);
 
-// Given two trimeshes, splits the trimeshes at all intersections between
-// them. Returns a pair of trimeshes, where
-Trimesh2D split_at_all_intersections(const Trimesh2D &a, const Trimesh2D &b);
-
 Trimesh2D mesh_union(const Trimesh2D &a, const Trimesh2D &b);
 Trimesh2D mesh_intersection(const Trimesh2D &a, const Trimesh2D &b);
 Trimesh2D mesh_difference(const Trimesh2D &a, const Trimesh2D &b);

@@ -119,6 +119,7 @@ struct Triangle3D {
     Circumcircle3D circumcircle() const;
     Point3D point_from_barycentric_coords(
         const BarycentricCoordinates &b) const;
+    std::vector<Point3D> triangle_intersection(const Triangle3D &t) const;
 
     std::string to_string() const;
 };

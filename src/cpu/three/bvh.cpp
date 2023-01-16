@@ -9,80 +9,6 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
-/* ---------------- *
- * TrimeshAdjacency *
- * ---------------- */
-
-TrimeshAdjacency3D::TrimeshAdjacency3D(const Trimesh3D &mesh) {
-    // Initializes adjacency lists.
-    vertex_to_faces.resize(mesh.vertices().size());
-    vertex_to_vertices.resize(mesh.vertices().size());
-    face_to_vertices.resize(mesh.faces().size());
-    face_to_faces.resize(mesh.faces().size());
-
-    // Populates adjacency lists.
-    for (size_t i = 0; i < mesh.faces().size(); i++) {
-        auto &[a, b, c] = mesh.faces()[i];
-        vertex_to_faces[a].push_back(i);
-        vertex_to_faces[b].push_back(i);
-        vertex_to_faces[c].push_back(i);
-        vertex_to_vertices[a].push_back(b);
-        vertex_to_vertices[b].push_back(c);
-        vertex_to_vertices[c].push_back(a);
-        face_to_vertices[i] = {a, b, c};
-    }
-
-    // Populates edge-to-face map.
-    for (size_t i = 0; i < mesh.faces().size(); i++) {
-        auto &[a, b, c] = mesh.faces()[i];
-        edge_to_faces[{a, b}] = i;
-        edge_to_faces[{b, c}] = i;
-        edge_to_faces[{c, a}] = i;
-    }
-
-    // Populates face-to-face adjacency list.
-    for (size_t i = 0; i < mesh.faces().size(); i++) {
-        auto &[a, b, c] = mesh.faces()[i];
-        edge_t ba = {b, a}, cb = {c, b}, ac = {a, c};
-        for (const edge_t &e : {ba, cb, ac}) {
-            if (edge_to_faces.find(e) == edge_to_faces.end()) {
-                throw std::runtime_error("Mesh is not manifold; edge " +
-                                         std::to_string(std::get<0>(e)) + ", " +
-                                         std::to_string(std::get<1>(e)) +
-                                         " is not shared.");
-            }
-        }
-        face_to_faces[i] = {edge_to_faces[ba], edge_to_faces[cb],
-                            edge_to_faces[ac]};
-    }
-}
-
-void TrimeshAdjacency3D::validate() const {
-    // Checks that all vertices are connected.
-    std::vector<bool> visited(vertex_to_vertices.size(), false);
-    std::queue<size_t> queue;
-    queue.push(0);
-    while (!queue.empty()) {
-        auto &i = queue.front();
-        queue.pop();
-        for (auto &j : vertex_to_vertices[i]) {
-            if (!visited[j]) queue.push(j);
-            visited[j] = true;
-        }
-    }
-    size_t num_invalid = 0;
-    for (const auto &v : visited)
-        if (!v) {
-            num_invalid++;
-            std::cout << "Vertex " << std::to_string(&v - &visited[0])
-                      << " is not connected." << std::endl;
-        }
-    if (num_invalid > 0)
-        throw std::runtime_error("Mesh is not connected; found " +
-                                 std::to_string(num_invalid) +
-                                 " unconnected vertices.");
-}
-
 /* ---- *
  *  BVH *
  * ---- */
@@ -212,9 +138,9 @@ void intersections_helper(
     // Checks if the line intersects the current triangle.
     auto face_id = std::get<0>(tree[id]);
     auto face_indices = trimesh->faces()[face_id];
-    Triangle3D face = {trimesh->vertices()[std::get<0>(face_indices)],
-                       trimesh->vertices()[std::get<1>(face_indices)],
-                       trimesh->vertices()[std::get<2>(face_indices)]};
+    Triangle3D face = {trimesh->vertices()[face_indices.a],
+                       trimesh->vertices()[face_indices.b],
+                       trimesh->vertices()[face_indices.c]};
     if (auto intr = l.triangle_intersection(face)) {
         intrs.push_back({face_id, face_indices, *intr});
     }
@@ -248,16 +174,6 @@ void add_3d_bvh_modules(py::module &m) {
         .def("intersections", &BVH3D::intersections, "Intersections", "line"_a)
         .def_property_readonly("trimesh", &BVH3D::get_trimesh, "Trimesh")
         .def_property_readonly("tree", &BVH3D::get_tree, "Tree");
-
-    py::class_<TrimeshAdjacency3D>(m, "TrimeshAdjacency3D")
-        .def(py::init<const Trimesh3D &>(), "Trimesh adjacency", "trimesh"_a)
-        .def_readonly("vertex_to_faces", &TrimeshAdjacency3D::vertex_to_faces)
-        .def_readonly("vertex_to_vertices",
-                      &TrimeshAdjacency3D::vertex_to_vertices)
-        .def_readonly("face_to_vertices", &TrimeshAdjacency3D::face_to_vertices)
-        .def_readonly("face_to_faces", &TrimeshAdjacency3D::face_to_faces)
-        .def_readonly("edge_to_faces", &TrimeshAdjacency3D::edge_to_faces)
-        .def("validate", &TrimeshAdjacency3D::validate);
 }
 
 }  // namespace trimesh

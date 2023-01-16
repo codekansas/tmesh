@@ -52,7 +52,7 @@ Point2D Point2D::operator/=(float s) {
 }
 
 bool Point2D::operator==(const Point2D &p) const {
-    return std::abs(x - p.x) < TOLERANCE && std::abs(y - p.y) < TOLERANCE;
+    return distance_to_point(p) < TOLERANCE;
 }
 
 bool Point2D::operator!=(const Point2D &p) const { return !(*this == p); }
@@ -239,6 +239,8 @@ bool Line2D::intersects_triangle(const Triangle2D &t) const {
 
 std::vector<Point2D> Line2D::triangle_intersection(const Triangle2D &t) const {
     std::vector<Point2D> points;
+    if (p1.is_inside_triangle(t)) points.push_back(p1);
+    if (p2.is_inside_triangle(t)) points.push_back(p2);
     for (auto &l : t.edges()) {
         std::optional<Point2D> p = line_intersection(l);
         if (p) points.push_back(*p);
@@ -334,6 +336,16 @@ bool Triangle2D::intersects_triangle(const Triangle2D &t) const {
         if (l.intersects_triangle(t)) return true;
     }
     return false;
+}
+
+std::vector<Point2D> Triangle2D::triangle_intersection(
+    const Triangle2D &t) const {
+    std::vector<Point2D> points;
+    for (auto &l : edges()) {
+        std::vector<Point2D> p = l.triangle_intersection(t);
+        points.insert(points.end(), p.begin(), p.end());
+    }
+    return points;
 }
 
 float Triangle2D::distance_to_point(const Point2D &p) const {
@@ -694,7 +706,7 @@ Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
     if (points.size() < 3) throw std::runtime_error("Invalid polygon.");
 
     // Gets the vertex indices from 0 to n - 1.
-    std::vector<int> indices(points.size());
+    std::vector<size_t> indices(points.size());
     std::iota(indices.begin(), indices.end(), 0);
 
     // Ensures that the polygon is counter-clockwise.
@@ -708,11 +720,11 @@ Trimesh2D Polygon2D::get_trimesh(bool is_convex) const {
     // Runs ear clipping algorithm.
     while (indices.size() > 3) {
         bool found = false;
-        int n = indices.size();
-        for (int i = 0; i < n; i++) {
-            int j = (i + 1) % n;
-            int k = (i + 2) % n;
-            int vi = indices[i], vj = indices[j], vk = indices[k];
+        size_t n = indices.size();
+        for (size_t i = 0; i < n; i++) {
+            size_t j = (i + 1) % n;
+            size_t k = (i + 2) % n;
+            size_t vi = indices[i], vj = indices[j], vk = indices[k];
             Point2D pi = points[vi], pj = points[vj], pk = points[vk];
             if (is_convex || is_ear(vi, vj, vk)) {
                 faces.push_back({vi, vj, vk});
@@ -893,9 +905,9 @@ void Trimesh2D::validate() const {
         used[vj] = true;
         used[vk] = true;
     }
-    for (bool b : used) {
-        if (!b) {
-            throw std::invalid_argument("Unused vertex");
+    for (size_t i = 0; i < used.size(); i++) {
+        if (!used[i]) {
+            throw std::invalid_argument("Unused vertex: " + std::to_string(i));
         }
     }
 
@@ -1041,9 +1053,9 @@ Trimesh2D Trimesh2D::subdivide(bool at_edges) const {
             }
         };
         for (auto &face : _faces) {
-            add_edge(std::get<0>(face), std::get<1>(face));
-            add_edge(std::get<1>(face), std::get<2>(face));
-            add_edge(std::get<2>(face), std::get<0>(face));
+            add_edge(face.a, face.b);
+            add_edge(face.b, face.c);
+            add_edge(face.c, face.a);
         }
 
         // Add new faces.
@@ -1096,8 +1108,7 @@ std::string Trimesh2D::to_string() const {
     ss << "  " << _faces.size() << " faces = [" << std::endl;
     i = 0;
     for (auto &face : _faces) {
-        ss << "    (" << std::get<0>(face) << ", " << std::get<1>(face) << ", "
-           << std::get<2>(face) << ")," << std::endl;
+        ss << "    " << face.to_string() << std::endl;
         if (i++ > 10) {
             ss << "    ..." << std::endl;
             break;

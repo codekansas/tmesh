@@ -11,19 +11,30 @@ namespace trimesh {
 
 struct BarycentricCoordinates;
 
-typedef std::tuple<size_t, size_t, size_t> face_t;
+struct face_t {
+    size_t a, b, c;
+
+    face_t(size_t a, size_t b, size_t c);
+    ~face_t() = default;
+
+    bool operator==(const face_t &f) const;
+    bool operator!=(const face_t &f) const;
+    bool operator<(const face_t &f) const;
+
+    std::vector<std::tuple<size_t, size_t>> get_edges() const;
+    std::string to_string() const;
+};
 
 struct __face_hash_fn {
     std::size_t operator()(const face_t &f) const {
         auto hf = std::hash<size_t>();
-        return hf(std::get<0>(f)) ^ hf(std::get<1>(f)) ^ hf(std::get<2>(f));
+        const auto &[a, b, c] = f;
+        return hf(a) ^ hf(b) ^ hf(c);
     }
 };
 
 typedef std::vector<face_t> face_list_t;
 typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
-
-std::vector<std::tuple<size_t, size_t>> get_edges(const face_t &face);
 
 struct BarycentricCoordinates {
     float u, v, w;

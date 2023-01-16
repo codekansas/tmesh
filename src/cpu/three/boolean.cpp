@@ -92,27 +92,8 @@ bool is_inside(const Triangle3D &triangle, const Point3D &face_pt,
     return dp < 0;
 }
 
-std::tuple<Trimesh3D, Trimesh3D> split_at_all_intersections(
-    const Trimesh3D &a, const Trimesh3D &b) {
-    std::vector<Point3D> a_vertices, b_vertices;
-    face_set_t a_faces, b_faces;
-
-    // Adds all vertices to the output mesh.
-    a_vertices.insert(a_vertices.end(), a.vertices().begin(),
-                      a.vertices().end());
-    b_vertices.insert(b_vertices.end(), b.vertices().begin(),
-                      b.vertices().end());
-
-    // Gets BVH for each mesh.
-    BVH3D a_bvh(a), b_bvh(b);
-
-    // Stores IDs of vertices which are shared between meshes.
-    std::vector<std::tuple<size_t, size_t>> vertex_pairs;
-
-    return {{a_vertices, a_faces}, {b_vertices, b_faces}};
-}
-
-Trimesh3D mesh_op(const Trimesh3D &a, const Trimesh3D &b, boolean_3d_op op) {
+Trimesh3D mesh_op(const Trimesh3D &mesh_a, const Trimesh3D &mesh_b,
+                  boolean_3d_op op) {
     throw std::runtime_error("Not implemented yet.");
 }
 

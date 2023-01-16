@@ -101,6 +101,7 @@ struct Triangle2D {
     bool contains(const Point2D &p) const;
     bool intersects_bounding_box(const BoundingBox2D &bb) const;
     bool intersects_triangle(const Triangle2D &t) const;
+    std::vector<Point2D> triangle_intersection(const Triangle2D &t) const;
     float distance_to_point(const Point2D &p) const;
     float distance_to_line(const Line2D &l) const;
     float distance_to_triangle(const Triangle2D &t) const;
