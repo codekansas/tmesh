@@ -14,9 +14,9 @@ namespace trimesh {
 
 struct TriangleSplitTree2D {
    private:
+    const face_t root;
     std::vector<face_t> faces;
     std::vector<std::vector<size_t>> children;
-    const std::vector<Point2D> &original_vertices;
     std::vector<Point2D> vertices;
 
    public:
@@ -34,7 +34,7 @@ struct TriangleSplitTree2D {
     void split_triangle(const Point2D &p, size_t i);
     void split_triangle(const Line2D &l, size_t i);
     Triangle2D get_triangle(size_t i) const;
-    const std::vector<face_t> get_leaf_faces() const;
+    const std::vector<face_t> get_leaf_faces(size_t offset) const;
     const std::vector<Point2D> &get_vertices() const { return this->vertices; }
 };
 

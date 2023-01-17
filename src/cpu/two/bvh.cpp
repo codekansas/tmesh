@@ -15,10 +15,11 @@ namespace trimesh {
 
 TriangleSplitTree2D::TriangleSplitTree2D(const face_t &root,
                                          const std::vector<Point2D> &vertices)
-    : original_vertices(vertices) {
-    this->faces = {root};
+    : root(root) {
+    this->faces = {{0, 1, 2}};
     this->children = {{}};
-    this->vertices = {};
+    auto &[a, b, c] = root;
+    this->vertices = {vertices[a], vertices[b], vertices[c]};
 }
 
 void TriangleSplitTree2D::add_triangle(const face_t &f, const size_t parent) {
@@ -30,9 +31,8 @@ void TriangleSplitTree2D::add_triangle(const face_t &f, const size_t parent) {
 }
 
 size_t TriangleSplitTree2D::add_point(const Point2D &p) {
-    size_t rval = this->original_vertices.size() + this->vertices.size();
     this->vertices.push_back(p);
-    return rval;
+    return this->vertices.size() - 1;
 }
 
 bool TriangleSplitTree2D::is_leaf(size_t i) const {
@@ -96,8 +96,8 @@ void TriangleSplitTree2D::split_triangle(const Point2D &p, size_t i) {
 
     // Create three new triangles.
     add_triangle({f.a, f.b, p4}, i);
-    add_triangle({f.b, f.c, p4}, i);
-    add_triangle({f.c, f.a, p4}, i);
+    add_triangle({p4, f.b, f.c}, i);
+    add_triangle({f.c, p4, f.a}, i);
 }
 
 void TriangleSplitTree2D::split_triangle(const Line2D &l, size_t i) {
@@ -158,23 +158,31 @@ void TriangleSplitTree2D::split_triangle(const Line2D &l, size_t i) {
 
 Triangle2D TriangleSplitTree2D::get_triangle(size_t i) const {
     const auto &[p1, p2, p3] = faces[i];
-    const auto v1 = p1 < original_vertices.size()
-                        ? original_vertices[p1]
-                        : vertices[p1 - original_vertices.size()],
-               v2 = p2 < original_vertices.size()
-                        ? original_vertices[p2]
-                        : vertices[p2 - original_vertices.size()],
-               v3 = p3 < original_vertices.size()
-                        ? original_vertices[p3]
-                        : vertices[p3 - original_vertices.size()];
+    const auto v1 = vertices[p1], v2 = vertices[p2], v3 = vertices[p3];
     Triangle2D ret_val{v1, v2, v3};
     return ret_val;
 }
 
-const std::vector<face_t> TriangleSplitTree2D::get_leaf_faces() const {
+const std::vector<face_t> TriangleSplitTree2D::get_leaf_faces(
+    size_t offset) const {
+    auto get_vertex = [&](const size_t v) {
+        switch (v) {
+            case 0:
+                return this->root.a;
+            case 1:
+                return this->root.b;
+            case 2:
+                return this->root.c;
+            default:
+                return v - 3 + offset;
+        }
+    };
     std::vector<face_t> leaf_faces;
     for (size_t i = 0; i < faces.size(); i++) {
-        if (is_leaf(i)) leaf_faces.push_back(faces[i]);
+        if (is_leaf(i)) {
+            auto &[a, b, c] = faces[i];
+            leaf_faces.push_back({get_vertex(a), get_vertex(b), get_vertex(c)});
+        }
     }
     return leaf_faces;
 }

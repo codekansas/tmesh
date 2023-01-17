@@ -91,31 +91,30 @@ Trimesh2D split_at_all_intersections(const Trimesh2D &a_mesh,
             }
 
             // Splits triangles at edges.
-            for (auto &[b_id_a, b_id_b] : b_face.get_edges()) {
-                Line2D b_edge{b_mesh.vertices()[b_id_a],
-                              b_mesh.vertices()[b_id_b]};
-                for (auto &t_id :
-                     a_tree.get_leaf_triangles_which_intersect(b_edge)) {
-                    a_tree.split_triangle(b_edge, t_id);
-                }
-            }
+            // for (auto &[b_id_a, b_id_b] : b_face.get_edges()) {
+            //     Line2D b_edge{b_mesh.vertices()[b_id_a],
+            //                   b_mesh.vertices()[b_id_b]};
+            //     for (auto &t_id :
+            //          a_tree.get_leaf_triangles_which_intersect(b_edge)) {
+            //         a_tree.split_triangle(b_edge, t_id);
+            //     }
+            // }
         }
+
+        // TODO: Just testing.
+        // break;
     }
 
     // Adds all faces from the split trees to the new mesh.
     face_set_t faces;
     size_t a_vertex_offset = a_mesh.vertices().size();
     for (auto &a_tree : a_trees) {
-        vertices.insert(vertices.end(), a_tree.get_vertices().begin(),
-                        a_tree.get_vertices().end());
-
-        for (auto &face : a_tree.get_leaf_faces()) {
-            faces.insert({face.a - a_mesh.vertices().size() + a_vertex_offset,
-                          face.b - a_mesh.vertices().size() + a_vertex_offset,
-                          face.c - a_mesh.vertices().size() + a_vertex_offset});
+        for (auto &face : a_tree.get_leaf_faces(vertices.size())) {
+            faces.insert(face);
         }
 
-        a_vertex_offset += a_tree.get_vertices().size();
+        vertices.insert(vertices.end(), a_tree.get_vertices().begin(),
+                        a_tree.get_vertices().end());
     }
 
     // Removes any unused vertices and remaps the faces.

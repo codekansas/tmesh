@@ -75,8 +75,10 @@ develop: initialize
 # -----
 
 build: initialize
-	mkdir -p build
-	cd build && cmake ../ && make -j
+	[[ -d build ]] || mkdir build
+	cd build && cmake ../src && make -j
+	cp build/tmesh.*.so .
+	stubgen -p tmesh -o .
 .PHONY: build
 
 build-ext-inplace: initialize
