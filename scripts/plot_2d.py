@@ -31,6 +31,8 @@ THINGS_TO_PLOT: List[Thing] = [
     # mesh_a - mesh_b,
 ]
 
+ALPHA = 0.4
+
 
 def get_color(i: int) -> str:
     """Returns the color of a thing.
@@ -54,7 +56,7 @@ def plot_line(line: Line2D, i: int) -> None:
         i: Index of line.
     """
 
-    plt.plot([line.p1.x, line.p2.x], [line.p1.y, line.p2.y], get_color(i))
+    plt.plot([line.p1.x, line.p2.x], [line.p1.y, line.p2.y], get_color(i), alpha=ALPHA)
 
 
 def plot_point(point: Point2D, i: int) -> None:
@@ -65,7 +67,7 @@ def plot_point(point: Point2D, i: int) -> None:
         i: Index of point.
     """
 
-    plt.plot(point.x, point.y, get_color(i) + "o")
+    plt.plot(point.x, point.y, get_color(i) + "o", alpha=ALPHA)
 
 
 def plot_triangle(triangle: Triangle2D, i: int) -> None:
@@ -80,6 +82,7 @@ def plot_triangle(triangle: Triangle2D, i: int) -> None:
         [triangle.p1.x, triangle.p2.x, triangle.p3.x, triangle.p1.x],
         [triangle.p1.y, triangle.p2.y, triangle.p3.y, triangle.p1.y],
         get_color(i),
+        alpha=ALPHA,
     )
 
 

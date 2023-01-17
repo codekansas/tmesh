@@ -35,7 +35,7 @@ struct TriangleSplitTree2D {
     void split_triangle(const Line2D &l, size_t i);
     Triangle2D get_triangle(size_t i) const;
     const std::vector<face_t> get_leaf_faces(size_t offset) const;
-    const std::vector<Point2D> &get_vertices() const { return this->vertices; }
+    const std::vector<Point2D> get_vertices() const;
 };
 
 // Defines the hierarchical box tree structure to support 2D queries.

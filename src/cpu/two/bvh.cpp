@@ -23,8 +23,6 @@ TriangleSplitTree2D::TriangleSplitTree2D(const face_t &root,
 }
 
 void TriangleSplitTree2D::add_triangle(const face_t &f, const size_t parent) {
-    if (f.a > 100000 || f.b > 100000 || f.c > 100000)
-        throw std::runtime_error("Invalid face: " + f.to_string() + ".");
     this->faces.push_back({f.a, f.b, f.c});
     this->children.push_back(std::vector<size_t>{});
     this->children[parent].push_back(this->children.size() - 1);
@@ -36,7 +34,7 @@ size_t TriangleSplitTree2D::add_point(const Point2D &p) {
 }
 
 bool TriangleSplitTree2D::is_leaf(size_t i) const {
-    return this->children[i].size() == 0;
+    return this->children[i].empty();
 }
 
 std::unordered_set<size_t>
@@ -95,7 +93,7 @@ void TriangleSplitTree2D::split_triangle(const Point2D &p, size_t i) {
     size_t p4 = add_point(p);
 
     // Create three new triangles.
-    add_triangle({f.a, f.b, p4}, i);
+    add_triangle({p4, f.a, f.b}, i);
     add_triangle({p4, f.b, f.c}, i);
     add_triangle({f.c, p4, f.a}, i);
 }
@@ -108,29 +106,6 @@ void TriangleSplitTree2D::split_triangle(const Line2D &l, size_t i) {
     Line2D l1{t.p1, t.p2}, l2{t.p2, t.p3}, l3{t.p3, t.p1};
     auto i1 = l1.line_intersection(l), i2 = l2.line_intersection(l),
          i3 = l3.line_intersection(l);
-
-    // Checks if the line intersects at a vertex.
-    if (i1 == t.p1 || i3 == t.p1) {
-        if (i2 == std::nullopt || t.p1 == *i2) return;
-        auto new_point = add_point(*i2);
-        add_triangle({f.a, f.b, new_point}, i);
-        add_triangle({f.a, new_point, f.b}, i);
-        return;
-    }
-    if (i1 == t.p2 || i2 == t.p2) {
-        if (i3 == std::nullopt || t.p2 == *i3) return;
-        auto new_point = add_point(*i3);
-        add_triangle({f.b, f.c, new_point}, i);
-        add_triangle({f.b, new_point, f.a}, i);
-        return;
-    }
-    if (i2 == t.p3 || i3 == t.p3) {
-        if (i1 == std::nullopt || t.p3 == *i1) return;
-        auto new_point = add_point(*i1);
-        add_triangle({f.c, f.a, new_point}, i);
-        add_triangle({f.c, new_point, f.b}, i);
-        return;
-    }
 
     // Does triangle cutting.
     if (i1 != std::nullopt && i2 != std::nullopt) {
@@ -185,6 +160,11 @@ const std::vector<face_t> TriangleSplitTree2D::get_leaf_faces(
         }
     }
     return leaf_faces;
+}
+
+const std::vector<Point2D> TriangleSplitTree2D::get_vertices() const {
+    std::vector<Point2D> v(vertices.begin() + 3, vertices.end());
+    return v;
 }
 
 /* ----- *
