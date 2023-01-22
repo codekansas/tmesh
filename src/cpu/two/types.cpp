@@ -198,6 +198,10 @@ bool line_2d_t::operator!=(const line_2d_t &other) const {
     return !(*this == other);
 }
 
+bool line_2d_t::operator<(const line_2d_t &other) const {
+    return p1 < other.p1 || p2 < other.p2;
+}
+
 line_2d_t line_2d_t::operator<<=(const affine_2d_t &a) {
     p1 <<= a;
     p2 <<= a;
@@ -309,6 +313,10 @@ bool triangle_2d_t::operator==(const triangle_2d_t &other) const {
 
 bool triangle_2d_t::operator!=(const triangle_2d_t &other) const {
     return !(*this == other);
+}
+
+bool triangle_2d_t::operator<(const triangle_2d_t &other) const {
+    return p1 < other.p1 || p2 < other.p2 || p3 < other.p3;
 }
 
 triangle_2d_t triangle_2d_t::operator<<=(const affine_2d_t &a) {
@@ -1172,17 +1180,17 @@ trimesh_2d_t trimesh_2d_t::operator-(const trimesh_2d_t &other) const {
 void add_2d_types_modules(py::module &m) {
     // Defines the classes first, so that methods can resolve types
     // correctly.
-    auto point2d = py::class_<point_2d_t>(m, "Point2D");
-    auto line2d = py::class_<line_2d_t>(m, "Line2D");
-    auto triangle2d = py::class_<triangle_2d_t>(m, "Triangle2D");
-    auto bbox2d = py::class_<bounding_box_2d_t>(m, "BoundingBox2D");
-    auto polygon2d = py::class_<polygon_2d_t>(m, "Polygon2D");
-    auto affine2d = py::class_<affine_2d_t>(m, "Affine2D");
-    auto trimesh2d =
+    auto point_2d = py::class_<point_2d_t>(m, "Point2D");
+    auto line_2d = py::class_<line_2d_t>(m, "Line2D");
+    auto triangle_2d = py::class_<triangle_2d_t>(m, "Triangle2D");
+    auto bbox_2d = py::class_<bounding_box_2d_t>(m, "BoundingBox2D");
+    auto polygon_2d = py::class_<polygon_2d_t>(m, "Polygon2D");
+    auto affine_2d = py::class_<affine_2d_t>(m, "Affine2D");
+    auto trimesh_2d =
         py::class_<trimesh_2d_t, std::shared_ptr<trimesh_2d_t>>(m, "Trimesh2D");
 
     // Defines Point2D methods.
-    point2d.def(py::init<float, float>(), "A point in 2D space", "x"_a, "y"_a)
+    point_2d.def(py::init<float, float>(), "A point in 2D space", "x"_a, "y"_a)
         .def_readwrite("x", &point_2d_t::x, "The point's x coordinate")
         .def_readwrite("y", &point_2d_t::y, "The point's y coordinate")
         .def("__str__", &point_2d_t::to_string, py::is_operator())
@@ -1272,7 +1280,7 @@ void add_2d_types_modules(py::module &m) {
              "Project onto a line", "other"_a);
 
     // Defines Line2D methods.
-    line2d
+    line_2d
         .def(py::init<const point_2d_t &, const point_2d_t &>(),
              "A line in 2D space", "p1"_a, "p2"_a)
         .def_readwrite("p1", &line_2d_t::p1, "The line's first point")
@@ -1283,6 +1291,7 @@ void add_2d_types_modules(py::module &m) {
              "other"_a, py::is_operator())
         .def("__ne__", &line_2d_t::operator!=, "Inequality with another line",
              "other"_a, py::is_operator())
+        .def("__lt__", &line_2d_t::operator<, "other"_a, py::is_operator())
         .def("__lshift__",
              py::overload_cast<const line_2d_t &, const affine_2d_t &>(
                  &operator<<),
@@ -1311,7 +1320,7 @@ void add_2d_types_modules(py::module &m) {
              "Distance to a bounding box", "bb"_a);
 
     // Defines Triangle2D methods.
-    triangle2d
+    triangle_2d
         .def(py::init<const point_2d_t &, const point_2d_t &,
                       const point_2d_t &>(),
              "A triangle in 2D space", "p1"_a, "p2"_a, "p3"_a)
@@ -1324,6 +1333,7 @@ void add_2d_types_modules(py::module &m) {
              "Equality with another triangle", "other"_a, py::is_operator())
         .def("__ne__", &triangle_2d_t::operator!=,
              "Inequality with another triangle", "other"_a, py::is_operator())
+        .def("__lt__", &triangle_2d_t::operator<, "other"_a, py::is_operator())
         .def("__lshift__",
              py::overload_cast<const triangle_2d_t &, const affine_2d_t &>(
                  &operator<<),
@@ -1354,7 +1364,7 @@ void add_2d_types_modules(py::module &m) {
              "Returns a point from barycentric coordinates", "b"_a);
 
     // Defines BoundingBox2D methods.
-    bbox2d
+    bbox_2d
         .def(py::init<const point_2d_t &, const point_2d_t &>(),
              "Creates a bounding box from two points", "min"_a, "max"_a)
         .def(py::init<const std::vector<point_2d_t> &>(),
@@ -1401,7 +1411,7 @@ void add_2d_types_modules(py::module &m) {
              "Distance to another bounding box", "bb"_a);
 
     // Defines Polygon2D methods.
-    polygon2d
+    polygon_2d
         .def(py::init<const std::vector<point_2d_t> &>(),
              "Creates a polygon from a list of points", "points"_a)
         .def_readwrite("points", &polygon_2d_t::points,
@@ -1443,7 +1453,7 @@ void add_2d_types_modules(py::module &m) {
              "is_convex"_a = false);
 
     // Defines Affine2D methods.
-    affine2d
+    affine_2d
         .def(py::init<std::optional<float>,
                       std::optional<std::tuple<float, float>>,
                       std::optional<float>>(),
@@ -1490,7 +1500,7 @@ void add_2d_types_modules(py::module &m) {
              "The inverse of the affine transformation");
 
     // Defines Trimesh2D methods.
-    trimesh2d
+    trimesh_2d
         // .def(py::init<vertices2d_t &, face_set_t &>(),
         //      "Creates a trimesh from vertices and faces", "vertices"_a,
         //      "faces"_a)

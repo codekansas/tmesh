@@ -71,6 +71,7 @@ struct line_2d_t {
 
     bool operator==(const line_2d_t &l) const;
     bool operator!=(const line_2d_t &l) const;
+    bool operator<(const line_2d_t &p) const;
     line_2d_t operator<<=(const affine_2d_t &a);
 
     point_2d_t closest_point(const point_2d_t &p) const;
@@ -92,6 +93,7 @@ struct triangle_2d_t {
 
     bool operator==(const triangle_2d_t &t) const;
     bool operator!=(const triangle_2d_t &t) const;
+    bool operator<(const triangle_2d_t &p) const;
     triangle_2d_t operator<<=(const affine_2d_t &a);
 
     float area() const;

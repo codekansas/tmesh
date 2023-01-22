@@ -11,8 +11,6 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
-enum boolean_2d_op { UNION, INTERSECTION, DIFFERENCE };
-
 trimesh_2d_t triangulation(const triangle_2d_t &triangle,
                            const std::vector<point_2d_t> &points) {
     std::vector<point_2d_t> vertices;
@@ -84,9 +82,11 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
 
             // Splits triangles at vertices.
             for (auto &b_id : {b_a, b_b, b_c}) {
-                for (auto &t_id : a_tree.get_leaf_triangles_which_intersect(
+                for (auto &t_id :
+                     a_tree.get_leaf_triangles_which_intersect_point(
                          b_mesh.vertices()[b_id])) {
-                    a_tree.split_triangle(b_mesh.vertices()[b_id], t_id);
+                    a_tree.split_triangle_at_point(b_mesh.vertices()[b_id],
+                                                   t_id);
                 }
             }
 
@@ -95,8 +95,8 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
                 line_2d_t b_edge{b_mesh.vertices()[b_id_a],
                                  b_mesh.vertices()[b_id_b]};
                 for (auto &t_id :
-                     a_tree.get_leaf_triangles_which_intersect(b_edge)) {
-                    a_tree.split_triangle(b_edge, t_id);
+                     a_tree.get_leaf_triangles_which_intersect_line(b_edge)) {
+                    a_tree.split_triangle_at_line(b_edge, t_id);
                 }
             }
         }
@@ -143,22 +143,30 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
     return {new_vertices, new_faces};
 }
 
-trimesh_2d_t mesh_op(const trimesh_2d_t &a_mesh, const trimesh_2d_t &b_mesh,
-                     boolean_2d_op op) {
-    // TODO: This is just testing the splitting algorithm.
-    return split_at_all_intersections(a_mesh, b_mesh);
-}
-
 trimesh_2d_t mesh_union(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    return mesh_op(a, b, UNION);
+    auto a_split = split_at_all_intersections(a, b),
+         b_split = split_at_all_intersections(b, a);
+
+    // Adds all triangles in a_split, and all triangles in b_split which are
+    // not in a_split.
+
+    return a_split;
 }
 
 trimesh_2d_t mesh_intersection(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    return mesh_op(a, b, INTERSECTION);
+    auto a_split = split_at_all_intersections(a, b);
+
+    // Adds all triangles in a_split which are inside a triangle in b.
+
+    return a_split;
 }
 
 trimesh_2d_t mesh_difference(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    return mesh_op(a, b, DIFFERENCE);
+    auto a_split = split_at_all_intersections(a, b);
+
+    // Adds all triangles in a_split which are not inside a triangle in b.
+
+    return a_split;
 }
 
 void add_2d_boolean_modules(py::module &m) {

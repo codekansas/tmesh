@@ -13,7 +13,9 @@ namespace trimesh {
 face_t::face_t(size_t a, size_t b, size_t c) : a(a), b(b), c(c) {}
 
 bool face_t::operator==(const face_t &f) const {
-    return a == f.a && b == f.b && c == f.c;
+    return (a == f.a && b == f.b && c == f.c) ||
+           (a == f.b && b == f.c && c == f.a) ||
+           (a == f.c && b == f.a && c == f.b);
 }
 
 bool face_t::operator!=(const face_t &f) const { return !(*this == f); }
@@ -40,12 +42,14 @@ std::string face_t::to_string() const {
 barycentric_coordinates_t::barycentric_coordinates_t(float u, float v, float w)
     : u(u), v(v), w(w) {}
 
-bool barycentric_coordinates_t::operator==(const barycentric_coordinates_t &b) const {
+bool barycentric_coordinates_t::operator==(
+    const barycentric_coordinates_t &b) const {
     return std::abs(u - b.u) < TOLERANCE && std::abs(v - b.v) < TOLERANCE &&
            std::abs(w - b.w) < TOLERANCE;
 }
 
-bool barycentric_coordinates_t::operator!=(const barycentric_coordinates_t &b) const {
+bool barycentric_coordinates_t::operator!=(
+    const barycentric_coordinates_t &b) const {
     return !(*this == b);
 }
 
@@ -63,16 +67,21 @@ void add_types_modules(py::module &m) {
         py::class_<barycentric_coordinates_t>(m, "BarycentricCoordinates");
 
     // Defines Face methods.
-    face.def(py::init<size_t, size_t, size_t>())
+    face.def(py::init<size_t, size_t, size_t>(), "a"_a, "b"_a, "c"_a,
+             "Defines a triangle face")
         .def_readwrite("a", &face_t::a, "First vertex index.")
         .def_readwrite("b", &face_t::b, "Second vertex index.")
         .def_readwrite("c", &face_t::c, "Third vertex index.")
-        .def("__eq__", &face_t::operator==)
-        .def("__ne__", &face_t::operator!=)
-        .def("__lt__", &face_t::operator<)
-        .def("get_vertices", &face_t::get_vertices)
-        .def("get_edges", &face_t::get_edges)
-        .def("__repr__", &face_t::to_string);
+        .def("__eq__", &face_t::operator==, "other"_a,
+             "Checks if two faces are equal.", py::is_operator())
+        .def("__ne__", &face_t::operator!=, "other"_a,
+             "Checks if two faces are not equal.", py::is_operator())
+        .def("__lt__", &face_t::operator<, "other"_a,
+             "Checks if one face is less than another.", py::is_operator())
+        .def("get_vertices", &face_t::get_vertices, "Returns the vertices.")
+        .def("get_edges", &face_t::get_edges, "Returns the edges.")
+        .def("__repr__", &face_t::to_string, "Returns a string representation.",
+             py::is_operator());
 
     // Defines BarycentricCoordinates methods.
     barycentric_coordinates
@@ -84,8 +93,10 @@ void add_types_modules(py::module &m) {
                        "The second barycentric coordinate")
         .def_readwrite("w", &barycentric_coordinates_t::w,
                        "The third barycentric coordinate")
-        .def("__str__", &barycentric_coordinates_t::to_string, py::is_operator())
-        .def("__repr__", &barycentric_coordinates_t::to_string, py::is_operator())
+        .def("__str__", &barycentric_coordinates_t::to_string,
+             "Returns a string representation.", py::is_operator())
+        .def("__repr__", &barycentric_coordinates_t::to_string,
+             py::is_operator())
         .def("__eq__", &barycentric_coordinates_t::operator==,
              "Checks if two barycentric coordinates are equal", "other"_a,
              py::is_operator())

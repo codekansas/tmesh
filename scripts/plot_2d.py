@@ -15,7 +15,7 @@ from tmesh import Affine2D, regular_polygon_mesh
 
 scale = Affine2D(scale=1.0)
 rotate = Affine2D(rot=math.pi / 3)
-translate = Affine2D(trans=(0.75, 0.5))
+translate = Affine2D(trans=(0.75, 0.0))
 
 # Gets two regular polygons.
 mesh_a = regular_polygon_mesh(1.0, n=3)

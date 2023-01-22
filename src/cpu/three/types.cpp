@@ -1099,18 +1099,18 @@ trimesh_3d_t trimesh_3d_t::operator-(const trimesh_3d_t &other) const {
 void add_3d_types_modules(py::module &m) {
     // Defines the classes first, so that methods can resolve types
     // correctly.
-    auto point3d = py::class_<point_3d_t>(m, "Point3D");
-    auto line3d = py::class_<line_3d_t>(m, "Line3D");
-    auto circumcircle3d = py::class_<circumcircle_3d_t>(m, "Circumcircle3D");
-    auto triangle3d = py::class_<triangle_3d_t>(m, "Triangle3D");
-    auto bbox3d = py::class_<bounding_box_3d_t>(m, "BoundingBox3D");
-    auto polygon3d = py::class_<polygon_3d_t>(m, "Polygon3D");
-    auto affine3d = py::class_<affine_3d_t>(m, "Affine3D");
-    auto trimesh3d =
+    auto point_3d = py::class_<point_3d_t>(m, "Point3D");
+    auto line_3d = py::class_<line_3d_t>(m, "Line3D");
+    auto circumcircle_3d = py::class_<circumcircle_3d_t>(m, "Circumcircle3D");
+    auto triangle_3d = py::class_<triangle_3d_t>(m, "Triangle3D");
+    auto bbox_3d = py::class_<bounding_box_3d_t>(m, "BoundingBox3D");
+    auto polygon_3d = py::class_<polygon_3d_t>(m, "Polygon3D");
+    auto affine_3d = py::class_<affine_3d_t>(m, "Affine3D");
+    auto trimesh_3d =
         py::class_<trimesh_3d_t, std::shared_ptr<trimesh_3d_t>>(m, "Trimesh3D");
 
     // Defines Point3D methods.
-    point3d
+    point_3d
         .def(py::init<float, float, float>(), "A point in 3D space", "x"_a,
              "y"_a, "z"_a)
         .def_readwrite("x", &point_3d_t::x, "The point's x coordinate")
@@ -1199,7 +1199,7 @@ void add_3d_types_modules(py::module &m) {
              "Projects the point onto a triangle", "t"_a);
 
     // Defines Line3D methods.
-    line3d
+    line_3d
         .def(py::init<const point_3d_t &, const point_3d_t &>(),
              "A line in 3D space", "p1"_a, "p2"_a)
         .def_readwrite("p1", &line_3d_t::p1, "The line's first point")
@@ -1241,7 +1241,7 @@ void add_3d_types_modules(py::module &m) {
              "Checks if the line intersects a bounding box", "bb"_a);
 
     // Defines Circumcircle3D methods.
-    circumcircle3d
+    circumcircle_3d
         .def(py::init<const point_3d_t &, float>(),
              "A circumcircle with a given center and radius", "center"_a,
              "radius"_a)
@@ -1261,7 +1261,7 @@ void add_3d_types_modules(py::module &m) {
              "Checks if the circumcircle contains a point", "p"_a);
 
     // Defines Triangle3D methods.
-    triangle3d
+    triangle_3d
         .def(py::init<const point_3d_t &, const point_3d_t &,
                       const point_3d_t &>(),
              "A triangle in 3D space", "p1"_a, "p2"_a, "p3"_a)
@@ -1300,7 +1300,7 @@ void add_3d_types_modules(py::module &m) {
              "The point from barycentric coordinates", "b"_a);
 
     // Defines BoundingBox3D methods.
-    bbox3d
+    bbox_3d
         .def(py::init<const point_3d_t &, const point_3d_t &>(),
              "Creates a bounding box from two points", "min"_a, "max"_a)
         .def(py::init<const std::vector<point_3d_t> &>(),
@@ -1341,7 +1341,7 @@ void add_3d_types_modules(py::module &m) {
         .def("volume", &bounding_box_3d_t::volume, "The bounding box's volume");
 
     // Defines Polygon3D methods.
-    polygon3d
+    polygon_3d
         .def(py::init<const std::vector<point_3d_t> &>(),
              "Creates a polygon from a set of points", "points"_a)
         .def_readwrite("points", &polygon_3d_t::points, "The polygon's points")
@@ -1367,7 +1367,7 @@ void add_3d_types_modules(py::module &m) {
              "The polygon's bounding box");
 
     // Defines Affine3D methods.
-    affine3d
+    affine_3d
         .def(py::init<std::optional<std::tuple<float, float, float>>,
                       std::optional<std::tuple<float, float, float>>,
                       std::optional<float>>(),
@@ -1414,7 +1414,7 @@ void add_3d_types_modules(py::module &m) {
              "The inverse of the affine transformation");
 
     // Defines Trimesh3D methods.
-    trimesh3d
+    trimesh_3d
         // .def(py::init<vertices3d_t &, face_set_t &>(),
         //      "Creates a trimesh from vertices and faces", "vertices"_a,
         //      "faces"_a)

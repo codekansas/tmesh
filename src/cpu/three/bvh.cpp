@@ -167,7 +167,9 @@ std::string bvh_3d_t::to_string() const {
 }
 
 void add_3d_bvh_modules(py::module &m) {
-    py::class_<bvh_3d_t, std::shared_ptr<bvh_3d_t>>(m, "BVH3D")
+    auto bvh_3d = py::class_<bvh_3d_t, std::shared_ptr<bvh_3d_t>>(m, "BVH3D");
+
+    bvh_3d
         .def(py::init<trimesh_3d_t &>(), "Boundary volume hierarchy",
              "trimesh"_a)
         .def("__str__", &bvh_3d_t::to_string, "String representation",
