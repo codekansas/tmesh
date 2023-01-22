@@ -4,8 +4,6 @@
 
 #include "bvh.h"
 
-#define TOLERANCE 1e-6
-
 using namespace pybind11::literals;
 
 namespace trimesh {
@@ -19,7 +17,7 @@ trimesh_3d_t triangulation(const triangle_3d_t &triangle,
 
     // Checks that all points are inside the triangle.
     for (auto &point : points) {
-        if (!triangle.contains(point))
+        if (!triangle.contains_point(point))
             throw std::runtime_error("Point " + point.to_string() +
                                      " is not inside triangle " +
                                      triangle.to_string() + ".");

@@ -3,13 +3,12 @@
 #include <numeric>
 #include <sstream>
 
+#include "../options.h"
 #include "boolean.h"
 
 using namespace pybind11::literals;
 
 namespace trimesh {
-
-#define TOLERANCE 1e-6
 
 /* ---------- *
  * point_2d_t *
@@ -52,13 +51,13 @@ point_2d_t point_2d_t::operator/=(float s) {
 }
 
 bool point_2d_t::operator==(const point_2d_t &p) const {
-    return distance_to_point(p) < TOLERANCE;
+    return distance_to_point(p) < get_tolerance();
 }
 
 bool point_2d_t::operator!=(const point_2d_t &p) const { return !(*this == p); }
 
 bool point_2d_t::operator<(const point_2d_t &p) const {
-    return x < p.x || (x == p.x && y < p.y);
+    return *this != p && (x < p.x || (x == p.x && y < p.y));
 }
 
 point_2d_t point_2d_t::operator<<=(const affine_2d_t &a) {
@@ -115,7 +114,8 @@ barycentric_coordinates_t point_2d_t::barycentric_coordinates(
 
 bool point_2d_t::is_inside_triangle(const triangle_2d_t &t) const {
     barycentric_coordinates_t bary = barycentric_coordinates(t);
-    return bary.u >= -TOLERANCE && bary.v >= -TOLERANCE && bary.w >= -TOLERANCE;
+    return bary.u >= -get_tolerance() && bary.v >= -get_tolerance() &&
+           bary.w >= -get_tolerance();
 }
 
 bool point_2d_t::is_inside_bounding_box(const bounding_box_2d_t &bb) const {
@@ -199,7 +199,7 @@ bool line_2d_t::operator!=(const line_2d_t &other) const {
 }
 
 bool line_2d_t::operator<(const line_2d_t &other) const {
-    return p1 < other.p1 || p2 < other.p2;
+    return *this != other && (p1 < other.p1 || p2 < other.p2);
 }
 
 line_2d_t line_2d_t::operator<<=(const affine_2d_t &a) {
@@ -228,14 +228,14 @@ std::optional<point_2d_t> line_2d_t::line_intersection(
     point_2d_t s = l.p2 - l.p1;
 
     float rxs = r.cross(s);
-    if (std::abs(rxs) < TOLERANCE) return std::nullopt;
+    if (std::abs(rxs) < get_tolerance()) return std::nullopt;
 
     point_2d_t qmp1 = l.p1 - p1;
     float t = qmp1.cross(s) / rxs;
     float u = qmp1.cross(r) / rxs;
 
-    if (t < -TOLERANCE || t > 1.0f + TOLERANCE || u < -TOLERANCE ||
-        u > 1.0f + TOLERANCE)
+    if (t < -get_tolerance() || t > 1.0f + get_tolerance() ||
+        u < -get_tolerance() || u > 1.0f + get_tolerance())
         return std::nullopt;
 
     return p1 + r * t;
@@ -316,7 +316,7 @@ bool triangle_2d_t::operator!=(const triangle_2d_t &other) const {
 }
 
 bool triangle_2d_t::operator<(const triangle_2d_t &other) const {
-    return p1 < other.p1 || p2 < other.p2 || p3 < other.p3;
+    return *this != other && (p1 < other.p1 || p2 < other.p2 || p3 < other.p3);
 }
 
 triangle_2d_t triangle_2d_t::operator<<=(const affine_2d_t &a) {
@@ -340,8 +340,17 @@ std::vector<line_2d_t> triangle_2d_t::edges() const {
     return {{p1, p2}, {p2, p3}, {p3, p1}};
 }
 
-bool triangle_2d_t::contains(const point_2d_t &p) const {
+bool triangle_2d_t::is_clockwise() const {
+    return (p3 - p1).cross(p2 - p1) < 0.0f;
+}
+
+bool triangle_2d_t::contains_point(const point_2d_t &p) const {
     return p.is_inside_triangle(*this);
+}
+
+bool triangle_2d_t::contains_triangle(const triangle_2d_t &t) const {
+    return t.p1.is_inside_triangle(*this) && t.p2.is_inside_triangle(*this) &&
+           t.p3.is_inside_triangle(*this);
 }
 
 bool triangle_2d_t::intersects_bounding_box(const bounding_box_2d_t &bb) const {
@@ -349,8 +358,10 @@ bool triangle_2d_t::intersects_bounding_box(const bounding_box_2d_t &bb) const {
 }
 
 bool triangle_2d_t::intersects_triangle(const triangle_2d_t &t) const {
-    if (t.contains(p1) || t.contains(p2) || t.contains(p3)) return true;
-    if (contains(t.p1) || contains(t.p2) || contains(t.p3)) return true;
+    if (t.contains_point(p1) || t.contains_point(p2) || t.contains_point(p3))
+        return true;
+    if (contains_point(t.p1) || contains_point(t.p2) || contains_point(t.p3))
+        return true;
     for (auto &l : edges()) {
         if (l.intersects_triangle(t)) return true;
     }
@@ -548,6 +559,15 @@ bool bounding_box_2d_t::intersects_triangle(const triangle_2d_t &t) const {
     for (const auto &l : edges())
         if (l.intersects_triangle(t)) return true;
     return false;
+}
+
+bool bounding_box_2d_t::contains_point(const point_2d_t &p) const {
+    return p.x >= min.x - get_tolerance() && p.x <= max.x + get_tolerance() &&
+           p.y >= min.y - get_tolerance() && p.y <= max.y + get_tolerance();
+}
+
+bool bounding_box_2d_t::contains_triangle(const triangle_2d_t &t) const {
+    return contains_point(t.p1) && contains_point(t.p2) && contains_point(t.p3);
 }
 
 float bounding_box_2d_t::distance_to_point(const point_2d_t &p) const {
@@ -1344,8 +1364,14 @@ void add_2d_types_modules(py::module &m) {
              py::is_operator())
         .def("area", &triangle_2d_t::area, "The triangle's area")
         .def("center", &triangle_2d_t::center, "The triangle's center")
-        .def("contains", &triangle_2d_t::contains,
+        .def("vertices", &triangle_2d_t::vertices, "The triangle's vertices")
+        .def("edges", &triangle_2d_t::edges, "The triangle's edges")
+        .def("is_clockwise", &triangle_2d_t::is_clockwise,
+             "Is the triangle clockwise")
+        .def("contains_point", &triangle_2d_t::contains_point,
              "Does the triangle contain a point", "p"_a)
+        .def("contains_triangle", &triangle_2d_t::contains_triangle,
+             "Does the triangle contain another triangle", "t"_a)
         .def("intersects_bounding_box", &triangle_2d_t::intersects_bounding_box,
              "Does the triangle intersect a bounding box", "bb"_a)
         .def("intersects_triangle", &triangle_2d_t::intersects_triangle,
@@ -1400,6 +1426,12 @@ void add_2d_types_modules(py::module &m) {
         .def("vertices", &bounding_box_2d_t::vertices,
              "The bounding box's vertices")
         .def("edges", &bounding_box_2d_t::edges, "The bounding box's edges")
+        .def("intersects_triangle", &bounding_box_2d_t::intersects_triangle,
+             "Does the bounding box intersect a triangle", "t"_a)
+        .def("contains_point", &bounding_box_2d_t::contains_point,
+             "Does the bounding box contain a point", "p"_a)
+        .def("contains_triangle", &bounding_box_2d_t::contains_triangle,
+             "Does the bounding box contain a triangle", "t"_a)
         .def("distance_to_point", &bounding_box_2d_t::distance_to_point,
              "Distance to a point", "p"_a)
         .def("distance_to_line", &bounding_box_2d_t::distance_to_line,

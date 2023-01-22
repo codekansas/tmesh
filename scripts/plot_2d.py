@@ -15,7 +15,7 @@ from tmesh import Affine2D, regular_polygon_mesh
 
 scale = Affine2D(scale=1.0)
 rotate = Affine2D(rot=math.pi / 3)
-translate = Affine2D(trans=(0.75, 0.0))
+translate = Affine2D(trans=(0.75, 0.5))
 
 # Gets two regular polygons.
 mesh_a = regular_polygon_mesh(1.0, n=3)
@@ -26,12 +26,12 @@ mesh_b = regular_polygon_mesh(1.0, n=3) << scale @ rotate @ translate
 THINGS_TO_PLOT: List[Thing] = [
     mesh_a,
     mesh_b,
-    mesh_a & mesh_b,
-    # mesh_a | mesh_b,
-    # mesh_a - mesh_b,
+    # mesh_a & mesh_b,
+    # mesh_b | mesh_a,
+    mesh_a - mesh_b,
 ]
 
-ALPHA = 0.4
+ALPHA = 1.0
 
 
 def get_color(i: int) -> str:

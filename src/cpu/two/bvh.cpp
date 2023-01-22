@@ -6,7 +6,7 @@
 #include <sstream>
 #include <unordered_set>
 
-#define TOLERANCE 1e-6
+#include "../options.h"
 
 using namespace pybind11::literals;
 
@@ -28,7 +28,7 @@ triangle_split_tree_2d_t::triangle_split_tree_2d_t(
 void triangle_split_tree_2d_t::add_triangle(const face_t &f,
                                             const size_t parent) {
     triangle_2d_t t{vertices[f.a], vertices[f.b], vertices[f.c]};
-    if (t.area() < TOLERANCE) return;
+    if (t.area() < get_tolerance()) return;
 
     this->faces.push_back({f.a, f.b, f.c});
     this->children.push_back(std::vector<size_t>{});
@@ -64,7 +64,7 @@ triangle_split_tree_2d_t::get_leaf_triangles_which_intersect_point(
         size_t i = q.front();
         q.pop();
         auto t = get_triangle(i);
-        if (t.contains(p)) {
+        if (t.contains_point(p)) {
             if (is_leaf(i)) {
                 leaf_triangles.insert(i);
             } else {
@@ -330,6 +330,41 @@ std::vector<face_t> bvh_2d_t::intersections(const triangle_2d_t &t) const {
     std::vector<face_t> intrs;
     intersections_helper(tree, trimesh, 0, t, intrs);
     return intrs;
+}
+
+std::optional<face_t> get_containing_face_helper(
+    const tree_t tree, const std::shared_ptr<trimesh_2d_t> &trimesh, int id,
+    const triangle_2d_t &t) {
+    if (id < 0 || id >= tree.size()) return std::nullopt;
+
+    auto &[face_id, lhs, rhs, box] = tree[id];
+
+    // If some part of the triangle is outside the current bounding box, then
+    // the triangle is not inside the mesh.
+    if (!box.contains_triangle(t)) {
+        return std::nullopt;
+    }
+
+    // Checks if the triangle is inside the current triangle.
+    auto &face_indices = trimesh->faces()[face_id];
+    triangle_2d_t face = {trimesh->vertices()[face_indices.a],
+                          trimesh->vertices()[face_indices.b],
+                          trimesh->vertices()[face_indices.c]};
+    if (face.contains_triangle(t)) {
+        return face_indices;
+    }
+
+    // Recursively checks the left and right subtrees.
+    if (auto face = get_containing_face_helper(tree, trimesh, lhs, t))
+        return face;
+    if (auto face = get_containing_face_helper(tree, trimesh, rhs, t))
+        return face;
+    return std::nullopt;
+}
+
+std::optional<face_t> bvh_2d_t::get_containing_face(
+    const triangle_2d_t &t) const {
+    return get_containing_face_helper(tree, trimesh, 0, t);
 }
 
 std::string bvh_2d_t::to_string() const {

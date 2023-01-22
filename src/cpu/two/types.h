@@ -100,8 +100,10 @@ struct triangle_2d_t {
     point_2d_t center() const;
     std::vector<point_2d_t> vertices() const;
     std::vector<line_2d_t> edges() const;
+    bool is_clockwise() const;
 
-    bool contains(const point_2d_t &p) const;
+    bool contains_point(const point_2d_t &p) const;
+    bool contains_triangle(const triangle_2d_t &t) const;
     bool intersects_bounding_box(const bounding_box_2d_t &bb) const;
     bool intersects_triangle(const triangle_2d_t &t) const;
     std::vector<point_2d_t> triangle_intersection(const triangle_2d_t &t) const;
@@ -135,6 +137,8 @@ struct bounding_box_2d_t {
     std::vector<line_2d_t> edges() const;
 
     bool intersects_triangle(const triangle_2d_t &t) const;
+    bool contains_point(const point_2d_t &p) const;
+    bool contains_triangle(const triangle_2d_t &t) const;
     float distance_to_point(const point_2d_t &p) const;
     float distance_to_line(const line_2d_t &l) const;
     float distance_to_triangle(const triangle_2d_t &t) const;

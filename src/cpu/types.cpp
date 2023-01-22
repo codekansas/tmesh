@@ -4,9 +4,9 @@
 #include <numeric>
 #include <sstream>
 
-using namespace pybind11::literals;
+#include "options.h"
 
-#define TOLERANCE 1e-6
+using namespace pybind11::literals;
 
 namespace trimesh {
 
@@ -21,7 +21,7 @@ bool face_t::operator==(const face_t &f) const {
 bool face_t::operator!=(const face_t &f) const { return !(*this == f); }
 
 bool face_t::operator<(const face_t &f) const {
-    return std::tie(a, b, c) < std::tie(f.a, f.b, f.c);
+    return *this != f && std::tie(a, b, c) < std::tie(f.a, f.b, f.c);
 }
 
 std::vector<size_t> face_t::get_vertices() const { return {a, b, c}; }
@@ -44,8 +44,9 @@ barycentric_coordinates_t::barycentric_coordinates_t(float u, float v, float w)
 
 bool barycentric_coordinates_t::operator==(
     const barycentric_coordinates_t &b) const {
-    return std::abs(u - b.u) < TOLERANCE && std::abs(v - b.v) < TOLERANCE &&
-           std::abs(w - b.w) < TOLERANCE;
+    return std::abs(u - b.u) < get_tolerance() &&
+           std::abs(v - b.v) < get_tolerance() &&
+           std::abs(w - b.w) < get_tolerance();
 }
 
 bool barycentric_coordinates_t::operator!=(

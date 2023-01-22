@@ -116,7 +116,7 @@ struct triangle_3d_t {
     std::vector<line_3d_t> edges() const;
 
     float distance_to_point(const point_3d_t &p) const;
-    bool contains(const point_3d_t &p) const;
+    bool contains_point(const point_3d_t &p) const;
     bool is_coplanar(const triangle_3d_t &t) const;
     circumcircle_3d_t circumcircle() const;
     point_3d_t point_from_barycentric_coords(

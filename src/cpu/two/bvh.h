@@ -61,6 +61,7 @@ struct bvh_2d_t {
     }
     tree_t get_tree() const { return this->tree; }
     std::vector<face_t> intersections(const triangle_2d_t &t) const;
+    std::optional<face_t> get_containing_face(const triangle_2d_t &t) const;
     std::string to_string() const;
 };
 

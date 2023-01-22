@@ -5,11 +5,11 @@
 
 #include "bvh.h"
 
-#define TOLERANCE 1e-6
-
 using namespace pybind11::literals;
 
 namespace trimesh {
+
+enum boolean_2d_op { UNION, INTERSECTION, DIFFERENCE };
 
 trimesh_2d_t triangulation(const triangle_2d_t &triangle,
                            const std::vector<point_2d_t> &points) {
@@ -18,7 +18,7 @@ trimesh_2d_t triangulation(const triangle_2d_t &triangle,
 
     // Checks that all points are inside the triangle.
     for (auto &point : points) {
-        if (!triangle.contains(point))
+        if (!triangle.contains_point(point))
             throw std::runtime_error("Point " + point.to_string() +
                                      " is not inside triangle " +
                                      triangle.to_string() + ".");
@@ -143,30 +143,125 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
     return {new_vertices, new_faces};
 }
 
+trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
+                     boolean_2d_op op) {
+    const trimesh_2d_t a_split = split_at_all_intersections(mesh_a, mesh_b),
+                       b_split = split_at_all_intersections(mesh_b, mesh_a);
+
+    // Classifies each face in A as inside or outside B, and each face in B
+    // as inside or outside A.
+    bvh_2d_t a_bvh(mesh_a), b_bvh(mesh_b);
+    std::vector<bool> a_face_inside(a_split.faces().size()),
+        b_face_inside(b_split.faces().size());
+    for (size_t a_face_id = 0; a_face_id < a_split.faces().size();
+         a_face_id++) {
+        auto &a_face = a_split.faces()[a_face_id];
+        auto &a_tri = a_split.get_triangle(a_face);
+        a_face_inside[a_face_id] = b_bvh.get_containing_face(a_tri).has_value();
+    }
+    for (size_t b_face_id = 0; b_face_id < b_split.faces().size();
+         b_face_id++) {
+        auto &b_face = b_split.faces()[b_face_id];
+        auto &b_tri = b_split.get_triangle(b_face);
+        b_face_inside[b_face_id] = a_bvh.get_containing_face(b_tri).has_value();
+    }
+
+    // Adds all vertices from A to the new mesh. We will clean up unused
+    // vertices later.
+    std::vector<point_2d_t> vertices;
+    vertices.insert(vertices.end(), a_split.vertices().begin(),
+                    a_split.vertices().end());
+
+    // Creates a new trimesh with the desired faces depending on the operation.
+    // For unions, add all faces from A, and all faces from B which are not
+    // inside A. For intersections, add all faces from A which are inside B.
+    // For differences, add all faces from A which are not inside B.
+    face_set_t faces;
+    for (size_t a_face_id = 0; a_face_id < a_split.faces().size();
+         a_face_id++) {
+        auto &a_face = a_split.faces()[a_face_id];
+        switch (op) {
+            case UNION:
+                faces.insert(a_face);
+                break;
+            case INTERSECTION:
+                if (a_face_inside[a_face_id]) faces.insert(a_face);
+                break;
+            case DIFFERENCE:
+                if (!a_face_inside[a_face_id]) faces.insert(a_face);
+                break;
+        }
+    }
+    if (op == UNION) {
+        vertices.insert(vertices.end(), b_split.vertices().begin(),
+                        b_split.vertices().end());
+        for (size_t b_face_id = 0; b_face_id < b_split.faces().size();
+             b_face_id++) {
+            auto &b_face = b_split.faces()[b_face_id];
+            if (!b_face_inside[b_face_id])
+                faces.insert({b_face.a + a_split.vertices().size(),
+                              b_face.b + a_split.vertices().size(),
+                              b_face.c + a_split.vertices().size()});
+        }
+    }
+
+    // Merges any vertices which are within the tolerance of each other.
+    // This works because point_2d_t::operator< will be false if the points
+    // are within the tolerance of each other. We can therefore remap
+    // vertices to the lowest matched vertex ID.
+    std::map<point_2d_t, size_t> vertex_to_id_map;
+    for (size_t i = 0; i < vertices.size(); i++) {
+        auto &v = vertices[i];
+        if (vertex_to_id_map.find(v) == vertex_to_id_map.end())
+            vertex_to_id_map[v] = i;
+    }
+    face_set_t remaped_faces;
+    for (auto f : faces) {
+        remaped_faces.insert({vertex_to_id_map[vertices[f.a]],
+                              vertex_to_id_map[vertices[f.b]],
+                              vertex_to_id_map[vertices[f.c]]});
+    }
+
+    // Removes any unused vertices and remaps the faces.
+    std::unordered_map<size_t, size_t> vertex_id_map;
+    for (auto f : remaped_faces) {
+        vertex_id_map[f.a] = 0;
+        vertex_id_map[f.b] = 0;
+        vertex_id_map[f.c] = 0;
+    }
+    std::vector<point_2d_t> new_vertices;
+    for (auto &[old_id, new_id] : vertex_id_map) {
+        new_id = new_vertices.size();
+        new_vertices.push_back(vertices[old_id]);
+    }
+    face_set_t new_faces;
+    for (auto f : remaped_faces) {
+        const auto &a = new_vertices[vertex_id_map[f.a]],
+                   &b = new_vertices[vertex_id_map[f.b]],
+                   &c = new_vertices[vertex_id_map[f.c]];
+
+        if ((b - a).cross(c - a) < 0) {
+            new_faces.insert(
+                {vertex_id_map[f.a], vertex_id_map[f.c], vertex_id_map[f.b]});
+        } else {
+            new_faces.insert(
+                {vertex_id_map[f.a], vertex_id_map[f.b], vertex_id_map[f.c]});
+        }
+    }
+
+    return {new_vertices, new_faces};
+}
+
 trimesh_2d_t mesh_union(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    auto a_split = split_at_all_intersections(a, b),
-         b_split = split_at_all_intersections(b, a);
-
-    // Adds all triangles in a_split, and all triangles in b_split which are
-    // not in a_split.
-
-    return a_split;
+    return mesh_op(a, b, UNION);
 }
 
 trimesh_2d_t mesh_intersection(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    auto a_split = split_at_all_intersections(a, b);
-
-    // Adds all triangles in a_split which are inside a triangle in b.
-
-    return a_split;
+    return mesh_op(a, b, INTERSECTION);
 }
 
 trimesh_2d_t mesh_difference(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    auto a_split = split_at_all_intersections(a, b);
-
-    // Adds all triangles in a_split which are not inside a triangle in b.
-
-    return a_split;
+    return mesh_op(a, b, DIFFERENCE);
 }
 
 void add_2d_boolean_modules(py::module &m) {

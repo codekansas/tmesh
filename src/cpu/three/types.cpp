@@ -3,13 +3,12 @@
 #include <numeric>
 #include <sstream>
 
+#include "../options.h"
 #include "boolean.h"
 
 using namespace pybind11::literals;
 
 namespace trimesh {
-
-#define TOLERANCE 1e-6
 
 /* ------- *
  * Point3D *
@@ -58,13 +57,14 @@ point_3d_t point_3d_t::operator/=(float s) {
 }
 
 bool point_3d_t::operator==(const point_3d_t &p) const {
-    return distance_to_point(p) < TOLERANCE;
+    return distance_to_point(p) < get_tolerance();
 }
 
 bool point_3d_t::operator!=(const point_3d_t &p) const { return !(*this == p); }
 
 bool point_3d_t::operator<(const point_3d_t &p) const {
-    return x < p.x || (x == p.x && (y < p.y || (y == p.y && z < p.z)));
+    return *this != p &&
+           (x < p.x || (x == p.x && (y < p.y || (y == p.y && z < p.z))));
 }
 
 point_3d_t point_3d_t::operator<<=(const affine_3d_t &a) {
@@ -116,9 +116,9 @@ barycentric_coordinates_t point_3d_t::barycentric_coordinates(
 }
 
 bool point_3d_t::is_inside_bounding_box(const bounding_box_3d_t &bb) const {
-    return x >= bb.min.x - TOLERANCE && x <= bb.max.x + TOLERANCE &&
-           y >= bb.min.y - TOLERANCE && y <= bb.max.y + TOLERANCE &&
-           z >= bb.min.z - TOLERANCE && z <= bb.max.z + TOLERANCE;
+    return x >= bb.min.x - get_tolerance() && x <= bb.max.x + get_tolerance() &&
+           y >= bb.min.y - get_tolerance() && y <= bb.max.y + get_tolerance() &&
+           z >= bb.min.z - get_tolerance() && z <= bb.max.z + get_tolerance();
 }
 
 float point_3d_t::distance_to_point(const point_3d_t &other) const {
@@ -137,7 +137,7 @@ float point_3d_t::distance_to_triangle(const triangle_3d_t &t) const {
 
 bool point_3d_t::is_coplanar(const triangle_3d_t &t) const {
     return std::abs((*this - t.p1).dot((t.p2 - t.p1).cross(t.p3 - t.p1))) <
-           TOLERANCE;
+           get_tolerance();
 }
 
 std::optional<point_3d_t> point_3d_t::project_to_line(
@@ -223,7 +223,7 @@ std::optional<std::tuple<point_3d_t, point_3d_t>> line_3d_t::closest_points(
     point_3d_t n = d1.cross(d2);
     point_3d_t n1 = d1.cross(n), n2 = d2.cross(n);
     float d2n1 = d2.dot(n1), d1n2 = d1.dot(n2);
-    if (std::abs(d2n1) < TOLERANCE && std::abs(d1n2) < TOLERANCE) {
+    if (std::abs(d2n1) < get_tolerance() && std::abs(d1n2) < get_tolerance()) {
         return std::nullopt;
     }
     point_3d_t c1 = p1 + d1 * (n2.dot(l.p1 - p1) / d1n2),
@@ -238,7 +238,7 @@ std::optional<point_3d_t> line_3d_t::line_intersection(
         return std::nullopt;
     }
     auto a = std::get<0>(*p), b = std::get<1>(*p);
-    if (a.distance_to_point(b) > TOLERANCE) {
+    if (a.distance_to_point(b) > get_tolerance()) {
         return std::nullopt;
     }
     return a;
@@ -262,7 +262,7 @@ std::optional<point_3d_t> line_3d_t::triangle_intersection(
     float det = -n.dot(d21);
 
     // Lines are parallel.
-    if (std::abs(det) < TOLERANCE) {
+    if (std::abs(det) < get_tolerance()) {
         return std::nullopt;
     }
 
@@ -273,8 +273,8 @@ std::optional<point_3d_t> line_3d_t::triangle_intersection(
     float v = -e1.dot(dao) / det;
     float w = ao.dot(n) / det;
 
-    if (w < -TOLERANCE || u < -TOLERANCE || v < -TOLERANCE ||
-        (u + v) > 1.0 + TOLERANCE || w > 1.0 + TOLERANCE) {
+    if (w < -get_tolerance() || u < -get_tolerance() || v < -get_tolerance() ||
+        (u + v) > 1.0 + get_tolerance() || w > 1.0 + get_tolerance()) {
         return std::nullopt;
     }
 
@@ -325,7 +325,7 @@ std::string line_3d_t::to_string() const {
  * -------------- */
 
 bool circumcircle_3d_t::operator==(const circumcircle_3d_t &c) const {
-    return center == c.center && std::abs(radius - c.radius) < TOLERANCE;
+    return center == c.center && std::abs(radius - c.radius) < get_tolerance();
 }
 
 bool circumcircle_3d_t::operator!=(const circumcircle_3d_t &c) const {
@@ -333,7 +333,7 @@ bool circumcircle_3d_t::operator!=(const circumcircle_3d_t &c) const {
 }
 
 bool circumcircle_3d_t::contains_point(const point_3d_t &p) const {
-    return center.distance_to_point(p) < radius + TOLERANCE;
+    return center.distance_to_point(p) < radius + get_tolerance();
 }
 
 std::string circumcircle_3d_t::to_string() const {
@@ -392,17 +392,17 @@ float triangle_3d_t::distance_to_point(const point_3d_t &p) const {
                      p.distance_to_line({p3, p1})});
 }
 
-bool triangle_3d_t::contains(const point_3d_t &p) const {
+bool triangle_3d_t::contains_point(const point_3d_t &p) const {
     std::optional<point_3d_t> tp = p.project_to_triangle(*this);
     if (!tp) return false;
-    return p.distance_to_point(*tp) < TOLERANCE;
+    return p.distance_to_point(*tp) < get_tolerance();
 }
 
 bool triangle_3d_t::is_coplanar(const triangle_3d_t &t) const {
     point_3d_t n = normal();
-    return std::abs(n.dot(t.p1 - p1)) < TOLERANCE &&
-           std::abs(n.dot(t.p2 - p1)) < TOLERANCE &&
-           std::abs(n.dot(t.p3 - p1)) < TOLERANCE;
+    return std::abs(n.dot(t.p1 - p1)) < get_tolerance() &&
+           std::abs(n.dot(t.p2 - p1)) < get_tolerance() &&
+           std::abs(n.dot(t.p3 - p1)) < get_tolerance();
 }
 
 circumcircle_3d_t triangle_3d_t::circumcircle() const {
@@ -429,10 +429,10 @@ std::vector<point_3d_t> triangle_3d_t::triangle_intersection(
     std::vector<point_3d_t> points;
     if (is_coplanar(t)) {
         for (const point_3d_t &p : t.vertices()) {
-            if (contains(p)) points.push_back(p);
+            if (contains_point(p)) points.push_back(p);
         }
         for (const point_3d_t &p : vertices()) {
-            if (t.contains(p)) points.push_back(p);
+            if (t.contains_point(p)) points.push_back(p);
         }
         for (const line_3d_t &e : edges()) {
             for (const line_3d_t &f : t.edges()) {
@@ -442,10 +442,10 @@ std::vector<point_3d_t> triangle_3d_t::triangle_intersection(
         }
     } else {
         for (const point_3d_t &p : t.vertices()) {
-            if (contains(p)) points.push_back(p);
+            if (contains_point(p)) points.push_back(p);
         }
         for (const point_3d_t &p : vertices()) {
-            if (t.contains(p)) points.push_back(p);
+            if (t.contains_point(p)) points.push_back(p);
         }
     }
     return points;
