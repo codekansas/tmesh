@@ -8,28 +8,8 @@ from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
 
 Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
 
-# TODO: Remove
-import math
-
-from tmesh import Affine2D, regular_polygon_mesh
-
-scale = Affine2D(scale=1.0)
-rotate = Affine2D(rot=math.pi / 3)
-translate = Affine2D(trans=(0.75, 0.5))
-
-# Gets two regular polygons.
-mesh_a = regular_polygon_mesh(1.0, n=3)
-mesh_b = regular_polygon_mesh(1.0, n=3) << scale @ rotate @ translate
-# END REMOVE
-
 # To plot things, add them to this list.
-THINGS_TO_PLOT: List[Thing] = [
-    mesh_a,
-    mesh_b,
-    # mesh_a & mesh_b,
-    # mesh_b | mesh_a,
-    mesh_a - mesh_b,
-]
+THINGS_TO_PLOT: List[Thing] = []
 
 ALPHA = 1.0
 

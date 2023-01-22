@@ -33,47 +33,32 @@ trimesh_3d_t linear_extrude(
     std::vector<point_3d_t> vertices;
     face_set_t faces;
 
-    // Ensure that polygon is counter-clockwise.
-    std::vector<size_t> poly_inds = mesh.get_polygon_inds();
+    // Gets the polygons for each connected component.
+    auto polygons = mesh.get_polygons();
 
-    size_t tv = mesh.vertices().size();
-    size_t tf = mesh.faces().size();
-    size_t p = poly_inds.size();
+    // Adds bottom and top vertices.
+    for (auto &vertex : mesh.vertices())
+        vertices.push_back({vertex.x, vertex.y, 0});
+    for (auto &vertex : mesh.vertices())
+        vertices.push_back(
+            {vertex.x, vertex.y, height_func(vertex.x, vertex.y)});
+    size_t top_offset = mesh.vertices().size();
 
-    vertices.reserve(2 * tv);
-    faces.reserve(2 * tf + 2 * p);
-
-    // Adds bottom vertices.
-    for (size_t i = 0; i < tv; i++) {
-        float x = mesh.vertices()[i].x;
-        float y = mesh.vertices()[i].y;
-        float z = height_func(x, y);
-        vertices.push_back({x, y, 0});
+    // Adds bottom and top faces.
+    for (auto &face : mesh.faces()) {
+        auto &[a, b, c] = face;
+        faces.insert({a, c, b});
+        faces.insert({a + top_offset, b + top_offset, c + top_offset});
     }
 
-    // Adds top vertices.
-    for (size_t i = 0; i < tv; i++) {
-        float x = mesh.vertices()[i].x;
-        float y = mesh.vertices()[i].y;
-        float z = height_func(x, y);
-        vertices.push_back({x, y, z});
-    }
-
-    // Adds top and bottom faces.
-    for (size_t i = 0; i < tf; i++) {
-        size_t v0 = mesh.faces()[i].a;
-        size_t v1 = mesh.faces()[i].b;
-        size_t v2 = mesh.faces()[i].c;
-        faces.insert({v0, v2, v1});
-        faces.insert({v0 + tv, v1 + tv, v2 + tv});
-    }
-
-    // Adds side faces. Each side face is made up of two triangles.
-    for (size_t i = 0; i < p; i++) {
-        size_t v0 = poly_inds[i];
-        size_t v1 = poly_inds[(i + 1) % p];
-        faces.insert({v0, v1 + tv, v1});
-        faces.insert({v0, v0 + tv, v1 + tv});
+    // Adds side faces.
+    for (auto &[poly, poly_inds] : polygons) {
+        for (size_t i = 0; i < poly_inds.size(); i++) {
+            auto &a = poly_inds[i];
+            auto &b = poly_inds[(i + 1) % poly_inds.size()];
+            faces.insert({a, b, b + top_offset});
+            faces.insert({a, b + top_offset, a + top_offset});
+        }
     }
 
     return {vertices, faces};
