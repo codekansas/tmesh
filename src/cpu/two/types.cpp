@@ -1011,15 +1011,8 @@ const std::vector<triangle_2d_t> trimesh_2d_t::get_triangles() const {
     return result;
 }
 
-float angle(const point_2d_t &p1, const point_2d_t &p2, const point_2d_t &p3) {
-    auto v1 = p2 - p1;
-    auto v2 = p3 - p1;
-    auto angle = std::atan2(v2.y, v2.x) - std::atan2(v1.y, v1.x);
-    if (angle < 0.0f) angle += 2.0f * M_PI;
-    return angle;
-}
-
-const std::vector<size_t> trimesh_2d_t::get_polygon_inds() const {
+const std::tuple<std::vector<size_t>, polygon_2d_t> trimesh_2d_t::get_polygon()
+    const {
     // First, counts the number of faces that each edge is part of.
     std::map<const std::tuple<size_t, size_t>, size_t> edge_counts;
     for (auto &face : _faces) {
@@ -1065,10 +1058,14 @@ const std::vector<size_t> trimesh_2d_t::get_polygon_inds() const {
     }
 
     // If the polygon is oriented clockwise, reverse it.
-    auto &p1 = _vertices[polygon_inds[0]], &p2 = _vertices[polygon_inds[1]],
-         &p3 = _vertices[polygon_inds[2]];
-    if (angle(p1, p2, p3) < M_PI) {
+    std::vector<point_2d_t> polygon_vertices;
+    for (auto &ind : polygon_inds) {
+        polygon_vertices.push_back(_vertices[ind]);
+    }
+    polygon_2d_t polygon{polygon_vertices};
+    if (polygon.is_clockwise()) {
         std::reverse(polygon_inds.begin(), polygon_inds.end());
+        polygon.reverse();
     }
 
     // Check that the polygon indices are unique.
@@ -1080,16 +1077,7 @@ const std::vector<size_t> trimesh_2d_t::get_polygon_inds() const {
         throw std::invalid_argument("Polygon indices are not unique");
     }
 
-    return polygon_inds;
-}
-
-const polygon_2d_t trimesh_2d_t::get_polygon() const {
-    auto polygon_inds = get_polygon_inds();
-    std::vector<point_2d_t> polygon;
-    for (auto &ind : polygon_inds) {
-        polygon.push_back(_vertices[ind]);
-    }
-    return {polygon};
+    return {polygon_inds, polygon};
 }
 
 trimesh_2d_t trimesh_2d_t::subdivide(bool at_edges) const {
@@ -1543,8 +1531,6 @@ void add_2d_types_modules(py::module &m) {
              "Returns the triangle for a given face", "face"_a)
         .def("get_triangles", &trimesh_2d_t::get_triangles,
              "Returns all the triangles in the trimesh")
-        .def("get_polygon_inds", &trimesh_2d_t::get_polygon_inds,
-             "Returns the indices of the polygon inscribing the trimesh")
         .def("get_polygon", &trimesh_2d_t::get_polygon,
              "Returns the polygon inscribing the trimesh")
         .def("subdivide", &trimesh_2d_t::subdivide,

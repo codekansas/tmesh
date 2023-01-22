@@ -12,7 +12,8 @@ build:
 	$(call add_example,simple)
 	$(call add_example,cylinder)
 	$(call add_example,torus)
-	$(call add_example,intersection)
+	$(call add_example,boolean_ops_2d)
+	$(call add_example,intersection_3d)
 	$(call add_example,sphere)
 	$(call add_example,convex_hull)
 .PHONY: build

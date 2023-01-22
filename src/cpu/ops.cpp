@@ -34,7 +34,7 @@ trimesh_3d_t linear_extrude(
     face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
-    std::vector<size_t> poly_inds = mesh.get_polygon_inds();
+    auto [poly_inds, poly] = mesh.get_polygon();
 
     size_t tv = mesh.vertices().size();
     size_t tf = mesh.faces().size();
@@ -72,8 +72,8 @@ trimesh_3d_t linear_extrude(
     for (size_t i = 0; i < p; i++) {
         size_t v0 = poly_inds[i];
         size_t v1 = poly_inds[(i + 1) % p];
-        faces.insert({v0, v1 + tv, v1});
-        faces.insert({v0, v0 + tv, v1 + tv});
+        faces.insert({v0, v1, v1 + tv});
+        faces.insert({v0, v1 + tv, v0 + tv});
     }
 
     return {vertices, faces};

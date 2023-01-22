@@ -218,8 +218,7 @@ struct trimesh_2d_t {
     const face_list_t &faces() const;
     const triangle_2d_t get_triangle(const face_t &face) const;
     const std::vector<triangle_2d_t> get_triangles() const;
-    const std::vector<size_t> get_polygon_inds() const;
-    const polygon_2d_t get_polygon() const;
+    const std::tuple<std::vector<size_t>, polygon_2d_t> get_polygon() const;
     trimesh_2d_t subdivide(bool at_edges = true) const;
     std::string to_string() const;
 

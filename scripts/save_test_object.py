@@ -20,13 +20,13 @@ def main() -> None:
     rot = Affine3D(rot=(math.pi / 4, 0.0, 0.0))
     trans = Affine3D(trans=(0.0, 0.5, 0.5))
 
-    a = cuboid(1.0, 1.0, 1.0)
-    b = cuboid(1.0, 1.0, 1.0) << rot @ trans
+    mesh_a = cuboid(1.0, 1.0, 1.0)
+    mesh_b = cuboid(1.0, 1.0, 1.0) << rot @ trans
 
     if args.output.endswith(".obj"):
-        save_obj(args.output, a + b)
+        save_obj(args.output, mesh_a & mesh_b)
     elif args.output.endswith(".stl"):
-        save_stl(args.output, a + b)
+        save_stl(args.output, mesh_a & mesh_b)
     else:
         raise ValueError(f"Unknown file extension: {args.output}")
     print(f"Saved test file to {args.output}.")
