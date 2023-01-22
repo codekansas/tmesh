@@ -1,5 +1,5 @@
 # pylint: disable=import-outside-toplevel
-"""Setup script for fast-trimesh.
+"""Setup script for tmesh.
 
 This setup script uses CMake to build the extension. It is based on the
 example from the PyBind11 documentation:
@@ -166,15 +166,15 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-    name="fast-trimesh",
-    url="https://github.com/codekansas/fast-trimesh",
+    name="tmesh",
+    url="https://github.com/codekansas/tmesh",
     version=version,
     author="Ben Bolte",
     author_email="ben@bolte.cc",
-    description="A fast trimesh implementation",
+    description="A fast triangular implementation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    ext_modules=[CMakeExtension("fast_trimesh")],
+    ext_modules=[CMakeExtension("tmesh")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     setup_requires=["cmake", "mypy", "pybind11"],

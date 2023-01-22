@@ -2,16 +2,16 @@
 
 namespace py = pybind11;
 
-namespace fast_trimesh {
+namespace trimesh {
 
-PYBIND11_MODULE(fast_trimesh, m) {
-    m.doc() = "Fast trimesh implementation";
+PYBIND11_MODULE(tmesh, m) {
+    m.doc() = "Implementation of operations on triangular meshes";
 
-    cpu::add_modules(m);
+    add_cpu_modules(m);
 
 #ifdef WITH_CUDA
-    cuda::add_modules(m);
+    add_cuda_modules(m);
 #endif
 }
 
-}  // namespace fast_trimesh
+}  // namespace trimesh

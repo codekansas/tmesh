@@ -6,7 +6,7 @@ import sys
 from types import ModuleType
 from typing import Any, TextIO
 
-import fast_trimesh
+import tmesh
 
 
 def get_docs_for_level(mod: ModuleType, level: int) -> dict[str, Any]:
@@ -135,8 +135,9 @@ def write_html_file(file_ptr: TextIO, docs: dict[str, Any], level: int) -> None:
 
         if "methods" in value:
             for _, method in value["methods"].items():
-                file_ptr.write(f"<h{level + 4}> {method['name']}</h{level + 4}>\n")
-                file_ptr.write(f"<pre><code>{method['doc']}</code></pre>\n")
+                name, doc = method["name"], method["doc"].replace("\n", "<br>")
+                file_ptr.write(f"<h{level + 4}> {name}</h{level + 4}>\n")
+                file_ptr.write(f"<pre><code>{doc}</code></pre>\n")
 
 
 def main() -> None:
@@ -158,7 +159,7 @@ def main() -> None:
     parser.add_argument("-s", "--start-indent-level", default=0, type=int, help="The starting indent level.")
     args = parser.parse_args()
 
-    docs = get_docs_for_level(fast_trimesh, 0)
+    docs = get_docs_for_level(tmesh, 0)
 
     file_ptr = open(args.output, "w", encoding="utf-8") if not args.print else sys.stdout
 
@@ -191,7 +192,7 @@ def main() -> None:
 
         # Page header.
         file_ptr.write('<div class="page-header">\n')
-        file_ptr.write('<h1 class="display-4">Fast Trimesh</h1>\n')
+        file_ptr.write('<h1 class="display-4">tmesh</h1>\n')
         file_ptr.write("</div>\n")
 
         # Alert box.
@@ -201,25 +202,25 @@ def main() -> None:
 
         # Writes welcome statement.
         file_ptr.write("<h2>Welcome!</h2>\n")
-        file_ptr.write("<p>Fast Trimesh is a Python package for working with triangular meshes.</p>\n")
+        file_ptr.write("<p><code>tmesh</code> is a Python package for working with triangular meshes.</p>\n")
 
         # Writes installation instructions.
         file_ptr.write("<h2>Installation</h2>\n")
         # file_ptr.write("<p>Install using <code>pip</code>:</p>\n")
-        # file_ptr.write("<pre><code>pip install fast-trimesh</code></pre>\n")
+        # file_ptr.write("<pre><code>pip install tmesh</code></pre>\n")
 
         file_ptr.write("<h3>Install from source</h3>\n")
         file_ptr.write("<ol>\n")
         file_ptr.write("<li>Clone the repository:</li>\n")
-        file_ptr.write("<pre><code>git clone https://github.com/codekansas/fast-trimesh.git</code></pre>\n")
+        file_ptr.write("<pre><code>git clone https://github.com/codekansas/tmesh.git</code></pre>\n")
         file_ptr.write("<li>Install the package:</li>\n")
-        file_ptr.write("<pre><code>cd fast-trimesh</code></pre>\n")
+        file_ptr.write("<pre><code>cd tmesh</code></pre>\n")
         file_ptr.write("<pre><code>make install-conda</code></pre>\n")
         file_ptr.write("<pre><code>make install</code></pre>\n")
         file_ptr.write("</ol>\n")
 
         file_ptr.write("<h3>Install from Github using Pip</h3>\n")
-        file_ptr.write("<pre><code>pip install git+https://github.com/codekansas/fast-trimesh.git</code></pre>\n")
+        file_ptr.write("<pre><code>pip install git+https://github.com/codekansas/tmesh.git</code></pre>\n")
 
         # Writes the documentation.
         write_html_file(file_ptr, docs, args.start_indent_level)

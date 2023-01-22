@@ -5,7 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from fast_trimesh.cpu.io import (
+from tmesh import (
+    Affine3D,
+    Point2D,
+    Polygon2D,
+    cuboid,
     load_obj,
     load_ply,
     load_stl,
@@ -15,8 +19,6 @@ from fast_trimesh.cpu.io import (
     save_stl,
     save_stl_text,
 )
-from fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.cpu.types import Affine3D, Point2D, Polygon2D, Trimesh2D
 
 
 @pytest.mark.parametrize(
@@ -66,14 +68,6 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     trans = Affine3D(trans=(3.0, 3.0, 3.0))
     tr_b = tr_b << rot @ trans
 
-    # Tests the intersection of two trimeshes.
-    tr_c = tr_a & tr_b
-
-    # Tests adding the two trimeshes together in-place.
-    tr_a &= tr_b
-    assert tr_c.vertices == tr_a.vertices
-    assert tr_c.faces == tr_a.faces
-
     # Tests saving and loading the trimesh as an STL.
     stl_path = str(tmpdir / "file.stl")
     save_stl(stl_path, tr_a)
@@ -84,8 +78,8 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     assert sorted(tr_d.vertices) == sorted(tr_a.vertices)
 
     # Converts the faces and vertices to the absolute vertices.
-    tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces])
-    tr_d_face_vertices = sorted([tuple(tr_d.vertices[j] for j in i) for i in tr_d.faces])
+    tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i.get_vertices()) for i in tr_a.faces])
+    tr_d_face_vertices = sorted([tuple(tr_d.vertices[j] for j in i.get_vertices()) for i in tr_d.faces])
     assert tr_a_face_vertices == tr_d_face_vertices
 
     # Tests saving and loading the trimesh as a text STL.
@@ -101,8 +95,8 @@ def test_simple_trimesh_ops(tmpdir: Path) -> None:
     )
 
     # Converts the faces and vertices to the absolute vertices.
-    tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i) for i in tr_a.faces])
-    tr_e_face_vertices = sorted([tuple(tr_e.vertices[j] for j in i) for i in tr_e.faces])
+    tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i.get_vertices()) for i in tr_a.faces])
+    tr_e_face_vertices = sorted([tuple(tr_e.vertices[j] for j in i.get_vertices()) for i in tr_e.faces])
     assert all(
         aa.distance_to_point(bb) == pytest.approx(0, abs=1e-3)
         for a, b in zip(tr_a_face_vertices, tr_e_face_vertices)

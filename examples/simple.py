@@ -1,8 +1,6 @@
 import math
 
-from fast_trimesh.cpu.io import save_stl_text
-from fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.cpu.types import Affine3D
+from tmesh import Affine3D, cuboid, save_stl
 
 # Create some cuboids.
 a = cuboid(1.0, 1.0, 1.0, center=True)
@@ -14,4 +12,4 @@ trans = Affine3D(trans=(0.0, 0.5, 0.0))
 b <<= rot @ trans
 
 # Save the resulting cuboid.
-save_stl_text("simple.stl", a | b)
+save_stl("simple.stl", a | b)

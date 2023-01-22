@@ -3,9 +3,7 @@
 import argparse
 import math
 
-from fast_trimesh.cpu.io import save_obj, save_stl
-from fast_trimesh.cpu.shapes import cuboid
-from fast_trimesh.cpu.types import Affine3D
+from tmesh import Affine3D, cuboid, save_obj, save_stl
 
 
 def main() -> None:

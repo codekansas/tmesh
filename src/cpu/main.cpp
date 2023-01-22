@@ -1,19 +1,19 @@
 #include "main.h"
 
-namespace fast_trimesh {
-namespace cpu {
+#include "ops.h"
+#include "shapes.h"
+#include "three/main.h"
+#include "two/main.h"
+#include "types.h"
 
-void add_modules(py::module &m) {
-    py::module s = m.def_submodule("cpu");
-    s.doc() = "CPU backend";
+namespace trimesh {
 
-    types::add_modules(s);
-    io::add_modules(s);
-    shapes::add_modules(s);
-    aabb_tree::add_modules(s);
-    ops::add_modules(s);
-    boolean::add_modules(s);
+void add_cpu_modules(py::module &m) {
+    add_types_modules(m);
+    add_2d_modules(m);
+    add_3d_modules(m);
+    add_shapes_modules(m);
+    add_ops_modules(m);
 }
 
-}  // namespace cpu
-}  // namespace fast_trimesh
+}  // namespace trimesh

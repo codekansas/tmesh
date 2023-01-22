@@ -5,6 +5,8 @@
   - [x] STL
   - [x] OBJ
   - [ ] PLY
+- [ ] Add visualization for Jupyter notebooks using ` _repr_html_`
+  - [ ] Using `ipyvolume`
 - [ ] CPU
   - [ ] Mesh data structure
     - [x] Represent vertices and faces

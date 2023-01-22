@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-project(fast_trimesh LANGUAGES CXX)
-set(LIBRARY_NAME fast_trimesh)
+project(tmesh LANGUAGES CXX)
+set(LIBRARY_NAME tmesh)
 
 # Sets C++ standard.
 set(CMAKE_CXX_STANDARD 17)
