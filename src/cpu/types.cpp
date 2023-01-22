@@ -22,6 +22,8 @@ bool face_t::operator<(const face_t &f) const {
     return std::tie(a, b, c) < std::tie(f.a, f.b, f.c);
 }
 
+std::vector<size_t> face_t::get_vertices() const { return {a, b, c}; }
+
 std::vector<std::tuple<size_t, size_t>> face_t::get_edges() const {
     return {{a, b}, {b, c}, {c, a}};
 }
@@ -56,8 +58,21 @@ std::string BarycentricCoordinates::to_string() const {
 void add_types_modules(py::module &m) {
     // Defines the classes first, so that methods can resolve types
     // correctly.
+    auto face = py::class_<face_t>(m, "Face");
     auto barycentric_coordinates =
         py::class_<BarycentricCoordinates>(m, "BarycentricCoordinates");
+
+    // Defines Face methods.
+    face.def(py::init<size_t, size_t, size_t>())
+        .def_readwrite("a", &face_t::a, "First vertex index.")
+        .def_readwrite("b", &face_t::b, "Second vertex index.")
+        .def_readwrite("c", &face_t::c, "Third vertex index.")
+        .def("__eq__", &face_t::operator==)
+        .def("__ne__", &face_t::operator!=)
+        .def("__lt__", &face_t::operator<)
+        .def("get_vertices", &face_t::get_vertices)
+        .def("get_edges", &face_t::get_edges)
+        .def("__repr__", &face_t::to_string);
 
     // Defines BarycentricCoordinates methods.
     barycentric_coordinates

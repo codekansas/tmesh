@@ -21,6 +21,7 @@ struct face_t {
     bool operator!=(const face_t &f) const;
     bool operator<(const face_t &f) const;
 
+    std::vector<size_t> get_vertices() const;
     std::vector<std::tuple<size_t, size_t>> get_edges() const;
     std::string to_string() const;
 };

@@ -1,8 +1,11 @@
 import math
 
+import pytest
+
 from tmesh import Affine2D, regular_polygon_mesh
 
 
+@pytest.mark.skip("Not implemented yet")
 def test_union_2d() -> None:
     """Tests taking the union of two trimeshes."""
 

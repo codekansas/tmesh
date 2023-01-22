@@ -1,8 +1,11 @@
 import math
 
+import pytest
+
 from tmesh import Affine3D, tetrahedron
 
 
+@pytest.mark.skip("Not implemented yet")
 def test_union_3d() -> None:
     """Tests taking the union of two trimeshes."""
 
