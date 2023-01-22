@@ -9,28 +9,28 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
-Trimesh3D linear_extrude(const Polygon2D &polygon, float height) {
+trimesh_3d_t linear_extrude(const polygon_2d_t &polygon, float height) {
     std::function<float(float, float)> height_func =
         [height](float x, float y) -> float { return height; };
     return linear_extrude(polygon, height_func);
 }
 
-Trimesh3D linear_extrude(
-    const Polygon2D &polygon,
+trimesh_3d_t linear_extrude(
+    const polygon_2d_t &polygon,
     const std::function<float(float, float)> &height_func) {
     return linear_extrude(polygon.get_trimesh(), height_func);
 }
 
-Trimesh3D linear_extrude(const Trimesh2D &polygon, float height) {
+trimesh_3d_t linear_extrude(const trimesh_2d_t &polygon, float height) {
     std::function<float(float, float)> height_func =
         [height](float x, float y) -> float { return height; };
     return linear_extrude(polygon, height_func);
 }
 
-Trimesh3D linear_extrude(
-    const Trimesh2D &mesh,
+trimesh_3d_t linear_extrude(
+    const trimesh_2d_t &mesh,
     const std::function<float(float, float)> &height_func) {
-    std::vector<Point3D> vertices;
+    std::vector<point_3d_t> vertices;
     face_set_t faces;
 
     // Ensure that polygon is counter-clockwise.
@@ -79,8 +79,8 @@ Trimesh3D linear_extrude(
     return {vertices, faces};
 }
 
-Trimesh3D rotate_extrude(const Polygon2D &polygon, float angle, int n,
-                         int axis) {
+trimesh_3d_t rotate_extrude(const polygon_2d_t &polygon, float angle, int n,
+                            int axis) {
     // Checks that `angle` is less than a full circle.
     if (angle < 0 || angle > 2 * M_PI - 1e-6) {
         throw std::invalid_argument(
@@ -98,11 +98,11 @@ Trimesh3D rotate_extrude(const Polygon2D &polygon, float angle, int n,
         throw std::invalid_argument("`axis` must be 0, 1, or 2.");
     }
 
-    std::vector<Point3D> vertices;
+    std::vector<point_3d_t> vertices;
     face_list_t faces;
 
     // Ensure that polygon is counter-clockwise.
-    Polygon2D poly = polygon;
+    polygon_2d_t poly = polygon;
     if (poly.is_clockwise()) {
         poly.reverse();
     }
@@ -130,11 +130,11 @@ Trimesh3D rotate_extrude(const Polygon2D &polygon, float angle, int n,
         std::tuple<float, float, float> rot{axis == 0 ? angle_i : 0.0,
                                             axis == 1 ? angle_i : 0.0f,
                                             axis == 2 ? angle_i : 0.0f};
-        Affine3D tf{rot};
+        affine_3d_t tf{rot};
 
         // Adds next layer of vertices.
         for (int j = 0; j < p; j++) {
-            Point3D v{poly.points[j].x, poly.points[j].y, 0.0f};
+            point_3d_t v{poly.points[j].x, poly.points[j].y, 0.0f};
             v <<= tf;
             vertices.push_back(v);
         }
@@ -156,11 +156,11 @@ Trimesh3D rotate_extrude(const Polygon2D &polygon, float angle, int n,
         faces.push_back(face_t(v0, v1, v2));
     }
 
-    Trimesh3D mesh3d = {vertices, faces};
+    trimesh_3d_t mesh3d = {vertices, faces};
     return mesh3d.signed_volume() < 0 ? mesh3d.flip_inside_out() : mesh3d;
 }
 
-Trimesh3D rotate_extrude(const Polygon2D &polygon, int n, int axis) {
+trimesh_3d_t rotate_extrude(const polygon_2d_t &polygon, int n, int axis) {
     // Checks that `n` is valid.
     if (n < 1) {
         throw std::invalid_argument("`n` must be at least 1.");
@@ -171,11 +171,11 @@ Trimesh3D rotate_extrude(const Polygon2D &polygon, int n, int axis) {
         throw std::invalid_argument("`axis` must be 0, 1, or 2.");
     }
 
-    std::vector<Point3D> vertices;
+    std::vector<point_3d_t> vertices;
     face_list_t faces;
 
     // Ensure that polygon is counter-clockwise.
-    Polygon2D poly = polygon;
+    polygon_2d_t poly = polygon;
     if (poly.is_clockwise()) {
         poly.reverse();
     }
@@ -197,12 +197,12 @@ Trimesh3D rotate_extrude(const Polygon2D &polygon, int n, int axis) {
         std::tuple<float, float, float> rot{axis == 0 ? angle_i : 0.0,
                                             axis == 1 ? angle_i : 0.0f,
                                             axis == 2 ? angle_i : 0.0f};
-        Affine3D tf{rot};
+        affine_3d_t tf{rot};
         int offset_next = offset + p;
 
         // Adds next layer of vertices.
         for (int j = 0; j < p; j++) {
-            Point3D v{poly.points[j].x, poly.points[j].y, 0.0f};
+            point_3d_t v{poly.points[j].x, poly.points[j].y, 0.0f};
             v <<= tf;
             vertices.push_back(v);
         }
@@ -226,34 +226,34 @@ Trimesh3D rotate_extrude(const Polygon2D &polygon, int n, int axis) {
         faces.push_back(face_t(v1, v3, v2));
     }
 
-    Trimesh3D mesh3d{vertices, faces};
+    trimesh_3d_t mesh3d{vertices, faces};
     return mesh3d.signed_volume() < 0 ? mesh3d.flip_inside_out() : mesh3d;
 }
 
 void add_ops_modules(py::module &m) {
     m.def("linear_extrude",
-          py::overload_cast<const Polygon2D &, float>(&linear_extrude),
+          py::overload_cast<const polygon_2d_t &, float>(&linear_extrude),
           "Linearly extrudes a 2D mesh", "mesh"_a, "height"_a);
     m.def("linear_extrude",
-          py::overload_cast<const Polygon2D &,
+          py::overload_cast<const polygon_2d_t &,
                             const std::function<float(float, float)> &>(
               &linear_extrude),
           "Linearly extrudes a 2D mesh", "mesh"_a, "height_func"_a);
     m.def("linear_extrude",
-          py::overload_cast<const Trimesh2D &, float>(&linear_extrude),
+          py::overload_cast<const trimesh_2d_t &, float>(&linear_extrude),
           "Linearly extrudes a 2D mesh", "mesh"_a, "height"_a);
     m.def("linear_extrude",
-          py::overload_cast<const Trimesh2D &,
+          py::overload_cast<const trimesh_2d_t &,
                             const std::function<float(float, float)> &>(
               &linear_extrude),
           "Linearly extrudes a 2D mesh", "mesh"_a, "height_func"_a);
 
-    m.def(
-        "rotate_extrude",
-        py::overload_cast<const Polygon2D &, float, int, int>(&rotate_extrude),
-        "Rotates a 2D mesh", "mesh"_a, "angle"_a, "n"_a, "axis"_a = 0);
     m.def("rotate_extrude",
-          py::overload_cast<const Polygon2D &, int, int>(&rotate_extrude),
+          py::overload_cast<const polygon_2d_t &, float, int, int>(
+              &rotate_extrude),
+          "Rotates a 2D mesh", "mesh"_a, "angle"_a, "n"_a, "axis"_a = 0);
+    m.def("rotate_extrude",
+          py::overload_cast<const polygon_2d_t &, int, int>(&rotate_extrude),
           "Rotates a 2D mesh", "mesh"_a, "n"_a, "axis"_a = 0);
 }
 

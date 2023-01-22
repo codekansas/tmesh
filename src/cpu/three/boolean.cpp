@@ -12,9 +12,9 @@ namespace trimesh {
 
 enum boolean_3d_op { UNION, INTERSECTION, DIFFERENCE };
 
-Trimesh3D triangulation(const Triangle3D &triangle,
-                        const std::vector<Point3D> &points) {
-    std::vector<Point3D> vertices;
+trimesh_3d_t triangulation(const triangle_3d_t &triangle,
+                           const std::vector<point_3d_t> &points) {
+    std::vector<point_3d_t> vertices;
     face_set_t faces;
 
     // Checks that all points are inside the triangle.
@@ -39,7 +39,7 @@ Trimesh3D triangulation(const Triangle3D &triangle,
         bool found_triangle = false;
         for (auto &face : faces) {
             auto &[a, b, c] = face;
-            Triangle3D triangle{vertices[a], vertices[b], vertices[c]};
+            triangle_3d_t triangle{vertices[a], vertices[b], vertices[c]};
             if (point.projects_to_triangle(triangle)) {
                 faces.insert(face_t(a, b, i + 3));
                 faces.insert(face_t(b, c, i + 3));
@@ -59,10 +59,11 @@ Trimesh3D triangulation(const Triangle3D &triangle,
     return {vertices, faces};
 }
 
-Trimesh3D mesh_union_no_intersections(const Trimesh3D &a, const Trimesh3D &b) {
+trimesh_3d_t mesh_union_no_intersections(const trimesh_3d_t &a,
+                                         const trimesh_3d_t &b) {
     const size_t n = a.vertices().size();
 
-    std::vector<Point3D> vertices;
+    std::vector<point_3d_t> vertices;
     face_set_t faces;
 
     // Adds all vertices to the output mesh.
@@ -84,28 +85,28 @@ Trimesh3D mesh_union_no_intersections(const Trimesh3D &a, const Trimesh3D &b) {
     return {vertices, faces};
 }
 
-bool is_inside(const Triangle3D &triangle, const Point3D &face_pt,
-               const Point3D &pt) {
-    Point3D normal = triangle.normal();
-    Point3D vec = pt - face_pt;
+bool is_inside(const triangle_3d_t &triangle, const point_3d_t &face_pt,
+               const point_3d_t &pt) {
+    point_3d_t normal = triangle.normal();
+    point_3d_t vec = pt - face_pt;
     float dp = normal.dot(vec);
     return dp < 0;
 }
 
-Trimesh3D mesh_op(const Trimesh3D &mesh_a, const Trimesh3D &mesh_b,
-                  boolean_3d_op op) {
+trimesh_3d_t mesh_op(const trimesh_3d_t &mesh_a, const trimesh_3d_t &mesh_b,
+                     boolean_3d_op op) {
     throw std::runtime_error("Not implemented yet.");
 }
 
-Trimesh3D mesh_union(const Trimesh3D &a, const Trimesh3D &b) {
+trimesh_3d_t mesh_union(const trimesh_3d_t &a, const trimesh_3d_t &b) {
     return mesh_op(a, b, UNION);
 }
 
-Trimesh3D mesh_intersection(const Trimesh3D &a, const Trimesh3D &b) {
+trimesh_3d_t mesh_intersection(const trimesh_3d_t &a, const trimesh_3d_t &b) {
     return mesh_op(a, b, INTERSECTION);
 }
 
-Trimesh3D mesh_difference(const Trimesh3D &a, const Trimesh3D &b) {
+trimesh_3d_t mesh_difference(const trimesh_3d_t &a, const trimesh_3d_t &b) {
     return mesh_op(a, b, DIFFERENCE);
 }
 

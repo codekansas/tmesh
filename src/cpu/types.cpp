@@ -33,25 +33,25 @@ std::string face_t::to_string() const {
            std::to_string(c) + ")";
 }
 
-/* ---------------------- *
- * BarycentricCoordinates *
- * ---------------------- */
+/* ------------------------- *
+ * barycentric_coordinates_t *
+ * ------------------------- */
 
-BarycentricCoordinates::BarycentricCoordinates(float u, float v, float w)
+barycentric_coordinates_t::barycentric_coordinates_t(float u, float v, float w)
     : u(u), v(v), w(w) {}
 
-bool BarycentricCoordinates::operator==(const BarycentricCoordinates &b) const {
+bool barycentric_coordinates_t::operator==(const barycentric_coordinates_t &b) const {
     return std::abs(u - b.u) < TOLERANCE && std::abs(v - b.v) < TOLERANCE &&
            std::abs(w - b.w) < TOLERANCE;
 }
 
-bool BarycentricCoordinates::operator!=(const BarycentricCoordinates &b) const {
+bool barycentric_coordinates_t::operator!=(const barycentric_coordinates_t &b) const {
     return !(*this == b);
 }
 
-std::string BarycentricCoordinates::to_string() const {
+std::string barycentric_coordinates_t::to_string() const {
     std::ostringstream ss;
-    ss << "BarycentricCoordinates(" << u << ", " << v << ", " << w << ")";
+    ss << "barycentric_coordinates_t(" << u << ", " << v << ", " << w << ")";
     return ss.str();
 }
 
@@ -60,7 +60,7 @@ void add_types_modules(py::module &m) {
     // correctly.
     auto face = py::class_<face_t>(m, "Face");
     auto barycentric_coordinates =
-        py::class_<BarycentricCoordinates>(m, "BarycentricCoordinates");
+        py::class_<barycentric_coordinates_t>(m, "BarycentricCoordinates");
 
     // Defines Face methods.
     face.def(py::init<size_t, size_t, size_t>())
@@ -78,18 +78,18 @@ void add_types_modules(py::module &m) {
     barycentric_coordinates
         .def(py::init<float, float, float>(), "Barycentric coordinates", "u"_a,
              "v"_a, "w"_a)
-        .def_readwrite("u", &BarycentricCoordinates::u,
+        .def_readwrite("u", &barycentric_coordinates_t::u,
                        "The first barycentric coordinate")
-        .def_readwrite("v", &BarycentricCoordinates::v,
+        .def_readwrite("v", &barycentric_coordinates_t::v,
                        "The second barycentric coordinate")
-        .def_readwrite("w", &BarycentricCoordinates::w,
+        .def_readwrite("w", &barycentric_coordinates_t::w,
                        "The third barycentric coordinate")
-        .def("__str__", &BarycentricCoordinates::to_string, py::is_operator())
-        .def("__repr__", &BarycentricCoordinates::to_string, py::is_operator())
-        .def("__eq__", &BarycentricCoordinates::operator==,
+        .def("__str__", &barycentric_coordinates_t::to_string, py::is_operator())
+        .def("__repr__", &barycentric_coordinates_t::to_string, py::is_operator())
+        .def("__eq__", &barycentric_coordinates_t::operator==,
              "Checks if two barycentric coordinates are equal", "other"_a,
              py::is_operator())
-        .def("__ne__", &BarycentricCoordinates::operator!=,
+        .def("__ne__", &barycentric_coordinates_t::operator!=,
              "Checks if two barycentric coordinates are not equal", "other"_a,
              py::is_operator());
 }

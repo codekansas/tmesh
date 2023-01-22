@@ -12,16 +12,18 @@ namespace py = pybind11;
 
 namespace trimesh {
 
-Trimesh3D linear_extrude(const Polygon2D &polygon, float height);
-Trimesh3D linear_extrude(const Polygon2D &polygon,
-                         const std::function<float(float, float)> &height_func);
-Trimesh3D linear_extrude(const Trimesh2D &polygon, float height);
-Trimesh3D linear_extrude(const Trimesh2D &mesh,
-                         const std::function<float(float, float)> &height_func);
+trimesh_3d_t linear_extrude(const polygon_2d_t &polygon, float height);
+trimesh_3d_t linear_extrude(
+    const polygon_2d_t &polygon,
+    const std::function<float(float, float)> &height_func);
+trimesh_3d_t linear_extrude(const trimesh_2d_t &polygon, float height);
+trimesh_3d_t linear_extrude(
+    const trimesh_2d_t &mesh,
+    const std::function<float(float, float)> &height_func);
 
-Trimesh3D rotate_extrude(const Polygon2D &polygon, float angle, int n,
-                         int axis = 0);
-Trimesh3D rotate_extrude(const Polygon2D &polygon, int n, int axis = 0);
+trimesh_3d_t rotate_extrude(const polygon_2d_t &polygon, float angle, int n,
+                            int axis = 0);
+trimesh_3d_t rotate_extrude(const polygon_2d_t &polygon, int n, int axis = 0);
 
 void add_ops_modules(py::module &m);
 

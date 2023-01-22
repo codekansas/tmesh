@@ -29,20 +29,20 @@ struct __edge_hash_fn {
 // The triangle ID points to the triangle in the trimesh. If a ray
 // doesn't intersect a box, then we don't need to check any of the
 // triangles in the box.
-typedef std::vector<std::tuple<size_t, int, int, BoundingBox3D>> tree_t;
+typedef std::vector<std::tuple<size_t, int, int, bounding_box_3d_t>> tree_t;
 
-struct BVH3D {
-    const std::shared_ptr<Trimesh3D> trimesh;
+struct bvh_3d_t {
+    const std::shared_ptr<trimesh_3d_t> trimesh;
     tree_t tree;
 
-    BVH3D(const Trimesh3D &t);
-    ~BVH3D() = default;
-    const std::shared_ptr<Trimesh3D> get_trimesh() const {
+    bvh_3d_t(const trimesh_3d_t &t);
+    ~bvh_3d_t() = default;
+    const std::shared_ptr<trimesh_3d_t> get_trimesh() const {
         return this->trimesh;
     }
     tree_t get_tree() const { return this->tree; }
-    std::vector<std::tuple<size_t, face_t, Point3D>> intersections(
-        const Line3D &l) const;
+    std::vector<std::tuple<size_t, face_t, point_3d_t>> intersections(
+        const line_3d_t &l) const;
     std::string to_string() const;
 };
 

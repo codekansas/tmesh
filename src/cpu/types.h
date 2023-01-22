@@ -9,8 +9,6 @@ namespace py = pybind11;
 
 namespace trimesh {
 
-struct BarycentricCoordinates;
-
 struct face_t {
     size_t a, b, c;
 
@@ -37,13 +35,13 @@ struct __face_hash_fn {
 typedef std::vector<face_t> face_list_t;
 typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
 
-struct BarycentricCoordinates {
+struct barycentric_coordinates_t {
     float u, v, w;
 
-    BarycentricCoordinates(float u, float v, float w);
+    barycentric_coordinates_t(float u, float v, float w);
 
-    bool operator==(const BarycentricCoordinates &bc) const;
-    bool operator!=(const BarycentricCoordinates &bc) const;
+    bool operator==(const barycentric_coordinates_t &bc) const;
+    bool operator!=(const barycentric_coordinates_t &bc) const;
 
     std::string to_string() const;
 };

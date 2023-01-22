@@ -15,59 +15,59 @@ namespace trimesh {
  * Point3D *
  * ------- */
 
-Point3D Point3D::operator+=(const Point3D &p) {
+point_3d_t point_3d_t::operator+=(const point_3d_t &p) {
     x += p.x;
     y += p.y;
     z += p.z;
     return *this;
 }
 
-Point3D Point3D::operator-=(const Point3D &p) {
+point_3d_t point_3d_t::operator-=(const point_3d_t &p) {
     x -= p.x;
     y -= p.y;
     z -= p.z;
     return *this;
 }
 
-Point3D Point3D::operator*=(const Point3D &p) {
+point_3d_t point_3d_t::operator*=(const point_3d_t &p) {
     x *= p.x;
     y *= p.y;
     z *= p.z;
     return *this;
 }
 
-Point3D Point3D::operator*=(float s) {
+point_3d_t point_3d_t::operator*=(float s) {
     x *= s;
     y *= s;
     z *= s;
     return *this;
 }
 
-Point3D Point3D::operator/=(const Point3D &p) {
+point_3d_t point_3d_t::operator/=(const point_3d_t &p) {
     x /= p.x;
     y /= p.y;
     z /= p.z;
     return *this;
 }
 
-Point3D Point3D::operator/=(float s) {
+point_3d_t point_3d_t::operator/=(float s) {
     x /= s;
     y /= s;
     z /= s;
     return *this;
 }
 
-bool Point3D::operator==(const Point3D &p) const {
+bool point_3d_t::operator==(const point_3d_t &p) const {
     return distance_to_point(p) < TOLERANCE;
 }
 
-bool Point3D::operator!=(const Point3D &p) const { return !(*this == p); }
+bool point_3d_t::operator!=(const point_3d_t &p) const { return !(*this == p); }
 
-bool Point3D::operator<(const Point3D &p) const {
+bool point_3d_t::operator<(const point_3d_t &p) const {
     return x < p.x || (x == p.x && (y < p.y || (y == p.y && z < p.z)));
 }
 
-Point3D Point3D::operator<<=(const Affine3D &a) {
+point_3d_t point_3d_t::operator<<=(const affine_3d_t &a) {
     float x1 = a.r00 * x + a.r01 * y + a.r02 * z + a.tx;
     float y1 = a.r10 * x + a.r11 * y + a.r12 * z + a.ty;
     float z1 = a.r20 * x + a.r21 * y + a.r22 * z + a.tz;
@@ -77,32 +77,32 @@ Point3D Point3D::operator<<=(const Affine3D &a) {
     return *this;
 }
 
-Point3D Point3D::normalize() const {
+point_3d_t point_3d_t::normalize() const {
     float inv_length = 1.0f / length();
     return {x * inv_length, y * inv_length, z * inv_length};
 }
 
-float Point3D::determinant(const Point3D &a, const Point3D &b) const {
+float point_3d_t::determinant(const point_3d_t &a, const point_3d_t &b) const {
     return x * a.y * b.z + y * a.z * b.x + z * a.x * b.y - z * a.y * b.x -
            y * a.x * b.z - x * a.z * b.y;
 }
 
-float Point3D::length() const { return std::sqrt(x * x + y * y + z * z); }
+float point_3d_t::length() const { return std::sqrt(x * x + y * y + z * z); }
 
-float Point3D::dot(const Point3D &other) const {
+float point_3d_t::dot(const point_3d_t &other) const {
     return x * other.x + y * other.y + z * other.z;
 }
 
-Point3D Point3D::cross(const Point3D &other) const {
+point_3d_t point_3d_t::cross(const point_3d_t &other) const {
     return {y * other.z - z * other.y, z * other.x - x * other.z,
             x * other.y - y * other.x};
 }
 
-BarycentricCoordinates Point3D::barycentric_coordinates(
-    const Triangle3D &t) const {
-    Point3D v0 = t.p2 - t.p1;
-    Point3D v1 = t.p3 - t.p1;
-    Point3D v2 = *this - t.p1;
+barycentric_coordinates_t point_3d_t::barycentric_coordinates(
+    const triangle_3d_t &t) const {
+    point_3d_t v0 = t.p2 - t.p1;
+    point_3d_t v1 = t.p3 - t.p1;
+    point_3d_t v2 = *this - t.p1;
     float d00 = v0.dot(v0);
     float d01 = v0.dot(v1);
     float d11 = v1.dot(v1);
@@ -115,85 +115,87 @@ BarycentricCoordinates Point3D::barycentric_coordinates(
     return {u, v, w};
 }
 
-bool Point3D::is_inside_bounding_box(const BoundingBox3D &bb) const {
+bool point_3d_t::is_inside_bounding_box(const bounding_box_3d_t &bb) const {
     return x >= bb.min.x - TOLERANCE && x <= bb.max.x + TOLERANCE &&
            y >= bb.min.y - TOLERANCE && y <= bb.max.y + TOLERANCE &&
            z >= bb.min.z - TOLERANCE && z <= bb.max.z + TOLERANCE;
 }
 
-float Point3D::distance_to_point(const Point3D &other) const {
+float point_3d_t::distance_to_point(const point_3d_t &other) const {
     return std::sqrt((x - other.x) * (x - other.x) +
                      (y - other.y) * (y - other.y) +
                      (z - other.z) * (z - other.z));
 }
 
-float Point3D::distance_to_line(const Line3D &l) const {
+float point_3d_t::distance_to_line(const line_3d_t &l) const {
     return l.distance_to_point(*this);
 }
 
-float Point3D::distance_to_triangle(const Triangle3D &t) const {
+float point_3d_t::distance_to_triangle(const triangle_3d_t &t) const {
     return t.distance_to_point(*this);
 }
 
-bool Point3D::is_coplanar(const Triangle3D &t) const {
+bool point_3d_t::is_coplanar(const triangle_3d_t &t) const {
     return std::abs((*this - t.p1).dot((t.p2 - t.p1).cross(t.p3 - t.p1))) <
            TOLERANCE;
 }
 
-std::optional<Point3D> Point3D::project_to_line(const Line3D &l) const {
+std::optional<point_3d_t> point_3d_t::project_to_line(
+    const line_3d_t &l) const {
     float dx = l.p2.x - l.p1.x, dy = l.p2.y - l.p1.y, dz = l.p2.z - l.p1.z;
     float t = ((x - l.p1.x) * dx + (y - l.p1.y) * dy + (z - l.p1.z) * dz) /
               (dx * dx + dy * dy + dz * dz);
     if (t < 0 || t > 1) return std::nullopt;
-    return Point3D{l.p1.x + t * dx, l.p1.y + t * dy, l.p1.z + t * dz};
+    return point_3d_t{l.p1.x + t * dx, l.p1.y + t * dy, l.p1.z + t * dz};
 }
 
-std::optional<Point3D> Point3D::project_to_triangle(const Triangle3D &t) const {
-    BarycentricCoordinates bc = barycentric_coordinates(t);
+std::optional<point_3d_t> point_3d_t::project_to_triangle(
+    const triangle_3d_t &t) const {
+    barycentric_coordinates_t bc = barycentric_coordinates(t);
     if (bc.u < 0 || bc.v < 0 || bc.w < 0) return std::nullopt;
     return t.point_from_barycentric_coords(bc);
 }
 
-bool Point3D::projects_to_triangle(const Triangle3D &t) const {
+bool point_3d_t::projects_to_triangle(const triangle_3d_t &t) const {
     return project_to_triangle(t).has_value();
 }
 
-std::string Point3D::to_string() const {
+std::string point_3d_t::to_string() const {
     std::ostringstream ss;
     ss << "Point3D(" << x << ", " << y << ", " << z << ")";
     return ss.str();
 }
 
-Point3D operator+(const Point3D &p1, const Point3D &p2) {
+point_3d_t operator+(const point_3d_t &p1, const point_3d_t &p2) {
     return {p1.x + p2.x, p1.y + p2.y, p1.z + p2.z};
 }
 
-Point3D operator-(const Point3D &p1, const Point3D &p2) {
+point_3d_t operator-(const point_3d_t &p1, const point_3d_t &p2) {
     return {p1.x - p2.x, p1.y - p2.y, p1.z - p2.z};
 }
 
-Point3D operator*(const Point3D &p1, const Point3D &p2) {
+point_3d_t operator*(const point_3d_t &p1, const point_3d_t &p2) {
     return {p1.x * p2.x, p1.y * p2.y, p1.z * p2.z};
 }
 
-Point3D operator*(float s, const Point3D &p) {
+point_3d_t operator*(float s, const point_3d_t &p) {
     return {s * p.x, s * p.y, s * p.z};
 }
 
-Point3D operator*(const Point3D &p, float s) {
+point_3d_t operator*(const point_3d_t &p, float s) {
     return {s * p.x, s * p.y, s * p.z};
 }
 
-Point3D operator/(const Point3D &p1, const Point3D &p2) {
+point_3d_t operator/(const point_3d_t &p1, const point_3d_t &p2) {
     return {p1.x / p2.x, p1.y / p2.y, p1.z / p2.z};
 }
 
-Point3D operator/(const Point3D &p, float s) {
+point_3d_t operator/(const point_3d_t &p, float s) {
     return {p.x / s, p.y / s, p.z / s};
 }
 
-float triangle_signed_volume(const Point3D &a, const Point3D &b,
-                             const Point3D &c, const Point3D &d) {
+float triangle_signed_volume(const point_3d_t &a, const point_3d_t &b,
+                             const point_3d_t &c, const point_3d_t &d) {
     return (1.0 / 6.0) * (b - a).cross(c - a).dot(d - a);
 }
 
@@ -201,33 +203,36 @@ float triangle_signed_volume(const Point3D &a, const Point3D &b,
  * Line3D *
  * ------ */
 
-bool Line3D::operator==(const Line3D &other) const {
+bool line_3d_t::operator==(const line_3d_t &other) const {
     return p1 == other.p1 && p2 == other.p2;
 }
 
-bool Line3D::operator!=(const Line3D &other) const { return !(*this == other); }
+bool line_3d_t::operator!=(const line_3d_t &other) const {
+    return !(*this == other);
+}
 
-Line3D Line3D::operator<<=(const Affine3D &a) {
+line_3d_t line_3d_t::operator<<=(const affine_3d_t &a) {
     p1 <<= a;
     p2 <<= a;
     return *this;
 }
 
-std::optional<std::tuple<Point3D, Point3D>> Line3D::closest_points(
-    const Line3D &l) const {
-    Point3D d1 = p2 - p1, d2 = l.p2 - l.p1;
-    Point3D n = d1.cross(d2);
-    Point3D n1 = d1.cross(n), n2 = d2.cross(n);
+std::optional<std::tuple<point_3d_t, point_3d_t>> line_3d_t::closest_points(
+    const line_3d_t &l) const {
+    point_3d_t d1 = p2 - p1, d2 = l.p2 - l.p1;
+    point_3d_t n = d1.cross(d2);
+    point_3d_t n1 = d1.cross(n), n2 = d2.cross(n);
     float d2n1 = d2.dot(n1), d1n2 = d1.dot(n2);
     if (std::abs(d2n1) < TOLERANCE && std::abs(d1n2) < TOLERANCE) {
         return std::nullopt;
     }
-    Point3D c1 = p1 + d1 * (n2.dot(l.p1 - p1) / d1n2),
-            c2 = l.p1 + d2 * (n1.dot(p1 - l.p1) / d2n1);
+    point_3d_t c1 = p1 + d1 * (n2.dot(l.p1 - p1) / d1n2),
+               c2 = l.p1 + d2 * (n1.dot(p1 - l.p1) / d2n1);
     return std::make_tuple(c1, c2);
 }
 
-std::optional<Point3D> Line3D::line_intersection(const Line3D &l) const {
+std::optional<point_3d_t> line_3d_t::line_intersection(
+    const line_3d_t &l) const {
     auto p = closest_points(l);
     if (!p) {
         return std::nullopt;
@@ -239,7 +244,7 @@ std::optional<Point3D> Line3D::line_intersection(const Line3D &l) const {
     return a;
 }
 
-bool Line3D::intersects_triangle(const Triangle3D &t) const {
+bool line_3d_t::intersects_triangle(const triangle_3d_t &t) const {
     // bool s1 = signed_volume(p1, t.p1, t.p2, t.p3) > 0,
     //      s2 = signed_volume(p2, t.p1, t.p2, t.p3) > 0,
     //      s3 = signed_volume(p1, p2, t.p1, t.p2) > 0,
@@ -250,10 +255,10 @@ bool Line3D::intersects_triangle(const Triangle3D &t) const {
     return triangle_intersection(t).has_value();
 }
 
-std::optional<Point3D> Line3D::triangle_intersection(
-    const Triangle3D &t) const {
-    Point3D e1 = t.p2 - t.p1, e2 = t.p3 - t.p1, d21 = p2 - p1;
-    Point3D n = e1.cross(e2);
+std::optional<point_3d_t> line_3d_t::triangle_intersection(
+    const triangle_3d_t &t) const {
+    point_3d_t e1 = t.p2 - t.p1, e2 = t.p3 - t.p1, d21 = p2 - p1;
+    point_3d_t n = e1.cross(e2);
     float det = -n.dot(d21);
 
     // Lines are parallel.
@@ -261,8 +266,8 @@ std::optional<Point3D> Line3D::triangle_intersection(
         return std::nullopt;
     }
 
-    Point3D ao = p1 - t.p1;
-    Point3D dao = ao.cross(d21);
+    point_3d_t ao = p1 - t.p1;
+    point_3d_t dao = ao.cross(d21);
 
     float u = e2.dot(dao) / det;
     float v = -e1.dot(dao) / det;
@@ -276,7 +281,7 @@ std::optional<Point3D> Line3D::triangle_intersection(
     return p1 + d21 * w;
 }
 
-bool Line3D::intersects_bounding_box(const BoundingBox3D &b) const {
+bool line_3d_t::intersects_bounding_box(const bounding_box_3d_t &b) const {
     if (p1.is_inside_bounding_box(b) || p2.is_inside_bounding_box(b)) {
         return true;
     }
@@ -288,8 +293,8 @@ bool Line3D::intersects_bounding_box(const BoundingBox3D &b) const {
     return false;
 }
 
-float Line3D::distance_to_point(const Point3D &p) const {
-    Point3D d = p2 - p1;
+float line_3d_t::distance_to_point(const point_3d_t &p) const {
+    point_3d_t d = p2 - p1;
     float t = d.dot(p - p1) / d.dot(d);
     if (t < 0.0f) {
         return p.distance_to_point(p1);
@@ -299,7 +304,7 @@ float Line3D::distance_to_point(const Point3D &p) const {
     return p.distance_to_point(p1 + t * d);
 }
 
-float Line3D::distance_to_line(const Line3D &l) const {
+float line_3d_t::distance_to_line(const line_3d_t &l) const {
     auto p = closest_points(l);
     if (p) {
         auto a = std::get<0>(*p), b = std::get<1>(*p);
@@ -309,7 +314,7 @@ float Line3D::distance_to_line(const Line3D &l) const {
                      p2.distance_to_point(l.p1), p2.distance_to_point(l.p2)});
 }
 
-std::string Line3D::to_string() const {
+std::string line_3d_t::to_string() const {
     std::ostringstream ss;
     ss << "Line3D(" << p1.to_string() << ", " << p2.to_string() << ")";
     return ss.str();
@@ -319,19 +324,19 @@ std::string Line3D::to_string() const {
  * Circumcircle3D *
  * -------------- */
 
-bool Circumcircle3D::operator==(const Circumcircle3D &c) const {
+bool circumcircle_3d_t::operator==(const circumcircle_3d_t &c) const {
     return center == c.center && std::abs(radius - c.radius) < TOLERANCE;
 }
 
-bool Circumcircle3D::operator!=(const Circumcircle3D &c) const {
+bool circumcircle_3d_t::operator!=(const circumcircle_3d_t &c) const {
     return !(*this == c);
 }
 
-bool Circumcircle3D::contains_point(const Point3D &p) const {
+bool circumcircle_3d_t::contains_point(const point_3d_t &p) const {
     return center.distance_to_point(p) < radius + TOLERANCE;
 }
 
-std::string Circumcircle3D::to_string() const {
+std::string circumcircle_3d_t::to_string() const {
     std::ostringstream ss;
     ss << "Circumcircle3D(" << center.to_string() << ", " << radius << ")";
     return ss.str();
@@ -341,43 +346,45 @@ std::string Circumcircle3D::to_string() const {
  * Triangle3D *
  * ---------- */
 
-bool Triangle3D::operator==(const Triangle3D &t) const {
+bool triangle_3d_t::operator==(const triangle_3d_t &t) const {
     return (p1 == t.p1 && p2 == t.p2 && p3 == t.p3) ||
            (p1 == t.p2 && p2 == t.p3 && p3 == t.p1) ||
            (p1 == t.p3 && p2 == t.p1 && p3 == t.p2);
 }
 
-bool Triangle3D::operator!=(const Triangle3D &t) const { return !(*this == t); }
+bool triangle_3d_t::operator!=(const triangle_3d_t &t) const {
+    return !(*this == t);
+}
 
-Triangle3D Triangle3D::operator<<=(const Affine3D &a) {
+triangle_3d_t triangle_3d_t::operator<<=(const affine_3d_t &a) {
     p1 <<= a;
     p2 <<= a;
     p3 <<= a;
     return *this;
 }
 
-float Triangle3D::area() const {
-    Point3D v1 = p2 - p1;
-    Point3D v2 = p3 - p1;
+float triangle_3d_t::area() const {
+    point_3d_t v1 = p2 - p1;
+    point_3d_t v2 = p3 - p1;
     return 0.5f * v1.cross(v2).length();
 }
 
-Point3D Triangle3D::center() const { return (p1 + p2 + p3) / 3.0f; }
+point_3d_t triangle_3d_t::center() const { return (p1 + p2 + p3) / 3.0f; }
 
-Point3D Triangle3D::normal() const {
-    Point3D v1 = p2 - p1;
-    Point3D v2 = p3 - p1;
+point_3d_t triangle_3d_t::normal() const {
+    point_3d_t v1 = p2 - p1;
+    point_3d_t v2 = p3 - p1;
     return v1.cross(v2).normalize();
 }
 
-std::vector<Point3D> Triangle3D::vertices() const { return {p1, p2, p3}; }
+std::vector<point_3d_t> triangle_3d_t::vertices() const { return {p1, p2, p3}; }
 
-std::vector<Line3D> Triangle3D::edges() const {
+std::vector<line_3d_t> triangle_3d_t::edges() const {
     return {{p1, p2}, {p2, p3}, {p3, p1}};
 }
 
-float Triangle3D::distance_to_point(const Point3D &p) const {
-    std::optional<Point3D> tp = p.project_to_triangle(*this);
+float triangle_3d_t::distance_to_point(const point_3d_t &p) const {
+    std::optional<point_3d_t> tp = p.project_to_triangle(*this);
     if (tp) {
         return p.distance_to_point(*tp);
     }
@@ -385,66 +392,66 @@ float Triangle3D::distance_to_point(const Point3D &p) const {
                      p.distance_to_line({p3, p1})});
 }
 
-bool Triangle3D::contains(const Point3D &p) const {
-    std::optional<Point3D> tp = p.project_to_triangle(*this);
+bool triangle_3d_t::contains(const point_3d_t &p) const {
+    std::optional<point_3d_t> tp = p.project_to_triangle(*this);
     if (!tp) return false;
     return p.distance_to_point(*tp) < TOLERANCE;
 }
 
-bool Triangle3D::is_coplanar(const Triangle3D &t) const {
-    Point3D n = normal();
+bool triangle_3d_t::is_coplanar(const triangle_3d_t &t) const {
+    point_3d_t n = normal();
     return std::abs(n.dot(t.p1 - p1)) < TOLERANCE &&
            std::abs(n.dot(t.p2 - p1)) < TOLERANCE &&
            std::abs(n.dot(t.p3 - p1)) < TOLERANCE;
 }
 
-Circumcircle3D Triangle3D::circumcircle() const {
-    Point3D v1 = p2 - p1;
-    Point3D v2 = p3 - p1;
-    Point3D v3 = p3 - p2;
+circumcircle_3d_t triangle_3d_t::circumcircle() const {
+    point_3d_t v1 = p2 - p1;
+    point_3d_t v2 = p3 - p1;
+    point_3d_t v3 = p3 - p2;
     float a = v1.length();
     float b = v2.length();
     float c = v3.length();
     float s = 0.5f * (a + b + c);
     float area = std::sqrt(s * (s - a) * (s - b) * (s - c));
     float r = a * b * c / (4.0f * area);
-    Point3D center = (p1 * a + p2 * b + p3 * c) / (a + b + c);
+    point_3d_t center = (p1 * a + p2 * b + p3 * c) / (a + b + c);
     return {center, r};
 }
 
-Point3D Triangle3D::point_from_barycentric_coords(
-    const BarycentricCoordinates &b) const {
+point_3d_t triangle_3d_t::point_from_barycentric_coords(
+    const barycentric_coordinates_t &b) const {
     return p1 * b.u + p2 * b.v + p3 * b.w;
 }
 
-std::vector<Point3D> Triangle3D::triangle_intersection(
-    const Triangle3D &t) const {
-    std::vector<Point3D> points;
+std::vector<point_3d_t> triangle_3d_t::triangle_intersection(
+    const triangle_3d_t &t) const {
+    std::vector<point_3d_t> points;
     if (is_coplanar(t)) {
-        for (const Point3D &p : t.vertices()) {
+        for (const point_3d_t &p : t.vertices()) {
             if (contains(p)) points.push_back(p);
         }
-        for (const Point3D &p : vertices()) {
+        for (const point_3d_t &p : vertices()) {
             if (t.contains(p)) points.push_back(p);
         }
-        for (const Line3D &e : edges()) {
-            for (const Line3D &f : t.edges()) {
-                std::optional<Point3D> p = e.line_intersection(f);
+        for (const line_3d_t &e : edges()) {
+            for (const line_3d_t &f : t.edges()) {
+                std::optional<point_3d_t> p = e.line_intersection(f);
                 if (p) points.push_back(*p);
             }
         }
     } else {
-        for (const Point3D &p : t.vertices()) {
+        for (const point_3d_t &p : t.vertices()) {
             if (contains(p)) points.push_back(p);
         }
-        for (const Point3D &p : vertices()) {
+        for (const point_3d_t &p : vertices()) {
             if (t.contains(p)) points.push_back(p);
         }
     }
     return points;
 }
 
-std::string Triangle3D::to_string() const {
+std::string triangle_3d_t::to_string() const {
     std::ostringstream ss;
     ss << "Triangle3D(" << p1.to_string() << ", " << p2.to_string() << ", "
        << p3.to_string() << ")";
@@ -455,7 +462,7 @@ std::string Triangle3D::to_string() const {
  * BoundingBox3D *
  * ------------- */
 
-BoundingBox3D::BoundingBox3D() {
+bounding_box_3d_t::bounding_box_3d_t() {
     min = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max(),
            std::numeric_limits<float>::max()};
     max = {std::numeric_limits<float>::lowest(),
@@ -463,10 +470,11 @@ BoundingBox3D::BoundingBox3D() {
            std::numeric_limits<float>::lowest()};
 }
 
-BoundingBox3D::BoundingBox3D(const Point3D &min, const Point3D &max)
+bounding_box_3d_t::bounding_box_3d_t(const point_3d_t &min,
+                                     const point_3d_t &max)
     : min(min), max(max) {}
 
-BoundingBox3D::BoundingBox3D(const std::vector<Point3D> &points) {
+bounding_box_3d_t::bounding_box_3d_t(const std::vector<point_3d_t> &points) {
     if (points.empty()) throw std::runtime_error("Empty point list");
 
     float min_x = points[0].x, min_y = points[0].y, min_z = points[0].z;
@@ -485,7 +493,7 @@ BoundingBox3D::BoundingBox3D(const std::vector<Point3D> &points) {
     max = {max_x, max_y, max_z};
 }
 
-BoundingBox3D::BoundingBox3D(const std::vector<Line3D> &lines) {
+bounding_box_3d_t::bounding_box_3d_t(const std::vector<line_3d_t> &lines) {
     if (lines.empty()) throw std::runtime_error("Empty line list");
 
     float min_x = lines[0].p1.x, min_y = lines[0].p1.y, min_z = lines[0].p1.z;
@@ -510,7 +518,8 @@ BoundingBox3D::BoundingBox3D(const std::vector<Line3D> &lines) {
     max = {max_x, max_y, max_z};
 }
 
-BoundingBox3D::BoundingBox3D(const std::vector<Triangle3D> &triangles) {
+bounding_box_3d_t::bounding_box_3d_t(
+    const std::vector<triangle_3d_t> &triangles) {
     if (triangles.empty()) throw std::runtime_error("Empty triangle list");
 
     float min_x = triangles[0].p1.x, min_y = triangles[0].p1.y,
@@ -543,7 +552,8 @@ BoundingBox3D::BoundingBox3D(const std::vector<Triangle3D> &triangles) {
     max = {max_x, max_y, max_z};
 }
 
-BoundingBox3D::BoundingBox3D(const std::vector<BoundingBox3D> &bboxes) {
+bounding_box_3d_t::bounding_box_3d_t(
+    const std::vector<bounding_box_3d_t> &bboxes) {
     if (bboxes.empty()) throw std::runtime_error("Empty bounding box list");
 
     float min_x = bboxes[0].min.x, min_y = bboxes[0].min.y,
@@ -564,32 +574,32 @@ BoundingBox3D::BoundingBox3D(const std::vector<BoundingBox3D> &bboxes) {
     max = {max_x, max_y, max_z};
 }
 
-bool BoundingBox3D::operator==(const BoundingBox3D &b) const {
+bool bounding_box_3d_t::operator==(const bounding_box_3d_t &b) const {
     return min == b.min && max == b.max;
 }
 
-bool BoundingBox3D::operator!=(const BoundingBox3D &b) const {
+bool bounding_box_3d_t::operator!=(const bounding_box_3d_t &b) const {
     return min != b.min || max != b.max;
 }
 
-BoundingBox3D BoundingBox3D::operator<<=(const Affine3D &a) {
+bounding_box_3d_t bounding_box_3d_t::operator<<=(const affine_3d_t &a) {
     min <<= a;
     max <<= a;
     return *this;
 }
 
-std::vector<face_t> BoundingBox3D::triangle_indices() const {
+std::vector<face_t> bounding_box_3d_t::triangle_indices() const {
     return {{0, 2, 1}, {0, 3, 2}, {0, 5, 4}, {0, 1, 5}, {1, 6, 5}, {1, 2, 6},
             {2, 7, 6}, {2, 3, 7}, {3, 4, 7}, {3, 0, 4}, {4, 6, 7}, {4, 5, 6}};
 }
 
-std::vector<Point3D> BoundingBox3D::corners() const {
+std::vector<point_3d_t> bounding_box_3d_t::corners() const {
     return {{min.x, min.x, min.x}, {max.x, min.y, min.z}, {max.x, max.y, min.z},
             {min.x, max.y, min.z}, {min.x, min.y, max.z}, {max.x, min.y, max.z},
             {max.x, max.y, max.z}, {min.x, max.y, max.z}};
 }
 
-std::vector<Line3D> BoundingBox3D::edges() const {
+std::vector<line_3d_t> bounding_box_3d_t::edges() const {
     return {
         {min, {max.x, min.y, min.z}},
         {min, {min.x, max.y, min.z}},
@@ -606,8 +616,8 @@ std::vector<Line3D> BoundingBox3D::edges() const {
     };
 }
 
-std::vector<Triangle3D> BoundingBox3D::triangles() const {
-    std::vector<Triangle3D> triangles;
+std::vector<triangle_3d_t> bounding_box_3d_t::triangles() const {
+    std::vector<triangle_3d_t> triangles;
     auto indices = this->triangle_indices();
     auto corners = this->corners();
     for (auto &index : indices) {
@@ -617,13 +627,13 @@ std::vector<Triangle3D> BoundingBox3D::triangles() const {
     return triangles;
 }
 
-Point3D BoundingBox3D::center() const { return (min + max) / 2.0f; }
+point_3d_t bounding_box_3d_t::center() const { return (min + max) / 2.0f; }
 
-float BoundingBox3D::volume() const {
+float bounding_box_3d_t::volume() const {
     return (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
 }
 
-std::string BoundingBox3D::to_string() const {
+std::string bounding_box_3d_t::to_string() const {
     std::ostringstream ss;
     ss << "BoundingBox3D(" << min.to_string() << ", " << max.to_string() << ")";
     return ss.str();
@@ -633,47 +643,50 @@ std::string BoundingBox3D::to_string() const {
  * Polygon3D *
  * --------- */
 
-Polygon3D::Polygon3D(const std::vector<Point3D> &points) : points(points) {}
+polygon_3d_t::polygon_3d_t(const std::vector<point_3d_t> &points)
+    : points(points) {}
 
-bool Polygon3D::operator==(const Polygon3D &p) const {
+bool polygon_3d_t::operator==(const polygon_3d_t &p) const {
     return points == p.points;
 }
 
-bool Polygon3D::operator!=(const Polygon3D &p) const { return !(*this == p); }
+bool polygon_3d_t::operator!=(const polygon_3d_t &p) const {
+    return !(*this == p);
+}
 
-Polygon3D Polygon3D::operator<<=(const Affine3D &a) {
+polygon_3d_t polygon_3d_t::operator<<=(const affine_3d_t &a) {
     for (auto &p : points) p <<= a;
     return *this;
 }
 
-float Polygon3D::area() const {
+float polygon_3d_t::area() const {
     if (points.size() < 3) return 0.0f;
     float area = 0.0f;
-    Point3D p1 = points[0];
+    point_3d_t p1 = points[0];
     for (size_t i = 1; i < points.size(); ++i) {
         size_t j = (i + 1) % points.size();
-        Point3D v1 = points[i] - p1;
-        Point3D v2 = points[j] - p1;
+        point_3d_t v1 = points[i] - p1;
+        point_3d_t v2 = points[j] - p1;
         area += v1.cross(v2).length();
     }
     return std::abs(area) / 2.0f;
 }
 
-Point3D Polygon3D::center() const {
+point_3d_t polygon_3d_t::center() const {
     if (points.empty()) throw std::runtime_error("Empty polygon");
-    Point3D center;
+    point_3d_t center;
     for (auto &p : points) center += p;
     return center / points.size();
 }
 
-Point3D Polygon3D::normal() const {
+point_3d_t polygon_3d_t::normal() const {
     if (points.size() < 3) throw std::runtime_error("Not enough points");
-    Point3D v1 = points[1] - points[0];
-    Point3D v2 = points[2] - points[0];
+    point_3d_t v1 = points[1] - points[0];
+    point_3d_t v2 = points[2] - points[0];
     return v1.cross(v2).normalize();
 }
 
-BoundingBox3D Polygon3D::bounding_box() const {
+bounding_box_3d_t polygon_3d_t::bounding_box() const {
     if (points.empty()) throw std::runtime_error("Empty polygon");
 
     float min_x = points[0].x, min_y = points[0].y, min_z = points[0].z;
@@ -688,10 +701,10 @@ BoundingBox3D Polygon3D::bounding_box() const {
         max_z = std::max(max_z, points[i].z);
     }
 
-    return BoundingBox3D({min_x, min_y, min_z}, {max_x, max_y, max_z});
+    return bounding_box_3d_t({min_x, min_y, min_z}, {max_x, max_y, max_z});
 }
 
-std::string Polygon3D::to_string() const {
+std::string polygon_3d_t::to_string() const {
     std::ostringstream ss;
     ss << "Polygon3D(" << points.size() << " vertices)";
     return ss.str();
@@ -701,9 +714,9 @@ std::string Polygon3D::to_string() const {
  * Affine3D *
  * -------- */
 
-Affine3D::Affine3D(float r00, float r01, float r02, float r10, float r11,
-                   float r12, float r20, float r21, float r22, float tx,
-                   float ty, float tz)
+affine_3d_t::affine_3d_t(float r00, float r01, float r02, float r10, float r11,
+                         float r12, float r20, float r21, float r22, float tx,
+                         float ty, float tz)
     : r00(r00),
       r01(r01),
       r02(r02),
@@ -717,9 +730,9 @@ Affine3D::Affine3D(float r00, float r01, float r02, float r10, float r11,
       ty(ty),
       tz(tz) {}
 
-Affine3D::Affine3D(std::optional<std::tuple<float, float, float>> rot,
-                   std::optional<std::tuple<float, float, float>> trans,
-                   std::optional<float> scale) {
+affine_3d_t::affine_3d_t(std::optional<std::tuple<float, float, float>> rot,
+                         std::optional<std::tuple<float, float, float>> trans,
+                         std::optional<float> scale) {
     if (rot) {
         float x = std::get<0>(*rot);
         float y = std::get<1>(*rot);
@@ -774,7 +787,7 @@ Affine3D::Affine3D(std::optional<std::tuple<float, float, float>> rot,
     }
 }
 
-Affine3D Affine3D::operator*=(const Affine3D &a) {
+affine_3d_t affine_3d_t::operator*=(const affine_3d_t &a) {
     float r00_ = r00 * a.r00 + r01 * a.r10 + r02 * a.r20;
     float r01_ = r00 * a.r01 + r01 * a.r11 + r02 * a.r21;
     float r02_ = r00 * a.r02 + r01 * a.r12 + r02 * a.r22;
@@ -802,7 +815,7 @@ Affine3D Affine3D::operator*=(const Affine3D &a) {
     return *this;
 }
 
-Affine3D Affine3D::inverse() const {
+affine_3d_t affine_3d_t::inverse() const {
     float det = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) +
                 r02 * (r10 * r21 - r11 * r20);
     float r00_ = (r11 * r22 - r12 * r21) / det;
@@ -821,7 +834,7 @@ Affine3D Affine3D::inverse() const {
             r20_, r21_, r22_, tx_,  ty_,  tz_};
 }
 
-std::string Affine3D::to_string() const {
+std::string affine_3d_t::to_string() const {
     std::stringstream ss;
     ss << "Affine3D([[" << r00 << ", " << r01 << ", " << r02 << "], [" << r10
        << ", " << r11 << ", " << r12 << "], [" << r20 << ", " << r21 << ", "
@@ -829,70 +842,78 @@ std::string Affine3D::to_string() const {
     return ss.str();
 }
 
-Affine3D operator*(const Affine3D &a1, const Affine3D &a2) {
-    Affine3D a = a1;
+affine_3d_t operator*(const affine_3d_t &a1, const affine_3d_t &a2) {
+    affine_3d_t a = a1;
     a *= a2;
     return a;
 }
 
-Point3D operator>>(const Affine3D &a, const Point3D &p) {
+point_3d_t operator>>(const affine_3d_t &a, const point_3d_t &p) {
     float x = a.r00 * p.x + a.r01 * p.y + a.r02 * p.z + a.tx;
     float y = a.r10 * p.x + a.r11 * p.y + a.r12 * p.z + a.ty;
     float z = a.r20 * p.x + a.r21 * p.y + a.r22 * p.z + a.tz;
     return {x, y, z};
 }
 
-Point3D operator<<(const Point3D &p, const Affine3D &a) { return a >> p; }
+point_3d_t operator<<(const point_3d_t &p, const affine_3d_t &a) {
+    return a >> p;
+}
 
-Line3D operator>>(const Affine3D &a, const Line3D &l) {
-    Point3D p1 = a >> l.p1;
-    Point3D p2 = a >> l.p2;
+line_3d_t operator>>(const affine_3d_t &a, const line_3d_t &l) {
+    point_3d_t p1 = a >> l.p1;
+    point_3d_t p2 = a >> l.p2;
     return {p1, p2};
 }
 
-Line3D operator<<(const Line3D &l, const Affine3D &a) { return a >> l; }
+line_3d_t operator<<(const line_3d_t &l, const affine_3d_t &a) {
+    return a >> l;
+}
 
-Triangle3D operator>>(const Affine3D &a, const Triangle3D &p) {
+triangle_3d_t operator>>(const affine_3d_t &a, const triangle_3d_t &p) {
     return {a >> p.p1, a >> p.p2, a >> p.p3};
 }
 
-Triangle3D operator<<(const Triangle3D &p, const Affine3D &a) { return a >> p; }
+triangle_3d_t operator<<(const triangle_3d_t &p, const affine_3d_t &a) {
+    return a >> p;
+}
 
-BoundingBox3D operator>>(const Affine3D &a, const BoundingBox3D &b) {
+bounding_box_3d_t operator>>(const affine_3d_t &a, const bounding_box_3d_t &b) {
     return {a >> b.min, a >> b.max};
 }
 
-BoundingBox3D operator<<(const BoundingBox3D &b, const Affine3D &a) {
+bounding_box_3d_t operator<<(const bounding_box_3d_t &b, const affine_3d_t &a) {
     return a >> b;
 }
 
-Polygon3D operator>>(const Affine3D &a, const Polygon3D &p) {
-    std::vector<Point3D> points;
+polygon_3d_t operator>>(const affine_3d_t &a, const polygon_3d_t &p) {
+    std::vector<point_3d_t> points;
     for (const auto &v : p.points) {
         points.push_back(a >> v);
     }
     return {points};
 }
 
-Polygon3D operator<<(const Polygon3D &p, const Affine3D &a) { return a >> p; }
+polygon_3d_t operator<<(const polygon_3d_t &p, const affine_3d_t &a) {
+    return a >> p;
+}
 
 /* --------- *
  * Trimesh3D *
  * --------- */
 
-Trimesh3D::Trimesh3D(const std::vector<Point3D> &vertices,
-                     const face_set_t &faces)
+trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices,
+                           const face_set_t &faces)
     : _vertices(vertices), _faces(faces.begin(), faces.end()) {
     validate();
 }
 
-Trimesh3D::Trimesh3D(const std::vector<Point3D> &vertices,
-                     const face_list_t &faces)
+trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices,
+                           const face_list_t &faces)
     : _vertices(vertices), _faces(faces) {
     validate();
 }
 
-void Trimesh3D::validate() const {
+void trimesh_3d_t::validate() const {
     // Checks that there is at least one face.
     if (_faces.empty()) {
         throw std::runtime_error("No faces");
@@ -930,25 +951,27 @@ void Trimesh3D::validate() const {
     }
 }
 
-const std::vector<Point3D> &Trimesh3D::vertices() const { return _vertices; }
+const std::vector<point_3d_t> &trimesh_3d_t::vertices() const {
+    return _vertices;
+}
 
-const face_list_t &Trimesh3D::faces() const { return _faces; }
+const face_list_t &trimesh_3d_t::faces() const { return _faces; }
 
-Triangle3D Trimesh3D::get_triangle(const face_t &face) const {
+triangle_3d_t trimesh_3d_t::get_triangle(const face_t &face) const {
     auto &[vi, vj, vk] = face;
     return {_vertices[vi], _vertices[vj], _vertices[vk]};
 }
 
-std::vector<Triangle3D> Trimesh3D::get_triangles() const {
-    std::vector<Triangle3D> result;
+std::vector<triangle_3d_t> trimesh_3d_t::get_triangles() const {
+    std::vector<triangle_3d_t> result;
     for (auto &face : _faces) {
         result.push_back(get_triangle(face));
     }
     return result;
 }
 
-float Trimesh3D::signed_volume() const {
-    Point3D center = {0, 0, 0};
+float trimesh_3d_t::signed_volume() const {
+    point_3d_t center = {0, 0, 0};
     float volume = 0;
     for (auto &triangle : get_triangles()) {
         volume += triangle_signed_volume(center, triangle.p1, triangle.p2,
@@ -957,8 +980,8 @@ float Trimesh3D::signed_volume() const {
     return volume;
 }
 
-Trimesh3D Trimesh3D::flip_inside_out() const {
-    std::vector<Point3D> vertices = this->_vertices;
+trimesh_3d_t trimesh_3d_t::flip_inside_out() const {
+    std::vector<point_3d_t> vertices = this->_vertices;
     face_list_t faces;
     std::transform(this->_faces.begin(), this->_faces.end(),
                    std::inserter(faces, faces.begin()), [](const face_t &face) {
@@ -967,8 +990,8 @@ Trimesh3D Trimesh3D::flip_inside_out() const {
     return {vertices, faces};
 }
 
-Trimesh3D Trimesh3D::subdivide(bool at_edges) const {
-    std::vector<Point3D> vertices = _vertices;
+trimesh_3d_t trimesh_3d_t::subdivide(bool at_edges) const {
+    std::vector<point_3d_t> vertices = _vertices;
     face_list_t faces;
 
     if (at_edges) {
@@ -1024,7 +1047,7 @@ Trimesh3D Trimesh3D::subdivide(bool at_edges) const {
     return {vertices, faces};
 }
 
-std::string Trimesh3D::to_string() const {
+std::string trimesh_3d_t::to_string() const {
     std::stringstream ss;
     ss << "Trimesh3D(" << std::endl;
     ss << "  " << _vertices.size() << " vertices = [" << std::endl;
@@ -1052,285 +1075,295 @@ std::string Trimesh3D::to_string() const {
     return ss.str();
 }
 
-Trimesh3D Trimesh3D::operator<<(const Affine3D &tf) const {
-    std::vector<Point3D> vertices;
+trimesh_3d_t trimesh_3d_t::operator<<(const affine_3d_t &tf) const {
+    std::vector<point_3d_t> vertices;
     face_list_t faces = this->_faces;
     std::transform(this->_vertices.begin(), this->_vertices.end(),
                    std::back_inserter(vertices),
-                   [&tf](const Point3D &vertex) { return vertex << tf; });
+                   [&tf](const point_3d_t &vertex) { return vertex << tf; });
     return {vertices, faces};
 }
 
-Trimesh3D Trimesh3D::operator|(const Trimesh3D &other) const {
+trimesh_3d_t trimesh_3d_t::operator|(const trimesh_3d_t &other) const {
     return mesh_intersection(*this, other);
 }
 
-Trimesh3D Trimesh3D::operator&(const Trimesh3D &other) const {
+trimesh_3d_t trimesh_3d_t::operator&(const trimesh_3d_t &other) const {
     return mesh_union(*this, other);
 }
 
-Trimesh3D Trimesh3D::operator-(const Trimesh3D &other) const {
+trimesh_3d_t trimesh_3d_t::operator-(const trimesh_3d_t &other) const {
     return mesh_difference(*this, other);
 }
 
 void add_3d_types_modules(py::module &m) {
     // Defines the classes first, so that methods can resolve types
     // correctly.
-    auto point3d = py::class_<Point3D>(m, "Point3D");
-    auto line3d = py::class_<Line3D>(m, "Line3D");
-    auto circumcircle3d = py::class_<Circumcircle3D>(m, "Circumcircle3D");
-    auto triangle3d = py::class_<Triangle3D>(m, "Triangle3D");
-    auto bbox3d = py::class_<BoundingBox3D>(m, "BoundingBox3D");
-    auto polygon3d = py::class_<Polygon3D>(m, "Polygon3D");
-    auto affine3d = py::class_<Affine3D>(m, "Affine3D");
+    auto point3d = py::class_<point_3d_t>(m, "Point3D");
+    auto line3d = py::class_<line_3d_t>(m, "Line3D");
+    auto circumcircle3d = py::class_<circumcircle_3d_t>(m, "Circumcircle3D");
+    auto triangle3d = py::class_<triangle_3d_t>(m, "Triangle3D");
+    auto bbox3d = py::class_<bounding_box_3d_t>(m, "BoundingBox3D");
+    auto polygon3d = py::class_<polygon_3d_t>(m, "Polygon3D");
+    auto affine3d = py::class_<affine_3d_t>(m, "Affine3D");
     auto trimesh3d =
-        py::class_<Trimesh3D, std::shared_ptr<Trimesh3D>>(m, "Trimesh3D");
+        py::class_<trimesh_3d_t, std::shared_ptr<trimesh_3d_t>>(m, "Trimesh3D");
 
     // Defines Point3D methods.
     point3d
         .def(py::init<float, float, float>(), "A point in 3D space", "x"_a,
              "y"_a, "z"_a)
-        .def_readwrite("x", &Point3D::x, "The point's x coordinate")
-        .def_readwrite("y", &Point3D::y, "The point's y coordinate")
-        .def_readwrite("z", &Point3D::z, "The point's z coordinate")
-        .def("__str__", &Point3D::to_string, py::is_operator())
-        .def("__repr__", &Point3D::to_string, py::is_operator())
+        .def_readwrite("x", &point_3d_t::x, "The point's x coordinate")
+        .def_readwrite("y", &point_3d_t::y, "The point's y coordinate")
+        .def_readwrite("z", &point_3d_t::z, "The point's z coordinate")
+        .def("__str__", &point_3d_t::to_string, py::is_operator())
+        .def("__repr__", &point_3d_t::to_string, py::is_operator())
         .def("__add__",
-             py::overload_cast<const Point3D &, const Point3D &>(&operator+),
+             py::overload_cast<const point_3d_t &, const point_3d_t &>(
+                 &operator+),
              "Adds two points together", "other"_a, py::is_operator())
-        .def("__iadd__", &Point3D::operator+=, "Adds a point to this point",
+        .def("__iadd__", &point_3d_t::operator+=, "Adds a point to this point",
              "other"_a, py::is_operator())
         .def("__sub__",
-             py::overload_cast<const Point3D &, const Point3D &>(&operator-),
+             py::overload_cast<const point_3d_t &, const point_3d_t &>(
+                 &operator-),
              "Subtracts two points", "other"_a, py::is_operator())
-        .def("__isub__", &Point3D::operator-=,
+        .def("__isub__", &point_3d_t::operator-=,
              "Subtracts a point from this point", "other"_a, py::is_operator())
         .def("__mul__",
-             py::overload_cast<const Point3D &, const Point3D &>(&operator*),
+             py::overload_cast<const point_3d_t &, const point_3d_t &>(
+                 &operator*),
              "Vector multiplication", "other"_a, py::is_operator())
-        .def("__mul__", py::overload_cast<const Point3D &, float>(&operator*),
+        .def("__mul__",
+             py::overload_cast<const point_3d_t &, float>(&operator*),
              "Multiplies a point by a scalar", "other"_a, py::is_operator())
-        .def("__mul__", py::overload_cast<float, const Point3D &>(&operator*),
+        .def("__mul__",
+             py::overload_cast<float, const point_3d_t &>(&operator*),
              "Multiplies a point by a scalar", "other"_a, py::is_operator())
         .def("__imul__",
-             py::overload_cast<const Point3D &>(&Point3D::operator*=),
+             py::overload_cast<const point_3d_t &>(&point_3d_t::operator*=),
              "Vector multiplication", "other"_a, py::is_operator())
-        .def("__imul__", py::overload_cast<float>(&Point3D::operator*=),
+        .def("__imul__", py::overload_cast<float>(&point_3d_t::operator*=),
              "Multiplies this point by a scalar", "other"_a, py::is_operator())
         .def("__truediv__",
-             py::overload_cast<const Point3D &, const Point3D &>(&operator/),
+             py::overload_cast<const point_3d_t &, const point_3d_t &>(
+                 &operator/),
              "Vector division", "other"_a, py::is_operator())
         .def("__truediv__",
-             py::overload_cast<const Point3D &, float>(&operator/),
+             py::overload_cast<const point_3d_t &, float>(&operator/),
              "Divides a point by a scalar", "other"_a, py::is_operator())
         .def("__itruediv__",
-             py::overload_cast<const Point3D &>(&Point3D::operator/=),
+             py::overload_cast<const point_3d_t &>(&point_3d_t::operator/=),
              "Vector division", "other"_a, py::is_operator())
-        .def("__itruediv__", py::overload_cast<float>(&Point3D::operator/=),
+        .def("__itruediv__", py::overload_cast<float>(&point_3d_t::operator/=),
              "Divides this point by a scalar", "other"_a, py::is_operator())
-        .def("__eq__", &Point3D::operator==, "Checks if two points are equal",
-             "other"_a, py::is_operator())
-        .def("__ne__", &Point3D::operator!=,
+        .def("__eq__", &point_3d_t::operator==,
+             "Checks if two points are equal", "other"_a, py::is_operator())
+        .def("__ne__", &point_3d_t::operator!=,
              "Checks if two points are not equal", "other"_a, py::is_operator())
-        .def("__lt__", &Point3D::operator<,
+        .def("__lt__", &point_3d_t::operator<,
              "Checks if this point is less than another", "other"_a,
              py::is_operator())
         .def("__lshift__",
-             py::overload_cast<const Point3D &, const Affine3D &>(operator<<),
+             py::overload_cast<const point_3d_t &, const affine_3d_t &>(
+                 operator<<),
              "Applies a affine transformation to the point", "other"_a,
              py::is_operator())
-        .def("__ilshift__", &Point3D::operator<<=,
+        .def("__ilshift__", &point_3d_t::operator<<=,
              "Applies a affine transformation to the point", "other"_a,
              py::is_operator())
-        .def("determinant", &Point3D::determinant,
+        .def("determinant", &point_3d_t::determinant,
              "The determinant of a 3x3 matrix with two other points", "a"_a,
              "b"_a)
-        .def("length", &Point3D::length, "The point's length")
-        .def("dot", &Point3D::dot, "The dot product of the point", "other"_a)
-        .def("cross", &Point3D::cross, "The cross product of the point",
+        .def("length", &point_3d_t::length, "The point's length")
+        .def("dot", &point_3d_t::dot, "The dot product of the point", "other"_a)
+        .def("cross", &point_3d_t::cross, "The cross product of the point",
              "other"_a)
-        .def("barycentric_coordinates", &Point3D::barycentric_coordinates,
+        .def("barycentric_coordinates", &point_3d_t::barycentric_coordinates,
              "The barycentric coordinates of the point relative to a "
              "triangle",
              "t"_a)
-        .def("is_inside_bounding_box", &Point3D::is_inside_bounding_box,
+        .def("is_inside_bounding_box", &point_3d_t::is_inside_bounding_box,
              "Checks if the point is inside a bounding box", "bb"_a)
-        .def("distance_to_point", &Point3D::distance_to_point,
+        .def("distance_to_point", &point_3d_t::distance_to_point,
              "The distance to another point", "other"_a)
-        .def("distance_to_line", &Point3D::distance_to_line,
+        .def("distance_to_line", &point_3d_t::distance_to_line,
              "The distance to a line", "line"_a)
-        .def("distance_to_triangle", &Point3D::distance_to_triangle,
+        .def("distance_to_triangle", &point_3d_t::distance_to_triangle,
              "The distance to a triangle", "triangle"_a)
-        .def("is_coplanar", &Point3D::is_coplanar,
+        .def("is_coplanar", &point_3d_t::is_coplanar,
              "Checks if the point is coplanar with a triangle", "t"_a)
-        .def("project_to_line", &Point3D::project_to_line,
+        .def("project_to_line", &point_3d_t::project_to_line,
              "Projects the point onto a line", "l"_a)
-        .def("project_to_triangle", &Point3D::project_to_triangle,
+        .def("project_to_triangle", &point_3d_t::project_to_triangle,
              "Projects the point onto a triangle", "t"_a);
 
     // Defines Line3D methods.
     line3d
-        .def(py::init<const Point3D &, const Point3D &>(), "A line in 3D space",
-             "p1"_a, "p2"_a)
-        .def_readwrite("p1", &Line3D::p1, "The line's first point")
-        .def_readwrite("p2", &Line3D::p2, "The line's second point")
-        .def("__str__", &Line3D::to_string, py::is_operator())
-        .def("__repr__", &Line3D::to_string, py::is_operator())
-        .def("__eq__", &Line3D::operator==, "Checks if two lines are equal",
+        .def(py::init<const point_3d_t &, const point_3d_t &>(),
+             "A line in 3D space", "p1"_a, "p2"_a)
+        .def_readwrite("p1", &line_3d_t::p1, "The line's first point")
+        .def_readwrite("p2", &line_3d_t::p2, "The line's second point")
+        .def("__str__", &line_3d_t::to_string, py::is_operator())
+        .def("__repr__", &line_3d_t::to_string, py::is_operator())
+        .def("__eq__", &line_3d_t::operator==, "Checks if two lines are equal",
              "other"_a, py::is_operator())
-        .def("__ne__", &Line3D::operator!=, "Checks if two lines are not equal",
-             "other"_a, py::is_operator())
+        .def("__ne__", &line_3d_t::operator!=,
+             "Checks if two lines are not equal", "other"_a, py::is_operator())
         .def("__lshift__",
-             py::overload_cast<const Line3D &, const Affine3D &>(&operator<<),
+             py::overload_cast<const line_3d_t &, const affine_3d_t &>(
+                 &operator<<),
              "Applies a affine transformation to the line", "other"_a,
              py::is_operator())
-        .def("__ilshift__", &Line3D::operator<<=,
+        .def("__ilshift__", &line_3d_t::operator<<=,
              "Applies a affine transformation to the line", "other"_a,
              py::is_operator())
-        .def("distance_to_point", &Line3D::distance_to_point,
+        .def("distance_to_point", &line_3d_t::distance_to_point,
              "The distance to another point", "other"_a)
-        .def("distance_to_line", &Line3D::distance_to_line,
+        .def("distance_to_line", &line_3d_t::distance_to_line,
              "The distance to another line", "other"_a)
-        .def("closest_points", &Line3D::closest_points,
+        .def("closest_points", &line_3d_t::closest_points,
              "The closest points between two lines; returns None if the "
              "lines "
              "are parallel",
              "other"_a)
-        .def("line_intersection", &Line3D::line_intersection,
+        .def("line_intersection", &line_3d_t::line_intersection,
              "The intersection point between two lines; returns None if the "
              "lines don't intersect",
              "other"_a)
-        .def("intersects_triangle", &Line3D::intersects_triangle,
+        .def("intersects_triangle", &line_3d_t::intersects_triangle,
              "Checks if the line intersects a triangle", "t"_a)
-        .def("triangle_intersection", &Line3D::triangle_intersection,
+        .def("triangle_intersection", &line_3d_t::triangle_intersection,
              "The intersection point between a line and a triangle; returns "
              "None if the line doesn't intersect the triangle",
              "t"_a)
-        .def("intersects_bounding_box", &Line3D::intersects_bounding_box,
+        .def("intersects_bounding_box", &line_3d_t::intersects_bounding_box,
              "Checks if the line intersects a bounding box", "bb"_a);
 
     // Defines Circumcircle3D methods.
     circumcircle3d
-        .def(py::init<const Point3D &, float>(),
+        .def(py::init<const point_3d_t &, float>(),
              "A circumcircle with a given center and radius", "center"_a,
              "radius"_a)
-        .def_readwrite("center", &Circumcircle3D::center,
+        .def_readwrite("center", &circumcircle_3d_t::center,
                        "The circumcircle's center")
-        .def_readwrite("radius", &Circumcircle3D::radius,
+        .def_readwrite("radius", &circumcircle_3d_t::radius,
                        "The circumcircle's radius")
-        .def("__str__", &Circumcircle3D::to_string, py::is_operator())
-        .def("__repr__", &Circumcircle3D::to_string, py::is_operator())
-        .def("__eq__", &Circumcircle3D::operator==,
+        .def("__str__", &circumcircle_3d_t::to_string, py::is_operator())
+        .def("__repr__", &circumcircle_3d_t::to_string, py::is_operator())
+        .def("__eq__", &circumcircle_3d_t::operator==,
              "Checks if two circumcircles are equal", "other"_a,
              py::is_operator())
-        .def("__ne__", &Circumcircle3D::operator!=,
+        .def("__ne__", &circumcircle_3d_t::operator!=,
              "Checks if two circumcircles are not equal", "other"_a,
              py::is_operator())
-        .def("contains_point", &Circumcircle3D::contains_point,
+        .def("contains_point", &circumcircle_3d_t::contains_point,
              "Checks if the circumcircle contains a point", "p"_a);
 
     // Defines Triangle3D methods.
     triangle3d
-        .def(py::init<const Point3D &, const Point3D &, const Point3D &>(),
+        .def(py::init<const point_3d_t &, const point_3d_t &,
+                      const point_3d_t &>(),
              "A triangle in 3D space", "p1"_a, "p2"_a, "p3"_a)
-        .def_readwrite("p1", &Triangle3D::p1, "The triangle's first point")
-        .def_readwrite("p2", &Triangle3D::p2, "The triangle's second point")
-        .def_readwrite("p3", &Triangle3D::p3, "The triangle's third point")
-        .def("__str__", &Triangle3D::to_string, py::is_operator())
-        .def("__repr__", &Triangle3D::to_string, py::is_operator())
-        .def("__eq__", &Triangle3D::operator==,
+        .def_readwrite("p1", &triangle_3d_t::p1, "The triangle's first point")
+        .def_readwrite("p2", &triangle_3d_t::p2, "The triangle's second point")
+        .def_readwrite("p3", &triangle_3d_t::p3, "The triangle's third point")
+        .def("__str__", &triangle_3d_t::to_string, py::is_operator())
+        .def("__repr__", &triangle_3d_t::to_string, py::is_operator())
+        .def("__eq__", &triangle_3d_t::operator==,
              "Checks if two triangles are equal", "other"_a, py::is_operator())
-        .def("__ne__", &Triangle3D::operator!=,
+        .def("__ne__", &triangle_3d_t::operator!=,
              "Checks if two triangles are not equal", "other"_a,
              py::is_operator())
-        .def(
-            "__lshift__",
-            py::overload_cast<const Triangle3D &, const Affine3D &>(operator<<),
-            "Applies a affine transformation to the triangle", "other"_a,
-            py::is_operator())
-        .def("__ilshift__", &Triangle3D::operator<<=,
+        .def("__lshift__",
+             py::overload_cast<const triangle_3d_t &, const affine_3d_t &>(
+                 operator<<),
              "Applies a affine transformation to the triangle", "other"_a,
              py::is_operator())
-        .def("area", &Triangle3D::area, "The triangle's area")
-        .def("normal", &Triangle3D::normal, "The triangle's normal")
-        .def("center", &Triangle3D::center, "The triangle's center")
-        .def("vertices", &Triangle3D::vertices, "The triangle's vertices")
-        .def("edges", &Triangle3D::edges, "The triangle's edges")
-        .def("distance_to_point", &Triangle3D::distance_to_point,
+        .def("__ilshift__", &triangle_3d_t::operator<<=,
+             "Applies a affine transformation to the triangle", "other"_a,
+             py::is_operator())
+        .def("area", &triangle_3d_t::area, "The triangle's area")
+        .def("normal", &triangle_3d_t::normal, "The triangle's normal")
+        .def("center", &triangle_3d_t::center, "The triangle's center")
+        .def("vertices", &triangle_3d_t::vertices, "The triangle's vertices")
+        .def("edges", &triangle_3d_t::edges, "The triangle's edges")
+        .def("distance_to_point", &triangle_3d_t::distance_to_point,
              "The distance to another point", "other"_a)
-        .def("is_coplanar", &Triangle3D::is_coplanar,
+        .def("is_coplanar", &triangle_3d_t::is_coplanar,
              "Checks if the triangle is coplanar with another triangle",
              "other"_a)
-        .def("circumcircle", &Triangle3D::circumcircle,
+        .def("circumcircle", &triangle_3d_t::circumcircle,
              "The triangle's circumcircle")
         .def("point_from_barycentric_coords",
-             &Triangle3D::point_from_barycentric_coords,
+             &triangle_3d_t::point_from_barycentric_coords,
              "The point from barycentric coordinates", "b"_a);
 
     // Defines BoundingBox3D methods.
     bbox3d
-        .def(py::init<const Point3D &, const Point3D &>(),
+        .def(py::init<const point_3d_t &, const point_3d_t &>(),
              "Creates a bounding box from two points", "min"_a, "max"_a)
-        .def(py::init<const std::vector<Point3D> &>(),
+        .def(py::init<const std::vector<point_3d_t> &>(),
              "Creates a bounding box from a set of points", "points"_a)
-        .def(py::init<const std::vector<Line3D> &>(),
+        .def(py::init<const std::vector<line_3d_t> &>(),
              "Creates a bounding box from a set of lines", "lines"_a)
-        .def(py::init<const std::vector<Triangle3D> &>(),
+        .def(py::init<const std::vector<triangle_3d_t> &>(),
              "Creates a bounding box from a set of triangles", "triangles"_a)
-        .def(py::init<const std::vector<BoundingBox3D> &>(),
+        .def(py::init<const std::vector<bounding_box_3d_t> &>(),
              "Creates a bounding box from a set of bounding boxes", "boxes"_a)
-        .def_readwrite("min", &BoundingBox3D::min,
+        .def_readwrite("min", &bounding_box_3d_t::min,
                        "The bounding box's minimum point")
-        .def_readwrite("max", &BoundingBox3D::max,
+        .def_readwrite("max", &bounding_box_3d_t::max,
                        "The bounding box's maximum point")
-        .def("__str__", &BoundingBox3D::to_string, py::is_operator())
-        .def("__repr__", &BoundingBox3D::to_string, py::is_operator())
-        .def("__eq__", &BoundingBox3D::operator==,
+        .def("__str__", &bounding_box_3d_t::to_string, py::is_operator())
+        .def("__repr__", &bounding_box_3d_t::to_string, py::is_operator())
+        .def("__eq__", &bounding_box_3d_t::operator==,
              "Checks if two bounding boxes are equal", "other"_a,
              py::is_operator())
-        .def("__ne__", &BoundingBox3D::operator!=,
+        .def("__ne__", &bounding_box_3d_t::operator!=,
              "Checks if two bounding boxes are not equal", "other"_a,
              py::is_operator())
         .def("__lshift__",
-             py::overload_cast<const BoundingBox3D &, const Affine3D &>(
+             py::overload_cast<const bounding_box_3d_t &, const affine_3d_t &>(
                  &operator<<),
              "Applies a affine transformation to the bounding box", "other"_a,
              py::is_operator())
-        .def("__ilshift__", &BoundingBox3D::operator<<=,
+        .def("__ilshift__", &bounding_box_3d_t::operator<<=,
              "Applies a affine transformation to the bounding box", "other"_a,
              py::is_operator())
-        .def("triangle_indices", &BoundingBox3D::triangle_indices,
+        .def("triangle_indices", &bounding_box_3d_t::triangle_indices,
              "The indices of the triangles that make up the bounding box")
-        .def("corners", &BoundingBox3D::corners, "The bounding box's corners")
-        .def("triangles", &BoundingBox3D::triangles,
+        .def("corners", &bounding_box_3d_t::corners,
+             "The bounding box's corners")
+        .def("triangles", &bounding_box_3d_t::triangles,
              "The bounding box's triangles")
-        .def("center", &BoundingBox3D::center, "The bounding box's center")
-        .def("volume", &BoundingBox3D::volume, "The bounding box's volume");
+        .def("center", &bounding_box_3d_t::center, "The bounding box's center")
+        .def("volume", &bounding_box_3d_t::volume, "The bounding box's volume");
 
     // Defines Polygon3D methods.
     polygon3d
-        .def(py::init<const std::vector<Point3D> &>(),
+        .def(py::init<const std::vector<point_3d_t> &>(),
              "Creates a polygon from a set of points", "points"_a)
-        .def_readwrite("points", &Polygon3D::points, "The polygon's points")
-        .def("__str__", &Polygon3D::to_string, py::is_operator())
-        .def("__repr__", &Polygon3D::to_string, py::is_operator())
-        .def("__eq__", &Polygon3D::operator==,
+        .def_readwrite("points", &polygon_3d_t::points, "The polygon's points")
+        .def("__str__", &polygon_3d_t::to_string, py::is_operator())
+        .def("__repr__", &polygon_3d_t::to_string, py::is_operator())
+        .def("__eq__", &polygon_3d_t::operator==,
              "Checks if two polygons are equal", "other"_a, py::is_operator())
-        .def("__ne__", &Polygon3D::operator!=,
+        .def("__ne__", &polygon_3d_t::operator!=,
              "Checks if two polygons are not equal", "other"_a,
              py::is_operator())
-        .def(
-            "__lshift__",
-            py::overload_cast<const Polygon3D &, const Affine3D &>(&operator<<),
-            "Applies a affine transformation to the polygon", "other"_a,
-            py::is_operator())
-        .def("__ilshift__", &Polygon3D::operator<<=,
+        .def("__lshift__",
+             py::overload_cast<const polygon_3d_t &, const affine_3d_t &>(
+                 &operator<<),
              "Applies a affine transformation to the polygon", "other"_a,
              py::is_operator())
-        .def("area", &Polygon3D::area, "The polygon's area")
-        .def("normal", &Polygon3D::normal, "The polygon's normal")
-        .def("center", &Polygon3D::center, "The polygon's center")
-        .def("bounding_box", &Polygon3D::bounding_box,
+        .def("__ilshift__", &polygon_3d_t::operator<<=,
+             "Applies a affine transformation to the polygon", "other"_a,
+             py::is_operator())
+        .def("area", &polygon_3d_t::area, "The polygon's area")
+        .def("normal", &polygon_3d_t::normal, "The polygon's normal")
+        .def("center", &polygon_3d_t::center, "The polygon's center")
+        .def("bounding_box", &polygon_3d_t::bounding_box,
              "The polygon's bounding box");
 
     // Defines Affine3D methods.
@@ -1343,38 +1376,41 @@ void add_3d_types_modules(py::module &m) {
              "vectors",
              "rot"_a = std::nullopt, "trans"_a = std::nullopt,
              "scale"_a = std::nullopt)
-        .def("__str__", &Affine3D::to_string, py::is_operator())
-        .def("__repr__", &Affine3D::to_string, py::is_operator())
+        .def("__str__", &affine_3d_t::to_string, py::is_operator())
+        .def("__repr__", &affine_3d_t::to_string, py::is_operator())
         .def("__matmul__",
-             py::overload_cast<const Affine3D &, const Affine3D &>(&operator*),
+             py::overload_cast<const affine_3d_t &, const affine_3d_t &>(
+                 &operator*),
              "Combine two affine transformations", "other"_a, py::is_operator())
-        .def("__imatmul__", &Affine3D::operator*=,
+        .def("__imatmul__", &affine_3d_t::operator*=,
              "Applies an affine transformation to a point", "other"_a,
              py::is_operator())
         .def("__rshift__",
-             py::overload_cast<const Affine3D &, const Point3D &>(&operator>>),
+             py::overload_cast<const affine_3d_t &, const point_3d_t &>(
+                 &operator>>),
              "Applies an affine transformation to a point", "other"_a,
              py::is_operator())
         .def("__rshift__",
-             py::overload_cast<const Affine3D &, const Line3D &>(&operator>>),
+             py::overload_cast<const affine_3d_t &, const line_3d_t &>(
+                 &operator>>),
              "Applies an affine transformation to a line", "other"_a,
              py::is_operator())
         .def("__rshift__",
-             py::overload_cast<const Affine3D &, const Triangle3D &>(
+             py::overload_cast<const affine_3d_t &, const triangle_3d_t &>(
                  &operator>>),
              "Applies an affine transformation to a triangle", "other"_a,
              py::is_operator())
         .def("__rshift__",
-             py::overload_cast<const Affine3D &, const BoundingBox3D &>(
+             py::overload_cast<const affine_3d_t &, const bounding_box_3d_t &>(
                  &operator>>),
              "Applies an affine transformation to a bounding box", "other"_a,
              py::is_operator())
-        .def(
-            "__rshift__",
-            py::overload_cast<const Affine3D &, const Polygon3D &>(&operator>>),
-            "Applies an affine transformation to a polygon", "other"_a,
-            py::is_operator())
-        .def("inverse", &Affine3D::inverse,
+        .def("__rshift__",
+             py::overload_cast<const affine_3d_t &, const polygon_3d_t &>(
+                 &operator>>),
+             "Applies an affine transformation to a polygon", "other"_a,
+             py::is_operator())
+        .def("inverse", &affine_3d_t::inverse,
              "The inverse of the affine transformation");
 
     // Defines Trimesh3D methods.
@@ -1382,34 +1418,34 @@ void add_3d_types_modules(py::module &m) {
         // .def(py::init<vertices3d_t &, face_set_t &>(),
         //      "Creates a trimesh from vertices and faces", "vertices"_a,
         //      "faces"_a)
-        .def_property_readonly("vertices", &Trimesh3D::vertices,
+        .def_property_readonly("vertices", &trimesh_3d_t::vertices,
                                "The mesh vertices")
-        .def_property_readonly("faces", &Trimesh3D::faces, "The mesh faces")
-        .def("get_triangle", &Trimesh3D::get_triangle,
+        .def_property_readonly("faces", &trimesh_3d_t::faces, "The mesh faces")
+        .def("get_triangle", &trimesh_3d_t::get_triangle,
              "Gets a mesh triangle from a face", "face"_a)
-        .def("get_triangles", &Trimesh3D::get_triangles,
+        .def("get_triangles", &trimesh_3d_t::get_triangles,
              "Gets all mesh triangles")
-        .def("signed_volume", &Trimesh3D::signed_volume,
+        .def("signed_volume", &trimesh_3d_t::signed_volume,
              "Computes the signed volume of the mesh")
-        .def("flip_inside_out", &Trimesh3D::flip_inside_out,
+        .def("flip_inside_out", &trimesh_3d_t::flip_inside_out,
              "Flips the mesh inside out")
-        .def("subdivide", &Trimesh3D::subdivide,
+        .def("subdivide", &trimesh_3d_t::subdivide,
              "Subdivides the mesh into smaller triangles", "at_edges"_a = true)
-        .def("__str__", &Trimesh3D::to_string, "Converts the mesh to a string",
-             py::is_operator())
-        .def("__repr__", &Trimesh3D::to_string, "Converts the mesh to a string",
-             py::is_operator())
-        .def("__or__", &Trimesh3D::operator|,
+        .def("__str__", &trimesh_3d_t::to_string,
+             "Converts the mesh to a string", py::is_operator())
+        .def("__repr__", &trimesh_3d_t::to_string,
+             "Converts the mesh to a string", py::is_operator())
+        .def("__or__", &trimesh_3d_t::operator|,
              "Computes the union of two 3D meshes", "other"_a,
              py::is_operator())
-        .def("__and__", &Trimesh3D::operator&,
+        .def("__and__", &trimesh_3d_t::operator&,
              "Computes the intersection of two "
              "3D meshes",
              "other"_a, py::is_operator())
-        .def("__sub__", &Trimesh3D::operator-,
+        .def("__sub__", &trimesh_3d_t::operator-,
              "Computes the difference of two 3D meshes", "other"_a,
              py::is_operator())
-        .def("__lshift__", &Trimesh3D::operator<<,
+        .def("__lshift__", &trimesh_3d_t::operator<<,
              "Applies affine transformation to 3D mesh", "affine"_a,
              py::is_operator());
 }

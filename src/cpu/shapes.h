@@ -11,19 +11,20 @@ namespace py = pybind11;
 
 namespace trimesh {
 
-Polygon2D rectangle(float width, float height, bool center = false);
+polygon_2d_t rectangle(float width, float height, bool center = false);
 
-Polygon2D regular_polygon(float radius, size_t n);
+polygon_2d_t regular_polygon(float radius, size_t n);
 
-Trimesh2D regular_polygon_mesh(float radius, size_t n);
+trimesh_2d_t regular_polygon_mesh(float radius, size_t n);
 
-Trimesh3D cuboid(float width, float height, float depth, bool center = false);
+trimesh_3d_t cuboid(float width, float height, float depth,
+                    bool center = false);
 
-Trimesh3D tetrahedron(float radius);
+trimesh_3d_t tetrahedron(float radius);
 
-Trimesh3D icosphere(float radius, size_t n);
+trimesh_3d_t icosphere(float radius, size_t n);
 
-Trimesh3D uv_sphere(float radius, size_t n, size_t m);
+trimesh_3d_t uv_sphere(float radius, size_t n, size_t m);
 
 void add_shapes_modules(py::module &m);
 

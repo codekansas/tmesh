@@ -9,12 +9,12 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
-/* ------------------- *
- * TriangleSplitTree2D *
- * ------------------- */
+/* ------------------------ *
+ * triangle_split_tree_2d_t *
+ * ------------------------ */
 
-TriangleSplitTree2D::TriangleSplitTree2D(const face_t &root,
-                                         const std::vector<Point2D> &vertices)
+triangle_split_tree_2d_t::triangle_split_tree_2d_t(
+    const face_t &root, const std::vector<point_2d_t> &vertices)
     : root(root) {
     this->faces = {{0, 1, 2}};
     this->children = {{}};
@@ -22,24 +22,25 @@ TriangleSplitTree2D::TriangleSplitTree2D(const face_t &root,
     this->vertices = {vertices[a], vertices[b], vertices[c]};
 }
 
-void TriangleSplitTree2D::add_triangle(const face_t &f, const size_t parent) {
+void triangle_split_tree_2d_t::add_triangle(const face_t &f,
+                                            const size_t parent) {
     this->faces.push_back({f.a, f.b, f.c});
     this->children.push_back(std::vector<size_t>{});
     this->children[parent].push_back(this->children.size() - 1);
 }
 
-size_t TriangleSplitTree2D::add_point(const Point2D &p) {
+size_t triangle_split_tree_2d_t::add_point(const point_2d_t &p) {
     this->vertices.push_back(p);
     return this->vertices.size() - 1;
 }
 
-bool TriangleSplitTree2D::is_leaf(size_t i) const {
+bool triangle_split_tree_2d_t::is_leaf(size_t i) const {
     return this->children[i].empty();
 }
 
 std::unordered_set<size_t>
-TriangleSplitTree2D::get_leaf_triangles_which_intersect(
-    const Point2D &p) const {
+triangle_split_tree_2d_t::get_leaf_triangles_which_intersect(
+    const point_2d_t &p) const {
     std::unordered_set<size_t> leaf_triangles;
     std::queue<size_t> q;
     q.push(0);
@@ -61,7 +62,8 @@ TriangleSplitTree2D::get_leaf_triangles_which_intersect(
 }
 
 std::unordered_set<size_t>
-TriangleSplitTree2D::get_leaf_triangles_which_intersect(const Line2D &l) const {
+triangle_split_tree_2d_t::get_leaf_triangles_which_intersect(
+    const line_2d_t &l) const {
     std::unordered_set<size_t> leaf_triangles;
     std::queue<size_t> q;
     q.push(0);
@@ -82,7 +84,7 @@ TriangleSplitTree2D::get_leaf_triangles_which_intersect(const Line2D &l) const {
     return leaf_triangles;
 }
 
-void TriangleSplitTree2D::split_triangle(const Point2D &p, size_t i) {
+void triangle_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
     const auto f = faces[i];
     const auto t = get_triangle(i);
 
@@ -98,12 +100,12 @@ void TriangleSplitTree2D::split_triangle(const Point2D &p, size_t i) {
     add_triangle({f.c, p4, f.a}, i);
 }
 
-void TriangleSplitTree2D::split_triangle(const Line2D &l, size_t i) {
+void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
     const auto f = faces[i];
     const auto t = get_triangle(i);
 
     // Gets the intersection points the line and each edge of the triangle.
-    Line2D l1{t.p1, t.p2}, l2{t.p2, t.p3}, l3{t.p3, t.p1};
+    line_2d_t l1{t.p1, t.p2}, l2{t.p2, t.p3}, l3{t.p3, t.p1};
     auto i1 = l1.line_intersection(l), i2 = l2.line_intersection(l),
          i3 = l3.line_intersection(l);
 
@@ -131,14 +133,14 @@ void TriangleSplitTree2D::split_triangle(const Line2D &l, size_t i) {
     }
 }
 
-Triangle2D TriangleSplitTree2D::get_triangle(size_t i) const {
+triangle_2d_t triangle_split_tree_2d_t::get_triangle(size_t i) const {
     const auto &[p1, p2, p3] = faces[i];
     const auto v1 = vertices[p1], v2 = vertices[p2], v3 = vertices[p3];
-    Triangle2D ret_val{v1, v2, v3};
+    triangle_2d_t ret_val{v1, v2, v3};
     return ret_val;
 }
 
-const std::vector<face_t> TriangleSplitTree2D::get_leaf_faces(
+const std::vector<face_t> triangle_split_tree_2d_t::get_leaf_faces(
     size_t offset) const {
     auto get_vertex = [&](const size_t v) {
         switch (v) {
@@ -162,16 +164,16 @@ const std::vector<face_t> TriangleSplitTree2D::get_leaf_faces(
     return leaf_faces;
 }
 
-const std::vector<Point2D> TriangleSplitTree2D::get_vertices() const {
-    std::vector<Point2D> v(vertices.begin() + 3, vertices.end());
+const std::vector<point_2d_t> triangle_split_tree_2d_t::get_vertices() const {
+    std::vector<point_2d_t> v(vertices.begin() + 3, vertices.end());
     return v;
 }
 
-/* ----- *
- * BVH2D *
- * ----- */
+/* -------- *
+ * bvh_2d_t *
+ * -------- */
 
-void sort_bounding_boxes(const std::vector<BoundingBox2D> &boxes,
+void sort_bounding_boxes(const std::vector<bounding_box_2d_t> &boxes,
                          std::vector<size_t> &indices, tree_t &tree, size_t lo,
                          size_t hi) {
     if (hi - lo < 2) {
@@ -195,7 +197,7 @@ void sort_bounding_boxes(const std::vector<BoundingBox2D> &boxes,
     size_t axis = 0;
     if (dx < dy) axis = 1;
 
-    auto get_axis_vals = [&axis](const BoundingBox2D &box) {
+    auto get_axis_vals = [&axis](const bounding_box_2d_t &box) {
         auto min = box.min, max = box.max;
         switch (axis) {
             case 0:
@@ -228,10 +230,11 @@ void sort_bounding_boxes(const std::vector<BoundingBox2D> &boxes,
     sort_bounding_boxes(boxes, indices, tree, lo + mid, hi);
 }
 
-BVH2D::BVH2D(const Trimesh2D &t) : trimesh(std::make_shared<Trimesh2D>(t)) {
-    std::vector<BoundingBox2D> boxes;
+bvh_2d_t::bvh_2d_t(const trimesh_2d_t &t)
+    : trimesh(std::make_shared<trimesh_2d_t>(t)) {
+    std::vector<bounding_box_2d_t> boxes;
     for (const auto &face : t.faces())
-        boxes.push_back(BoundingBox2D({t.get_triangle(face)}));
+        boxes.push_back(bounding_box_2d_t({t.get_triangle(face)}));
 
     std::vector<size_t> indices(boxes.size());
     std::iota(indices.begin(), indices.end(), 0);
@@ -240,8 +243,8 @@ BVH2D::BVH2D(const Trimesh2D &t) : trimesh(std::make_shared<Trimesh2D>(t)) {
 }
 
 void intersections_helper(const tree_t tree,
-                          const std::shared_ptr<Trimesh2D> &trimesh, int id,
-                          const Triangle2D &t, std::vector<face_t> &intrs) {
+                          const std::shared_ptr<trimesh_2d_t> &trimesh, int id,
+                          const triangle_2d_t &t, std::vector<face_t> &intrs) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
 
     auto &[face_id, lhs, rhs, box] = tree[id];
@@ -254,9 +257,9 @@ void intersections_helper(const tree_t tree,
 
     // Checks if the line intersects the current triangle.
     auto &face_indices = trimesh->faces()[face_id];
-    Triangle2D face = {trimesh->vertices()[face_indices.a],
-                       trimesh->vertices()[face_indices.b],
-                       trimesh->vertices()[face_indices.c]};
+    triangle_2d_t face = {trimesh->vertices()[face_indices.a],
+                          trimesh->vertices()[face_indices.b],
+                          trimesh->vertices()[face_indices.c]};
     if (face.intersects_triangle(t)) {
         intrs.push_back(face_indices);
     }
@@ -266,29 +269,30 @@ void intersections_helper(const tree_t tree,
     if (rhs != -1) intersections_helper(tree, trimesh, rhs, t, intrs);
 }
 
-std::vector<face_t> BVH2D::intersections(const Triangle2D &t) const {
+std::vector<face_t> bvh_2d_t::intersections(const triangle_2d_t &t) const {
     std::vector<face_t> intrs;
     intersections_helper(tree, trimesh, 0, t, intrs);
     return intrs;
 }
 
-std::string BVH2D::to_string() const {
+std::string bvh_2d_t::to_string() const {
     std::stringstream ss;
     ss << "BVH2D(" << trimesh->to_string() << ")";
     return ss.str();
 }
 
 void add_2d_bvh_modules(py::module &m) {
-    py::class_<BVH2D, std::shared_ptr<BVH2D>>(m, "BVH2D")
-        .def(py::init<Trimesh2D &>(), "Boundary volume hierarchy", "trimesh"_a)
-        .def("__str__", &BVH2D::to_string, "String representation",
+    py::class_<bvh_2d_t, std::shared_ptr<bvh_2d_t>>(m, "BVH2D")
+        .def(py::init<trimesh_2d_t &>(), "Boundary volume hierarchy",
+             "trimesh"_a)
+        .def("__str__", &bvh_2d_t::to_string, "String representation",
              py::is_operator())
-        .def("__repr__", &BVH2D::to_string, "String representation",
+        .def("__repr__", &bvh_2d_t::to_string, "String representation",
              py::is_operator())
-        .def("intersections", &BVH2D::intersections, "Intersections",
+        .def("intersections", &bvh_2d_t::intersections, "Intersections",
              "triangle"_a)
-        .def_property_readonly("trimesh", &BVH2D::get_trimesh, "Trimesh")
-        .def_property_readonly("tree", &BVH2D::get_tree, "Tree");
+        .def_property_readonly("trimesh", &bvh_2d_t::get_trimesh, "Trimesh")
+        .def_property_readonly("tree", &bvh_2d_t::get_tree, "Tree");
 }
 
 }  // namespace trimesh

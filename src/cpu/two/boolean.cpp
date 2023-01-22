@@ -13,9 +13,9 @@ namespace trimesh {
 
 enum boolean_2d_op { UNION, INTERSECTION, DIFFERENCE };
 
-Trimesh2D triangulation(const Triangle2D &triangle,
-                        const std::vector<Point2D> &points) {
-    std::vector<Point2D> vertices;
+trimesh_2d_t triangulation(const triangle_2d_t &triangle,
+                           const std::vector<point_2d_t> &points) {
+    std::vector<point_2d_t> vertices;
     face_set_t faces;
 
     // Checks that all points are inside the triangle.
@@ -40,7 +40,7 @@ Trimesh2D triangulation(const Triangle2D &triangle,
         bool found_triangle = false;
         for (auto &face : faces) {
             auto &[a, b, c] = face;
-            Triangle2D triangle{vertices[a], vertices[b], vertices[c]};
+            triangle_2d_t triangle{vertices[a], vertices[b], vertices[c]};
             if (point.is_inside_triangle(triangle)) {
                 faces.insert(face_t(a, b, i + 3));
                 faces.insert(face_t(b, c, i + 3));
@@ -60,12 +60,12 @@ Trimesh2D triangulation(const Triangle2D &triangle,
     return {vertices, faces};
 }
 
-Trimesh2D split_at_all_intersections(const Trimesh2D &a_mesh,
-                                     const Trimesh2D &b_mesh) {
-    std::vector<Point2D> vertices = a_mesh.vertices();
+trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
+                                        const trimesh_2d_t &b_mesh) {
+    std::vector<point_2d_t> vertices = a_mesh.vertices();
 
     // Keeps track of the faces that have been split.
-    std::vector<TriangleSplitTree2D> a_trees;
+    std::vector<triangle_split_tree_2d_t> a_trees;
     for (auto &a_face : a_mesh.faces()) {
         a_trees.push_back({a_face, vertices});
     }
@@ -92,8 +92,8 @@ Trimesh2D split_at_all_intersections(const Trimesh2D &a_mesh,
 
             // Splits triangles at edges.
             for (auto &[b_id_a, b_id_b] : b_face.get_edges()) {
-                Line2D b_edge{b_mesh.vertices()[b_id_a],
-                              b_mesh.vertices()[b_id_b]};
+                line_2d_t b_edge{b_mesh.vertices()[b_id_a],
+                                 b_mesh.vertices()[b_id_b]};
                 for (auto &t_id :
                      a_tree.get_leaf_triangles_which_intersect(b_edge)) {
                     a_tree.split_triangle(b_edge, t_id);
@@ -120,7 +120,7 @@ Trimesh2D split_at_all_intersections(const Trimesh2D &a_mesh,
         vertex_id_map[f.b] = 0;
         vertex_id_map[f.c] = 0;
     }
-    std::vector<Point2D> new_vertices;
+    std::vector<point_2d_t> new_vertices;
     for (auto &[old_id, new_id] : vertex_id_map) {
         new_id = new_vertices.size();
         new_vertices.push_back(vertices[old_id]);
@@ -143,21 +143,21 @@ Trimesh2D split_at_all_intersections(const Trimesh2D &a_mesh,
     return {new_vertices, new_faces};
 }
 
-Trimesh2D mesh_op(const Trimesh2D &a_mesh, const Trimesh2D &b_mesh,
-                  boolean_2d_op op) {
+trimesh_2d_t mesh_op(const trimesh_2d_t &a_mesh, const trimesh_2d_t &b_mesh,
+                     boolean_2d_op op) {
     // TODO: This is just testing the splitting algorithm.
     return split_at_all_intersections(a_mesh, b_mesh);
 }
 
-Trimesh2D mesh_union(const Trimesh2D &a, const Trimesh2D &b) {
+trimesh_2d_t mesh_union(const trimesh_2d_t &a, const trimesh_2d_t &b) {
     return mesh_op(a, b, UNION);
 }
 
-Trimesh2D mesh_intersection(const Trimesh2D &a, const Trimesh2D &b) {
+trimesh_2d_t mesh_intersection(const trimesh_2d_t &a, const trimesh_2d_t &b) {
     return mesh_op(a, b, INTERSECTION);
 }
 
-Trimesh2D mesh_difference(const Trimesh2D &a, const Trimesh2D &b) {
+trimesh_2d_t mesh_difference(const trimesh_2d_t &a, const trimesh_2d_t &b) {
     return mesh_op(a, b, DIFFERENCE);
 }
 

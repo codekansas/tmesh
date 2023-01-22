@@ -12,30 +12,30 @@ namespace py = pybind11;
 
 namespace trimesh {
 
-struct TriangleSplitTree2D {
+struct triangle_split_tree_2d_t {
    private:
     const face_t root;
     std::vector<face_t> faces;
     std::vector<std::vector<size_t>> children;
-    std::vector<Point2D> vertices;
+    std::vector<point_2d_t> vertices;
 
    public:
-    TriangleSplitTree2D(const face_t &root,
-                        const std::vector<Point2D> &vertices);
-    ~TriangleSplitTree2D() = default;
+    triangle_split_tree_2d_t(const face_t &root,
+                             const std::vector<point_2d_t> &vertices);
+    ~triangle_split_tree_2d_t() = default;
 
     void add_triangle(const face_t &f, size_t parent);
-    size_t add_point(const Point2D &p);
+    size_t add_point(const point_2d_t &p);
     bool is_leaf(size_t i) const;
     std::unordered_set<size_t> get_leaf_triangles_which_intersect(
-        const Point2D &p) const;
+        const point_2d_t &p) const;
     std::unordered_set<size_t> get_leaf_triangles_which_intersect(
-        const Line2D &l) const;
-    void split_triangle(const Point2D &p, size_t i);
-    void split_triangle(const Line2D &l, size_t i);
-    Triangle2D get_triangle(size_t i) const;
+        const line_2d_t &l) const;
+    void split_triangle(const point_2d_t &p, size_t i);
+    void split_triangle(const line_2d_t &l, size_t i);
+    triangle_2d_t get_triangle(size_t i) const;
     const std::vector<face_t> get_leaf_faces(size_t offset) const;
-    const std::vector<Point2D> get_vertices() const;
+    const std::vector<point_2d_t> get_vertices() const;
 };
 
 // Defines the hierarchical box tree structure to support 2D queries.
@@ -44,19 +44,19 @@ struct TriangleSplitTree2D {
 // and right_child are the indices of the left and right children in the tree
 // (-1 if there is no child), and box is the bounding box for the current
 // node.
-typedef std::vector<std::tuple<size_t, int, int, BoundingBox2D>> tree_t;
+typedef std::vector<std::tuple<size_t, int, int, bounding_box_2d_t>> tree_t;
 
-struct BVH2D {
-    const std::shared_ptr<Trimesh2D> trimesh;
+struct bvh_2d_t {
+    const std::shared_ptr<trimesh_2d_t> trimesh;
     tree_t tree;
 
-    BVH2D(const Trimesh2D &t);
-    ~BVH2D() = default;
-    const std::shared_ptr<Trimesh2D> get_trimesh() const {
+    bvh_2d_t(const trimesh_2d_t &t);
+    ~bvh_2d_t() = default;
+    const std::shared_ptr<trimesh_2d_t> get_trimesh() const {
         return this->trimesh;
     }
     tree_t get_tree() const { return this->tree; }
-    std::vector<face_t> intersections(const Triangle2D &t) const;
+    std::vector<face_t> intersections(const triangle_2d_t &t) const;
     std::string to_string() const;
 };
 
