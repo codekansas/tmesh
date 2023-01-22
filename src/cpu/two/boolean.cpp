@@ -113,32 +113,9 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
         }
     }
 
-    // Removes any unused vertices and remaps the faces.
-    std::unordered_map<size_t, size_t> vertex_id_map;
-    for (auto f : faces) {
-        vertex_id_map[f.a] = 0;
-        vertex_id_map[f.b] = 0;
-        vertex_id_map[f.c] = 0;
-    }
-    std::vector<point_2d_t> new_vertices;
-    for (auto &[old_id, new_id] : vertex_id_map) {
-        new_id = new_vertices.size();
-        new_vertices.push_back(vertices[old_id]);
-    }
-    face_set_t new_faces;
-    for (auto f : faces) {
-        const auto &a = new_vertices[vertex_id_map[f.a]],
-                   &b = new_vertices[vertex_id_map[f.b]],
-                   &c = new_vertices[vertex_id_map[f.c]];
-
-        if ((b - a).cross(c - a) < 0) {
-            new_faces.insert(
-                {vertex_id_map[f.a], vertex_id_map[f.c], vertex_id_map[f.b]});
-        } else {
-            new_faces.insert(
-                {vertex_id_map[f.a], vertex_id_map[f.b], vertex_id_map[f.c]});
-        }
-    }
+    // Removes vertices that are not used by any face and remaps faces.
+    auto [new_vertices, new_faces] =
+        trimesh_2d_t::remove_unused_vertices(vertices, faces);
 
     return {new_vertices, new_faces};
 }
@@ -222,32 +199,9 @@ trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
                               vertex_to_id_map[vertices[f.c]]});
     }
 
-    // Removes any unused vertices and remaps the faces.
-    std::unordered_map<size_t, size_t> vertex_id_map;
-    for (auto f : remaped_faces) {
-        vertex_id_map[f.a] = 0;
-        vertex_id_map[f.b] = 0;
-        vertex_id_map[f.c] = 0;
-    }
-    std::vector<point_2d_t> new_vertices;
-    for (auto &[old_id, new_id] : vertex_id_map) {
-        new_id = new_vertices.size();
-        new_vertices.push_back(vertices[old_id]);
-    }
-    face_set_t new_faces;
-    for (auto f : remaped_faces) {
-        const auto &a = new_vertices[vertex_id_map[f.a]],
-                   &b = new_vertices[vertex_id_map[f.b]],
-                   &c = new_vertices[vertex_id_map[f.c]];
-
-        if ((b - a).cross(c - a) < 0) {
-            new_faces.insert(
-                {vertex_id_map[f.a], vertex_id_map[f.c], vertex_id_map[f.b]});
-        } else {
-            new_faces.insert(
-                {vertex_id_map[f.a], vertex_id_map[f.b], vertex_id_map[f.c]});
-        }
-    }
+    // Removes vertices that are not used by any face and remaps faces.
+    auto [new_vertices, new_faces] =
+        trimesh_2d_t::remove_unused_vertices(vertices, remaped_faces);
 
     return {new_vertices, new_faces};
 }

@@ -14,6 +14,7 @@ mesh_union = mesh & (mesh << scale @ rotate @ translate)
 mesh_intersection = (mesh | (mesh << scale @ rotate @ translate)) << Affine2D(trans=(2.0, 0.0))
 mesh_difference = (mesh - (mesh << scale @ rotate @ translate)) << Affine2D(trans=(-2.0, 0.0))
 
-final_mesh = linear_extrude(mesh_union & mesh_intersection & mesh_difference, 1.0)
+combined_mesh = mesh_union & mesh_intersection & mesh_difference
+final_mesh = linear_extrude(combined_mesh, 1.0)
 
 save_stl("boolean_ops_2d.stl", final_mesh)

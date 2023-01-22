@@ -1,6 +1,7 @@
 #include "types.h"
 
 #include <numeric>
+#include <queue>
 #include <sstream>
 
 #include "../options.h"
@@ -1011,12 +1012,72 @@ const std::vector<triangle_2d_t> trimesh_2d_t::get_triangles() const {
     return result;
 }
 
-const std::tuple<std::vector<size_t>, polygon_2d_t> trimesh_2d_t::get_polygon()
-    const {
+const std::tuple<std::vector<point_2d_t>, face_set_t>
+trimesh_2d_t::remove_unused_vertices(const std::vector<point_2d_t> &vertices,
+                                     const face_set_t &faces) {
+    std::unordered_map<size_t, size_t> vertex_id_map;
+    for (auto f : faces) {
+        vertex_id_map[f.a] = 0;
+        vertex_id_map[f.b] = 0;
+        vertex_id_map[f.c] = 0;
+    }
+    std::vector<point_2d_t> new_vertices;
+    for (auto &[old_id, new_id] : vertex_id_map) {
+        new_id = new_vertices.size();
+        new_vertices.push_back(vertices[old_id]);
+    }
+    face_set_t new_faces;
+    for (auto f : faces) {
+        const auto &a = new_vertices[vertex_id_map[f.a]],
+                   &b = new_vertices[vertex_id_map[f.b]],
+                   &c = new_vertices[vertex_id_map[f.c]];
+
+        if ((b - a).cross(c - a) < 0) {
+            new_faces.insert(
+                {vertex_id_map[f.a], vertex_id_map[f.c], vertex_id_map[f.b]});
+        } else {
+            new_faces.insert(
+                {vertex_id_map[f.a], vertex_id_map[f.b], vertex_id_map[f.c]});
+        }
+    }
+    return {new_vertices, new_faces};
+}
+
+const std::vector<face_set_t> trimesh_2d_t::get_connected_components() const {
+    std::vector<face_set_t> result;
+    std::vector<bool> used(_faces.size(), false);
+    for (size_t i = 0; i < _faces.size(); i++) {
+        if (used[i]) continue;
+        face_set_t cur_faces;
+        std::queue<size_t> queue;
+        queue.push(i);
+        while (!queue.empty()) {
+            size_t j = queue.front();
+            queue.pop();
+            if (used[j]) continue;
+            used[j] = true;
+            cur_faces.insert(_faces[j]);
+            auto &[vi, vj, vk] = _faces[j];
+            for (size_t k = 0; k < _faces.size(); k++) {
+                if (used[k]) continue;
+                auto &[vi1, vj1, vk1] = _faces[k];
+                if (vi == vi1 || vi == vj1 || vi == vk1 || vj == vi1 ||
+                    vj == vj1 || vj == vk1 || vk == vi1 || vk == vj1 ||
+                    vk == vk1) {
+                    queue.push(k);
+                }
+            }
+        }
+        result.push_back(cur_faces);
+    }
+    return result;
+}
+
+const std::tuple<polygon_2d_t, std::vector<size_t>> trimesh_2d_t::get_polygon(
+    const face_set_t &component) const {
     // First, counts the number of faces that each edge is part of.
     std::map<const std::tuple<size_t, size_t>, size_t> edge_counts;
-    for (auto &face : _faces) {
-        auto &[vi, vj, vk] = face;
+    for (auto &[vi, vj, vk] : component) {
         edge_counts[{vi, vj}]++;
         edge_counts[{vj, vi}]++;
         edge_counts[{vj, vk}]++;
@@ -1057,6 +1118,15 @@ const std::tuple<std::vector<size_t>, polygon_2d_t> trimesh_2d_t::get_polygon()
         }
     }
 
+    // Check that the polygon indices are unique.
+    std::set<size_t> unique_inds;
+    for (auto &ind : polygon_inds) {
+        unique_inds.insert(ind);
+    }
+    if (unique_inds.size() != polygon_inds.size()) {
+        throw std::invalid_argument("Polygon indices are not unique");
+    }
+
     // If the polygon is oriented clockwise, reverse it.
     std::vector<point_2d_t> polygon_vertices;
     for (auto &ind : polygon_inds) {
@@ -1068,16 +1138,17 @@ const std::tuple<std::vector<size_t>, polygon_2d_t> trimesh_2d_t::get_polygon()
         polygon.reverse();
     }
 
-    // Check that the polygon indices are unique.
-    std::set<size_t> unique_inds;
-    for (auto &ind : polygon_inds) {
-        unique_inds.insert(ind);
-    }
-    if (unique_inds.size() != polygon_inds.size()) {
-        throw std::invalid_argument("Polygon indices are not unique");
-    }
+    return {polygon, polygon_inds};
+}
 
-    return {polygon_inds, polygon};
+const std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>>
+trimesh_2d_t::get_polygons() const {
+    auto connected_components = get_connected_components();
+    std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>> result;
+    for (auto &face : connected_components) {
+        result.push_back(get_polygon(face));
+    }
+    return result;
 }
 
 trimesh_2d_t trimesh_2d_t::subdivide(bool at_edges) const {
@@ -1531,7 +1602,7 @@ void add_2d_types_modules(py::module &m) {
              "Returns the triangle for a given face", "face"_a)
         .def("get_triangles", &trimesh_2d_t::get_triangles,
              "Returns all the triangles in the trimesh")
-        .def("get_polygon", &trimesh_2d_t::get_polygon,
+        .def("get_polygons", &trimesh_2d_t::get_polygons,
              "Returns the polygon inscribing the trimesh")
         .def("subdivide", &trimesh_2d_t::subdivide,
              "Splits each triangle into four smaller triangles",
