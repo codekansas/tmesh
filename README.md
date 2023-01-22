@@ -1,13 +1,13 @@
-# Fast Trimesh
+# tmesh
 
 Fast operators for triangular meshes.
 
 ## Getting Started
 
-Fast Trimesh is available on PyPI:
+`tmesh` is available on PyPI:
 
 ```bash
-pip install fast-trimesh
+pip install tmesh
 ```
 
 See the [examples](examples) directory to see how to use the package.

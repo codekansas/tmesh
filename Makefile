@@ -1,14 +1,14 @@
 # Makefile
 
 define HELP_MESSAGE
-			Fast Trimesh
-			------------
+			tmesh
+			-----
 
-Fast trimesh implementation, with C++ and CUDA backends.
+Implementation of some operations on triangular meshes, with C++ and CUDA backends.
 
 Getting Started:
-	1. Create a new Conda environment: 'conda create --name fast-trimesh python=3.10'
-	2. Activate the environment: 'conda activate fast-trimesh'
+	1. Create a new Conda environment: 'conda create --name tmesh python=3.10'
+	2. Activate the environment: 'conda activate tmesh'
 	3. Install dependencies: 'make install-conda'
 	4. Build the project: 'make build'
 
