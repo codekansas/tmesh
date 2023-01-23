@@ -8,19 +8,17 @@ scale = Affine2D(scale=1.0)
 rotate = Affine2D(rot=math.pi / 3)
 translate = Affine2D(trans=(0.75, 0.5))
 
-# mesh = regular_polygon_mesh(1.0, n=3)
+# For some reason, using this translation causes the boolean operations to
+# break.
+# translate = Affine2D(trans=(0.75, 0.0))
 
-# mesh_union = mesh & (mesh << scale @ rotate @ translate)
-# mesh_intersection = (mesh | (mesh << scale @ rotate @ translate)) << Affine2D(trans=(2.0, 0.0))
-# mesh_difference = (mesh - (mesh << scale @ rotate @ translate)) << Affine2D(trans=(-2.0, 0.0))
+mesh = regular_polygon_mesh(1.0, n=3)
 
-# combined_mesh = mesh_union & mesh_intersection & mesh_difference
-# final_mesh = linear_extrude(combined_mesh, 1.0)
+mesh_union = mesh & (mesh << scale @ rotate @ translate)
+mesh_intersection = (mesh | (mesh << scale @ rotate @ translate)) << Affine2D(trans=(2.0, 0.0))
+mesh_difference = (mesh - (mesh << scale @ rotate @ translate)) << Affine2D(trans=(-2.0, 0.0))
 
-# save_stl("boolean_ops_2d.stl", final_mesh)
+combined_mesh = mesh_union & mesh_intersection & mesh_difference
+final_mesh = linear_extrude(combined_mesh, 1.0)
 
-mesh_a = regular_polygon_mesh(5.0, n=10)
-mesh_b = regular_polygon_mesh(2.0, n=10)
-mesh_c = linear_extrude(mesh_a - mesh_b, 1.0)
-
-save_stl("boolean_ops_2d.stl", mesh_c)
+save_stl("boolean_ops_2d.stl", final_mesh)

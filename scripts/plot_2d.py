@@ -8,7 +8,8 @@ from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
 
 Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
 
-from tmesh import regular_polygon_mesh
+import math
+from tmesh import *
 
 # This breaks the current intersection algorithm because it creates a
 # new line in a polygon which intersects itself.
@@ -16,13 +17,27 @@ from tmesh import regular_polygon_mesh
 mesh_a = regular_polygon_mesh(5.0, n=3)
 mesh_b = regular_polygon_mesh(2.0, n=7)
 
+# scale = Affine2D(scale=1.0)
+# rotate = Affine2D(rot=math.pi / 3)
+# translate = Affine2D(trans=(0.75, 0.0))
+
+# mesh = regular_polygon_mesh(1.0, n=3)
+
+# mesh_union = mesh & (mesh << scale @ rotate @ translate)
+# mesh_intersection = (mesh | (mesh << scale @ rotate @ translate)) << Affine2D(trans=(2.0, 0.0))
+# mesh_difference = (mesh - (mesh << scale @ rotate @ translate)) << Affine2D(trans=(-2.0, 0.0))
+
 # To plot things, add them to this list.
 THINGS_TO_PLOT: List[Thing] = [
+    # mesh,
+    # mesh << scale @ rotate @ translate,
+    # mesh_union,
+    # mesh_intersection,
+    # mesh_difference,
+
     # mesh_a,
     # mesh_b,
-    mesh_a - mesh_b,
-    # mesh_a & mesh_b,
-    # mesh_a | mesh_b,
+    mesh_a | mesh_b,
 ]
 
 ALPHA = 1.0
