@@ -8,8 +8,22 @@ from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
 
 Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
 
+from tmesh import regular_polygon_mesh
+
+# This breaks the current intersection algorithm because it creates a
+# new line in a polygon which intersects itself.
+# Also it will likely break the linear extrude function as well.
+mesh_a = regular_polygon_mesh(5.0, n=3)
+mesh_b = regular_polygon_mesh(2.0, n=7)
+
 # To plot things, add them to this list.
-THINGS_TO_PLOT: List[Thing] = []
+THINGS_TO_PLOT: List[Thing] = [
+    # mesh_a,
+    # mesh_b,
+    mesh_a - mesh_b,
+    # mesh_a & mesh_b,
+    # mesh_a | mesh_b,
+]
 
 ALPHA = 1.0
 

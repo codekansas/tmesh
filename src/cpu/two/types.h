@@ -207,8 +207,8 @@ struct trimesh_2d_t {
     const std::vector<point_2d_t> _vertices;
     const face_list_t _faces;
     void validate() const;
-    const std::tuple<polygon_2d_t, std::vector<size_t>> get_polygon(
-        const face_set_t &component) const;
+    const std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>>
+    get_polygon(const face_set_t &component) const;
     const std::vector<face_set_t> get_connected_components() const;
 
    public:

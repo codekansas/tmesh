@@ -91,9 +91,9 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
             }
 
             // Splits triangles at edges.
-            for (auto &[b_id_a, b_id_b] : b_face.get_edges()) {
-                line_2d_t b_edge{b_mesh.vertices()[b_id_a],
-                                 b_mesh.vertices()[b_id_b]};
+            for (auto &edge : b_face.get_edges()) {
+                line_2d_t b_edge{b_mesh.vertices()[edge.a],
+                                 b_mesh.vertices()[edge.b]};
                 for (auto &t_id :
                      a_tree.get_leaf_triangles_which_intersect_line(b_edge)) {
                     a_tree.split_triangle_at_line(b_edge, t_id);

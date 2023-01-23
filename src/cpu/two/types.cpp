@@ -3,6 +3,7 @@
 #include <numeric>
 #include <queue>
 #include <sstream>
+#include <unordered_set>
 
 #include "../options.h"
 #include "boolean.h"
@@ -1045,36 +1046,52 @@ trimesh_2d_t::remove_unused_vertices(const std::vector<point_2d_t> &vertices,
 
 const std::vector<face_set_t> trimesh_2d_t::get_connected_components() const {
     std::vector<face_set_t> result;
-    std::vector<bool> used(_faces.size(), false);
+
+    // Build adjacency matrix.
+    std::vector<std::unordered_set<size_t>> adj;
+    adj.resize(_vertices.size());
     for (size_t i = 0; i < _faces.size(); i++) {
-        if (used[i]) continue;
+        auto &[a, b, c] = _faces[i];
+        adj[a].insert(i);
+        adj[b].insert(i);
+        adj[c].insert(i);
+    }
+
+    // Flood fills to get connected components for each face.
+    std::vector<bool> used(_faces.size(), false);
+
+    auto add_all_adj_faces = [&](const size_t &vertex_id,
+                                 std::queue<size_t> &queue) {
+        for (auto &adj_face_id : adj[vertex_id]) {
+            if (!used[adj_face_id]) {
+                used[adj_face_id] = true;
+                queue.push(adj_face_id);
+            }
+        }
+    };
+
+    for (size_t face_id = 0; face_id < _faces.size(); face_id++) {
+        if (used[face_id]) continue;
         face_set_t cur_faces;
         std::queue<size_t> queue;
-        queue.push(i);
+        queue.push(face_id);
         while (!queue.empty()) {
-            size_t j = queue.front();
+            size_t cur_face_id = queue.front();
             queue.pop();
-            if (used[j]) continue;
-            used[j] = true;
-            cur_faces.insert(_faces[j]);
-            auto &[vi, vj, vk] = _faces[j];
-            for (size_t k = 0; k < _faces.size(); k++) {
-                if (used[k]) continue;
-                auto &[vi1, vj1, vk1] = _faces[k];
-                if (vi == vi1 || vi == vj1 || vi == vk1 || vj == vi1 ||
-                    vj == vj1 || vj == vk1 || vk == vi1 || vk == vj1 ||
-                    vk == vk1) {
-                    queue.push(k);
-                }
-            }
+            cur_faces.insert(_faces[cur_face_id]);
+            auto &[a, b, c] = _faces[cur_face_id];
+            add_all_adj_faces(a, queue);
+            add_all_adj_faces(b, queue);
+            add_all_adj_faces(c, queue);
         }
         result.push_back(cur_faces);
     }
+
     return result;
 }
 
-const std::tuple<polygon_2d_t, std::vector<size_t>> trimesh_2d_t::get_polygon(
-    const face_set_t &component) const {
+const std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>>
+trimesh_2d_t::get_polygon(const face_set_t &component) const {
     // First, counts the number of faces that each edge is part of.
     std::map<const std::tuple<size_t, size_t>, size_t> edge_counts;
     for (auto &[vi, vj, vk] : component) {
@@ -1105,40 +1122,42 @@ const std::tuple<polygon_2d_t, std::vector<size_t>> trimesh_2d_t::get_polygon(
     }
 
     // Finally, find the starting vertex and walk around the polygon.
+    std::unordered_set<size_t> used;
     auto current = adjacencies.begin()->first;
-    std::vector<size_t> polygon_inds;
-    while (true) {
-        polygon_inds.push_back(current);
-        auto next = adjacencies[current].begin();
-        adjacencies[current].erase(next);
-        adjacencies[*next].erase(current);
-        current = *next;
-        if (current == polygon_inds[0]) {
-            break;
+    std::vector<std::vector<size_t>> polygon_inds;
+    for (auto &[edge, edge_set] : adjacencies) {
+        if (used.find(edge) == used.end()) {
+            std::optional<size_t> next = edge;
+            std::vector<size_t> cur_polygon_inds;
+            while (next.has_value()) {
+                cur_polygon_inds.push_back(next.value());
+                used.insert(next.value());
+                auto &next_adjs = adjacencies[next.value()];
+                next = std::nullopt;
+                for (auto &adj_vertex : next_adjs) {
+                    if (used.find(adj_vertex) == used.end()) {
+                        used.insert(adj_vertex);
+                        next = adj_vertex;
+                        break;
+                    }
+                }
+            }
+            polygon_inds.push_back(cur_polygon_inds);
         }
     }
 
-    // Check that the polygon indices are unique.
-    std::set<size_t> unique_inds;
-    for (auto &ind : polygon_inds) {
-        unique_inds.insert(ind);
-    }
-    if (unique_inds.size() != polygon_inds.size()) {
-        throw std::invalid_argument("Polygon indices are not unique");
-    }
-
-    // If the polygon is oriented clockwise, reverse it.
-    std::vector<point_2d_t> polygon_vertices;
-    for (auto &ind : polygon_inds) {
-        polygon_vertices.push_back(_vertices[ind]);
-    }
-    polygon_2d_t polygon{polygon_vertices};
-    if (polygon.is_clockwise()) {
-        std::reverse(polygon_inds.begin(), polygon_inds.end());
-        polygon.reverse();
+    // Gets the polygons for each set of vertices.
+    std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>> return_val;
+    for (auto &cur_polygon_inds : polygon_inds) {
+        std::vector<point_2d_t> polygon_vertices;
+        for (auto &ind : cur_polygon_inds) {
+            polygon_vertices.push_back(_vertices[ind]);
+        }
+        polygon_2d_t polygon{polygon_vertices};
+        return_val.push_back({polygon, cur_polygon_inds});
     }
 
-    return {polygon, polygon_inds};
+    return return_val;
 }
 
 const std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>>
@@ -1146,7 +1165,8 @@ trimesh_2d_t::get_polygons() const {
     auto connected_components = get_connected_components();
     std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>> result;
     for (auto &face : connected_components) {
-        result.push_back(get_polygon(face));
+        const auto &polygon = get_polygon(face);
+        result.insert(result.end(), polygon.begin(), polygon.end());
     }
     return result;
 }

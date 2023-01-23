@@ -3,23 +3,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <unordered_map>
-
 #include "../types.h"
 #include "types.h"
 
 namespace py = pybind11;
 
 namespace trimesh {
-
-typedef std::tuple<size_t, size_t> edge_t;
-
-struct __edge_hash_fn {
-    std::size_t operator()(const edge_t &f) const {
-        auto hf = std::hash<size_t>();
-        return hf(std::get<0>(f)) ^ hf(std::get<1>(f));
-    }
-};
 
 // Defines the hierarchical box tree structure to support 3D queries.
 // The tree is represented as a vector of nodes, where each node is
