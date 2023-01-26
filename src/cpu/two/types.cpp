@@ -1,8 +1,10 @@
 #include "types.h"
 
+#include <iostream>
 #include <numeric>
 #include <queue>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "../options.h"
@@ -927,15 +929,15 @@ polygon_2d_t operator<<(const polygon_2d_t &p, const affine_2d_t &a) {
  * ------------ */
 
 trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices,
-                           const face_set_t &faces)
+                           const face_set_t &faces, bool validate)
     : _vertices(vertices), _faces(faces.begin(), faces.end()) {
-    validate();
+    if (validate) this->validate();
 }
 
 trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices,
-                           const face_list_t &faces)
+                           const face_list_t &faces, bool validate)
     : _vertices(vertices), _faces(faces) {
-    validate();
+    if (validate) this->validate();
 }
 
 void trimesh_2d_t::validate() const {
@@ -1014,6 +1016,28 @@ const std::vector<triangle_2d_t> trimesh_2d_t::get_triangles() const {
 }
 
 const std::tuple<std::vector<point_2d_t>, face_set_t>
+trimesh_2d_t::merge_vertices(const std::vector<point_2d_t> &vertices,
+                             const face_set_t &faces) {
+    std::vector<point_2d_t> new_vertices;
+    std::map<point_2d_t, size_t> vertex_map;
+    for (auto &v : vertices) {
+        if (vertex_map.find(v) == vertex_map.end()) {
+            vertex_map[v] = new_vertices.size();
+            new_vertices.push_back(v);
+        }
+    }
+
+    face_set_t new_faces;
+    for (auto &face : faces) {
+        auto &[vi, vj, vk] = face;
+        new_faces.insert({vertex_map[vertices[vi]], vertex_map[vertices[vj]],
+                          vertex_map[vertices[vk]]});
+    }
+
+    return {new_vertices, new_faces};
+}
+
+const std::tuple<std::vector<point_2d_t>, face_set_t>
 trimesh_2d_t::remove_unused_vertices(const std::vector<point_2d_t> &vertices,
                                      const face_set_t &faces) {
     std::unordered_map<size_t, size_t> vertex_id_map;
@@ -1041,6 +1065,125 @@ trimesh_2d_t::remove_unused_vertices(const std::vector<point_2d_t> &vertices,
                 {vertex_id_map[f.a], vertex_id_map[f.b], vertex_id_map[f.c]});
         }
     }
+    return {new_vertices, new_faces};
+}
+
+const std::tuple<std::vector<point_2d_t>, face_set_t>
+trimesh_2d_t::merge_triangles(const std::vector<point_2d_t> &vertices,
+                              const face_set_t &faces) {
+    face_list_t face_list(faces.begin(), faces.end());
+
+    // Gets edges for adjacent faces.
+    std::unordered_map<edge_t, std::vector<size_t>, __edge_hash_fn> adj_map;
+    for (size_t i = 0; i < face_list.size(); i++) {
+        for (const auto &edge : face_list[i].get_edges(false)) {
+            adj_map[edge].push_back(i);
+        }
+    }
+
+    // Gets the true face ID, after having been merged.
+    std::vector<int> new_face_id(face_list.size(), -1);
+    auto get_face_id = [&new_face_id](const size_t &face_id) {
+        size_t i = face_id;
+        while (true) {
+            if (new_face_id[i] == -1) return i;
+            i = new_face_id[i];
+        }
+    };
+
+    std::queue<edge_t> edge_queue;
+    for (auto &[edge, adj] : adj_map) {
+        if (adj.size() > 2) {
+            std::stringstream ss;
+            ss << "Non-manifold mesh; got " << adj.size()
+               << " adjacent faces for edge " << edge.to_string() << ":";
+            for (auto &face_id : adj) {
+                auto &face = face_list[face_id];
+                ss << " " << face.to_string();
+            }
+            // throw std::runtime_error(ss.str());
+            std::cout << ss.str() << std::endl;
+            return {vertices, faces};
+        }
+        if (adj.size() == 2) edge_queue.push(edge);
+    }
+
+    // Checks each shared edge to see if it can be merged. The edge can be
+    // merged if any of the two other edges of the adjacent faces
+    // colinear. If so, then mark the face as unused, and add a pointer to
+    // the new face to the adjacent faces.
+    while (!edge_queue.empty()) {
+        auto edge = edge_queue.front();
+        edge_queue.pop();
+        if (adj_map.find(edge) == adj_map.end()) continue;
+        const auto &adj_faces = adj_map[edge];
+        auto f1 = get_face_id(adj_faces[0]), f2 = get_face_id(adj_faces[1]);
+        if (f1 == f2) continue;
+
+        // Gets the point for each face that is not on the edge.
+        if (!face_list[f1].has_edge(edge) || !face_list[f2].has_edge(edge))
+            continue;
+        auto o1 = face_list[f1].get_other_vertex(edge),
+             o2 = face_list[f2].get_other_vertex(edge);
+        auto &va = vertices[edge.a], &vb = vertices[edge.b];
+        auto &v1 = vertices[o1], &v2 = vertices[o2];
+
+        // Checks if either edge point is colinear with the two
+        // other points. If so, create a new face with the
+        // remaining point, and mark the two old faces as merged.
+        bool a_colinear =
+                 std::abs((v1 - va).normalize().cross((v2 - va).normalize())) <
+                 get_tolerance(),
+             b_colinear =
+                 std::abs((v1 - vb).normalize().cross((v2 - vb).normalize())) <
+                 get_tolerance();
+        if (!a_colinear && !b_colinear) continue;
+
+        // Creates a new face.
+        face_t new_face{o1, o2, a_colinear ? edge.b : edge.a};
+        face_list.push_back(new_face);
+        new_face_id.push_back(-1);
+        new_face_id[f1] = face_list.size() - 1;
+        new_face_id[f2] = face_list.size() - 1;
+
+        // Reconsiders the edges of the new face.
+        for (const auto &new_edge : new_face.get_edges(false))
+            edge_queue.push(new_edge);
+    }
+
+    // Gets all vertices that are used by the new faces.
+    std::unordered_map<size_t, size_t> vertex_id_map;
+    for (size_t i = 0; i < face_list.size(); i++) {
+        if (new_face_id[i] != -1) continue;
+        auto &f = face_list[i];
+        vertex_id_map[f.a] = 0;
+        vertex_id_map[f.b] = 0;
+        vertex_id_map[f.c] = 0;
+    }
+    std::vector<point_2d_t> new_vertices;
+    for (auto &[old_id, new_id] : vertex_id_map) {
+        new_id = new_vertices.size();
+        new_vertices.push_back(vertices[old_id]);
+    }
+
+    // Remaps the vertex ids in the new faces.
+    face_set_t new_faces;
+    for (size_t i = 0; i < face_list.size(); i++) {
+        if (new_face_id[i] != -1) continue;
+        auto &f = face_list[i];
+        const auto &a = new_vertices[vertex_id_map[f.a]],
+                   &b = new_vertices[vertex_id_map[f.b]],
+                   &c = new_vertices[vertex_id_map[f.c]];
+
+        if ((b - a).cross(c - a) < 0) {
+            new_faces.insert(
+                {vertex_id_map[f.a], vertex_id_map[f.c], vertex_id_map[f.b]});
+        } else {
+            new_faces.insert(
+                {vertex_id_map[f.a], vertex_id_map[f.b], vertex_id_map[f.c]});
+        }
+    }
+
     return {new_vertices, new_faces};
 }
 
@@ -1112,7 +1255,7 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
 
     // Next, get the adjacencies of each vertex for the endpoints of the
     // edges that are part of only one face.
-    std::map<size_t, std::set<size_t>> adjacencies;
+    std::unordered_map<size_t, std::set<size_t>> adjacencies;
     for (auto &[edge, count] : edge_counts) {
         if (count == 1) {
             auto &[vi, vj] = edge;

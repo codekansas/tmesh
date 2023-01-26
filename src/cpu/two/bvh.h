@@ -16,12 +16,11 @@ struct triangle_split_tree_2d_t {
     std::vector<face_t> faces;
     std::vector<std::vector<size_t>> children;
     std::vector<point_2d_t> vertices;
+    std::map<point_2d_t, size_t> vertex_id_map;
 
     void add_triangle(const face_t &f, size_t parent);
+    void add_triangles(const std::vector<face_t> &fs, size_t parent);
     size_t add_point(const point_2d_t &p);
-    size_t maybe_add_point(const point_2d_t &p, const size_t a,
-                           const point_2d_t &pa, const size_t b,
-                           const point_2d_t &pb);
 
    public:
     triangle_split_tree_2d_t(const face_t &root,
@@ -29,13 +28,12 @@ struct triangle_split_tree_2d_t {
     ~triangle_split_tree_2d_t() = default;
 
     bool is_leaf(size_t i) const;
-    std::vector<size_t> get_leaf_triangles_which_intersect_point(
-        const point_2d_t &p) const;
-    std::vector<size_t> get_leaf_triangles_which_intersect_line(
+    std::vector<size_t> get_leaf_triangles() const;
+    std::vector<size_t> get_leaf_triangles_which_intersect(
         const line_2d_t &l) const;
-    void split_triangle_at_point(const point_2d_t &p, size_t i);
-    void split_triangle_at_line(const line_2d_t &l, size_t i);
+    void split_triangle(const line_2d_t &l, size_t i);
     triangle_2d_t get_triangle(size_t i) const;
+    triangle_2d_t get_triangle_from_face(const face_t &f) const;
     const std::vector<size_t> get_children(size_t i) const;
     const std::vector<face_t> get_leaf_faces(size_t offset) const;
     const std::vector<point_2d_t> get_vertices() const;

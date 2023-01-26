@@ -18,6 +18,7 @@ edge_t::edge_t(size_t a, size_t b, bool directed)
     : a(a), b(b), directed(directed) {}
 
 bool edge_t::operator==(const edge_t &e) const {
+    if (e.directed != directed) throw std::runtime_error("Cannot compare");
     if (directed) return a == e.a && b == e.b;
     return (a == e.a && b == e.b) || (a == e.b && b == e.a);
 }
@@ -25,12 +26,21 @@ bool edge_t::operator==(const edge_t &e) const {
 bool edge_t::operator!=(const edge_t &f) const { return !(*this == f); }
 
 bool edge_t::operator<(const edge_t &f) const {
-    return *this != f && std::tie(a, b) < std::tie(f.a, f.b);
+    if (f.directed != directed) throw std::runtime_error("Cannot compare");
+    auto a1 = a, b1 = b, a2 = f.a, b2 = f.b;
+    if (!directed) {
+        if (a1 > b1) std::swap(a1, b1);
+        if (a2 > b2) std::swap(a2, b2);
+    }
+    return std::tie(a1, b1) < std::tie(a2, b2);
 }
 
 std::string edge_t::to_string() const {
-    return "(" + std::to_string(a) + ", " + std::to_string(b) +
-           (directed ? ", directed" : "") + ")";
+    if (directed)
+        return "(" + std::to_string(a) + ", " + std::to_string(b) +
+               ", directed)";
+    if (a < b) return "(" + std::to_string(a) + ", " + std::to_string(b) + ")";
+    return "(" + std::to_string(b) + ", " + std::to_string(a) + ")";
 }
 
 /* ------ *
@@ -51,10 +61,27 @@ bool face_t::operator<(const face_t &f) const {
     return *this != f && std::tie(a, b, c) < std::tie(f.a, f.b, f.c);
 }
 
+face_t face_t::operator+(size_t offset) const {
+    return {a + offset, b + offset, c + offset};
+}
+
 std::vector<size_t> face_t::get_vertices() const { return {a, b, c}; }
 
 std::vector<edge_t> face_t::get_edges(bool directed) const {
     return {{a, b, directed}, {b, c, directed}, {c, a, directed}};
+}
+
+bool face_t::has_edge(const edge_t &e) const {
+    return (e.a == a && e.b == b) || (e.a == b && e.b == a) ||
+           (e.a == b && e.b == c) || (e.a == c && e.b == b) ||
+           (e.a == c && e.b == a) || (e.a == a && e.b == c);
+}
+
+size_t face_t::get_other_vertex(const edge_t &e) const {
+    if ((e.a == a && e.b == b) || (e.a == b && e.b == a)) return c;
+    if ((e.a == b && e.b == c) || (e.a == c && e.b == b)) return a;
+    if ((e.a == c && e.b == a) || (e.a == a && e.b == c)) return b;
+    throw std::runtime_error("Edge is not part of face");
 }
 
 std::string face_t::to_string() const {
