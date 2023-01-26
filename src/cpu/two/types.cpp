@@ -127,7 +127,7 @@ bool point_2d_t::is_inside_bounding_box(const bounding_box_2d_t &bb) const {
 }
 
 float point_2d_t::distance_to_point(const point_2d_t &p) const {
-    return std::sqrt((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y));
+    return (*this - p).length();
 }
 
 float point_2d_t::distance_to_line(const line_2d_t &l) const {
@@ -1080,118 +1080,128 @@ trimesh_2d_t::remove_unused_vertices(const std::vector<point_2d_t> &vertices,
 }
 
 const std::tuple<std::vector<point_2d_t>, face_set_t>
-trimesh_2d_t::merge_triangles(const std::vector<point_2d_t> &vertices,
-                              const face_set_t &faces) {
-    face_list_t face_list(faces.begin(), faces.end());
+trimesh_2d_t::merge_triangles(const std::vector<point_2d_t> &init_vertices,
+                              const face_set_t &init_faces) {
+    bool changed = true;
 
-    // Gets edges for adjacent faces.
-    std::unordered_map<edge_t, std::vector<size_t>, __edge_hash_fn> adj_map;
-    for (size_t i = 0; i < face_list.size(); i++) {
-        for (const auto &edge : face_list[i].get_edges(false)) {
-            adj_map[edge].push_back(i);
-        }
-    }
+    std::vector<point_2d_t> new_vertices = init_vertices;
+    face_set_t new_faces = init_faces;
 
-    // Gets the true face ID, after having been merged.
-    std::vector<int> new_face_id(face_list.size(), -1);
-    auto get_face_id = [&new_face_id](const size_t &face_id) {
-        size_t i = face_id;
-        while (true) {
-            if (new_face_id[i] == -1) return i;
-            i = new_face_id[i];
-        }
-    };
+    while (changed) {
+        changed = false;
 
-    std::queue<edge_t> edge_queue;
-    for (auto &[edge, adj] : adj_map) {
-        if (adj.size() > 2) {
-            std::stringstream ss;
-            ss << "Non-manifold mesh; got " << adj.size()
-               << " adjacent faces for edge " << edge.to_string() << ":";
-            for (auto &face_id : adj) {
-                auto &face = face_list[face_id];
-                ss << " " << face.to_string();
+        const std::vector<point_2d_t> vertices(new_vertices.begin(),
+                                               new_vertices.end());
+        face_list_t face_list(new_faces.begin(), new_faces.end());
+
+        // Clears the new vertices and faces.
+        new_vertices.clear();
+        new_faces.clear();
+
+        // Gets edges for adjacent faces.
+        std::unordered_map<edge_t, std::vector<size_t>, __edge_hash_fn> adj_map;
+        for (size_t i = 0; i < face_list.size(); i++) {
+            for (const auto &edge : face_list[i].get_edges(false)) {
+                adj_map[edge].push_back(i);
             }
-            // throw std::runtime_error(ss.str());
-            std::cout << ss.str() << std::endl;
-            return {vertices, faces};
         }
-        if (adj.size() == 2) edge_queue.push(edge);
-    }
 
-    // Checks each shared edge to see if it can be merged. The edge can be
-    // merged if any of the two other edges of the adjacent faces
-    // colinear. If so, then mark the face as unused, and add a pointer to
-    // the new face to the adjacent faces.
-    while (!edge_queue.empty()) {
-        auto edge = edge_queue.front();
-        edge_queue.pop();
-        if (adj_map.find(edge) == adj_map.end()) continue;
-        const auto &adj_faces = adj_map[edge];
-        auto f1 = get_face_id(adj_faces[0]), f2 = get_face_id(adj_faces[1]);
-        if (f1 == f2) continue;
+        // Gets the true face ID, after having been merged.
+        std::vector<int> new_face_id(face_list.size(), -1);
+        auto get_face_id = [&new_face_id](const size_t &face_id) {
+            size_t i = face_id;
+            while (true) {
+                if (new_face_id[i] == -1) return i;
+                i = new_face_id[i];
+            }
+        };
 
-        // Gets the point for each face that is not on the edge.
-        if (!face_list[f1].has_edge(edge) || !face_list[f2].has_edge(edge))
-            continue;
-        auto o1 = face_list[f1].get_other_vertex(edge),
-             o2 = face_list[f2].get_other_vertex(edge);
-        auto &va = vertices[edge.a], &vb = vertices[edge.b];
-        auto &v1 = vertices[o1], &v2 = vertices[o2];
+        std::queue<edge_t> edge_queue;
+        for (auto &[edge, adj] : adj_map) {
+            if (adj.size() > 2) {
+                std::stringstream ss;
+                ss << "Non-manifold mesh; got " << adj.size()
+                   << " adjacent faces for edge " << edge.to_string() << ":";
+                for (auto &face_id : adj) {
+                    auto &face = face_list[face_id];
+                    ss << " " << face.to_string();
+                }
+                throw std::runtime_error(ss.str());
+            }
+            if (adj.size() == 2) edge_queue.push(edge);
+        }
 
-        // Checks if either edge point is colinear with the two
-        // other points. If so, create a new face with the
-        // remaining point, and mark the two old faces as merged.
-        bool a_colinear =
-                 std::abs((v1 - va).normalize().cross((v2 - va).normalize())) <
-                 get_tolerance(),
-             b_colinear =
-                 std::abs((v1 - vb).normalize().cross((v2 - vb).normalize())) <
-                 get_tolerance();
-        if (!a_colinear && !b_colinear) continue;
+        // Checks each shared edge to see if it can be merged. The edge can be
+        // merged if any of the two other edges of the adjacent faces
+        // colinear. If so, then mark the face as unused, and add a pointer to
+        // the new face to the adjacent faces.
+        while (!edge_queue.empty()) {
+            auto edge = edge_queue.front();
+            edge_queue.pop();
+            if (adj_map.find(edge) == adj_map.end()) continue;
+            const auto &adj_faces = adj_map[edge];
+            auto f1 = get_face_id(adj_faces[0]), f2 = get_face_id(adj_faces[1]);
+            if (f1 == f2) continue;
 
-        // Creates a new face.
-        face_t new_face{o1, o2, a_colinear ? edge.b : edge.a};
-        face_list.push_back(new_face);
-        new_face_id.push_back(-1);
-        new_face_id[f1] = face_list.size() - 1;
-        new_face_id[f2] = face_list.size() - 1;
+            // Gets the point for each face that is not on the edge.
+            if (!face_list[f1].has_edge(edge) || !face_list[f2].has_edge(edge))
+                continue;
+            auto o1 = face_list[f1].get_other_vertex(edge),
+                 o2 = face_list[f2].get_other_vertex(edge);
+            auto &va = vertices[edge.a], &vb = vertices[edge.b];
+            auto &v1 = vertices[o1], &v2 = vertices[o2];
 
-        // Reconsiders the edges of the new face.
-        for (const auto &new_edge : new_face.get_edges(false))
-            edge_queue.push(new_edge);
-    }
+            // Checks if either edge point is colinear with the two
+            // other points. If so, create a new face with the
+            // remaining point, and mark the two old faces as merged.
+            bool a_colinear = std::abs((v1 - va).normalize().cross(
+                                  (v2 - va).normalize())) < get_tolerance(),
+                 b_colinear = std::abs((v1 - vb).normalize().cross(
+                                  (v2 - vb).normalize())) < get_tolerance();
+            if (!a_colinear && !b_colinear) continue;
 
-    // Gets all vertices that are used by the new faces.
-    std::unordered_map<size_t, size_t> vertex_id_map;
-    for (size_t i = 0; i < face_list.size(); i++) {
-        if (new_face_id[i] != -1) continue;
-        auto &f = face_list[i];
-        vertex_id_map[f.a] = 0;
-        vertex_id_map[f.b] = 0;
-        vertex_id_map[f.c] = 0;
-    }
-    std::vector<point_2d_t> new_vertices;
-    for (auto &[old_id, new_id] : vertex_id_map) {
-        new_id = new_vertices.size();
-        new_vertices.push_back(vertices[old_id]);
-    }
+            // Creates a new face.
+            face_t new_face{o1, o2, a_colinear ? edge.b : edge.a};
+            face_list.push_back(new_face);
+            new_face_id.push_back(-1);
+            new_face_id[f1] = face_list.size() - 1;
+            new_face_id[f2] = face_list.size() - 1;
+            changed = true;
 
-    // Remaps the vertex ids in the new faces.
-    face_set_t new_faces;
-    for (size_t i = 0; i < face_list.size(); i++) {
-        if (new_face_id[i] != -1) continue;
-        auto &f = face_list[i];
-        const auto &a = new_vertices[vertex_id_map[f.a]],
-                   &b = new_vertices[vertex_id_map[f.b]],
-                   &c = new_vertices[vertex_id_map[f.c]];
+            // Reconsiders the edges of the new face.
+            for (const auto &new_edge : new_face.get_edges(false))
+                edge_queue.push(new_edge);
+        }
 
-        if ((b - a).cross(c - a) < 0) {
-            new_faces.insert(
-                {vertex_id_map[f.a], vertex_id_map[f.c], vertex_id_map[f.b]});
-        } else {
-            new_faces.insert(
-                {vertex_id_map[f.a], vertex_id_map[f.b], vertex_id_map[f.c]});
+        // Gets all vertices that are used by the new faces.
+        std::unordered_map<size_t, size_t> vertex_id_map;
+        for (size_t i = 0; i < face_list.size(); i++) {
+            if (new_face_id[i] != -1) continue;
+            auto &f = face_list[i];
+            vertex_id_map[f.a] = 0;
+            vertex_id_map[f.b] = 0;
+            vertex_id_map[f.c] = 0;
+        }
+        for (auto &[old_id, new_id] : vertex_id_map) {
+            new_id = new_vertices.size();
+            new_vertices.push_back(vertices[old_id]);
+        }
+
+        // Remaps the vertex ids in the new faces.
+        for (size_t i = 0; i < face_list.size(); i++) {
+            if (new_face_id[i] != -1) continue;
+            auto &f = face_list[i];
+            const auto &a = new_vertices[vertex_id_map[f.a]],
+                       &b = new_vertices[vertex_id_map[f.b]],
+                       &c = new_vertices[vertex_id_map[f.c]];
+
+            if ((b - a).cross(c - a) < 0) {
+                new_faces.insert({vertex_id_map[f.a], vertex_id_map[f.c],
+                                  vertex_id_map[f.b]});
+            } else {
+                new_faces.insert({vertex_id_map[f.a], vertex_id_map[f.b],
+                                  vertex_id_map[f.c]});
+            }
         }
     }
 

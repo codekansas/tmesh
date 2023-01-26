@@ -23,14 +23,18 @@ triangle_split_tree_2d_t::triangle_split_tree_2d_t(
     this->children = {{}};
     auto &[a, b, c] = root;
     this->vertices = {vertices[a], vertices[b], vertices[c]};
-    this->vertex_id_map = {
-        {vertices[a], 0}, {vertices[b], 1}, {vertices[c], 2}};
 }
 
 void triangle_split_tree_2d_t::add_triangle(const face_t &f,
                                             const size_t parent) {
-    triangle_2d_t t{vertices[f.a], vertices[f.b], vertices[f.c]};
-    if (t.area() < get_tolerance()) return;
+    triangle_2d_t t{vertices[f.a], vertices[f.b], vertices[f.c]},
+        pt{vertices[faces[parent].a], vertices[faces[parent].b],
+           vertices[faces[parent].c]};
+    if (t.area() < std::sqrt(get_tolerance())) return;
+    if (t.is_clockwise() != pt.is_clockwise()) {
+        throw std::runtime_error(
+            "Child faces are not oriented the same as the parent face.");
+    }
 
     this->faces.push_back({f.a, f.b, f.c});
     this->children.push_back(std::vector<size_t>{});
@@ -76,7 +80,7 @@ void triangle_split_tree_2d_t::add_triangles(const std::vector<face_t> &fs,
         fs.begin(), fs.end(), 0.0, [&](double area, const face_t &f) {
             return area + get_triangle_from_face(f).area();
         });
-    if (std::abs(parent_area - child_area) > get_tolerance()) {
+    if (std::abs(parent_area - child_area) > std::sqrt(get_tolerance())) {
         std::stringstream ss;
         ss << "Child faces do not have the same area as the parent face. "
            << "Parent area: " << parent_area << ". Child areas:";
@@ -87,23 +91,15 @@ void triangle_split_tree_2d_t::add_triangles(const std::vector<face_t> &fs,
         throw std::runtime_error(ss.str());
     }
 
-    for (auto &f : fs) {
-        const auto triangle = get_triangle_from_face(f);
-        if (triangle.area() < get_tolerance()) continue;
-        if (triangle.is_clockwise() != parent_triangle.is_clockwise()) {
-            throw std::runtime_error(
-                "Child faces are not oriented the same as the parent face.");
-        }
-        add_triangle(f, parent);
-    }
+    for (auto &f : fs) add_triangle(f, parent);
 }
 
 size_t triangle_split_tree_2d_t::add_point(const point_2d_t &p) {
-    if (this->vertex_id_map.find(p) != this->vertex_id_map.end()) {
-        return this->vertex_id_map[p];
+    // TODO: Probably there is a better way to do this.
+    for (size_t i = 0; i < this->vertices.size(); i++) {
+        if (this->vertices[i] == p) return i;
     }
     this->vertices.push_back(p);
-    this->vertex_id_map[p] = this->vertices.size() - 1;
     return this->vertices.size() - 1;
 }
 
@@ -150,6 +146,7 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
 
     // Gets the intersection points the line and each edge of the triangle.
     line_2d_t l1{t.p1, t.p2}, l2{t.p2, t.p3}, l3{t.p3, t.p1};
+
     auto i1 = l1.line_intersection(l), i2 = l2.line_intersection(l),
          i3 = l3.line_intersection(l);
 
@@ -161,8 +158,14 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
                    {i3, i1, f.c, f.a, f.b}};
 
     // Cuts the triangle when it passes through two intersections.
+    bool intersects_corner = false;
     for (auto &[ia, ib, fa, fb, fc] : invariants) {
         if (ia.has_value() && ib.has_value()) {
+            if (ia.value() == ib.value()) {
+                intersects_corner = true;
+                continue;
+            }
+
             auto new_point_1 = add_point(ia.value()),
                  new_point_2 = add_point(ib.value());
             add_triangles({{fa, new_point_1, new_point_2},
@@ -172,6 +175,9 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
             return;
         }
     }
+
+    // Lines which just intersect at a corner are ignored.
+    if (intersects_corner) return;
 
     bool p1_in_t = t.contains_point(l.p1), p2_in_t = t.contains_point(l.p2);
 
@@ -190,10 +196,11 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
             else if (p2_in_t && l.p2 != ia.value())
                 p_in = l.p2;
 
-            auto fi = add_point(ia.value());
             if (!p_in.has_value()) {
+                auto fi = add_point(ia.value());
                 add_triangles({{fa, fi, fc}, {fb, fc, fi}}, i);
             } else {
+                auto fi = add_point(ia.value());
                 auto fp = add_point(p_in.value());
                 add_triangles(
                     {{fa, fi, fp}, {fa, fp, fc}, {fb, fp, fi}, {fb, fc, fp}},

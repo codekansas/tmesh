@@ -21,13 +21,13 @@ def test_union_2d() -> None:
 
     # Checks the union of the two meshes.
     mesh_union = mesh_a & mesh_b
-    assert len(mesh_union.faces) == 16
+    assert len(mesh_union.faces) == 14
     assert len(mesh_union.vertices) == 12
 
     # Checks the intersection of the two meshes.
     mesh_intersection = mesh_a | mesh_b
-    assert len(mesh_intersection.faces) == 4
-    assert len(mesh_intersection.vertices) == 6
+    assert len(mesh_intersection.faces) == 2
+    assert len(mesh_intersection.vertices) == 4
 
     # Checks the difference of the two meshes.
     mesh_difference = mesh_a - mesh_b

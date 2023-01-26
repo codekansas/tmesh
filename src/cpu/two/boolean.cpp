@@ -1,7 +1,6 @@
 #include "boolean.h"
 
 #include <algorithm>
-#include <iostream>
 
 #include "bvh.h"
 
@@ -71,21 +70,22 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
     // Checks each triangle in B against each triangle in A.
     // This could be made more efficient by indexing the vertices of B to
     // efficiently find the vertices which intersect a triangle in A.
-    for (size_t a_face_id = 0; a_face_id < a_mesh.faces().size(); a_face_id++) {
-        auto &a_tree = a_trees[a_face_id];
+    for (size_t b_face_id = 0; b_face_id < b_mesh.faces().size(); b_face_id++) {
+        auto &b_face = b_mesh.faces()[b_face_id];
+        auto &[b_a, b_b, b_c] = b_face;
+        auto &b_tri = b_mesh.get_triangle(b_face);
 
-        for (size_t b_face_id = 0; b_face_id < b_mesh.faces().size();
-             b_face_id++) {
-            auto &b_face = b_mesh.faces()[b_face_id];
-            auto &[b_a, b_b, b_c] = b_face;
-            auto &b_tri = b_mesh.get_triangle(b_face);
+        // Splits triangles at edges.
+        for (auto &edge : b_face.get_edges()) {
+            line_2d_t b_edge{b_mesh.vertices()[edge.a],
+                             b_mesh.vertices()[edge.b]};
 
-            // Splits triangles at edges.
-            for (auto &edge : b_face.get_edges()) {
-                line_2d_t b_edge{b_mesh.vertices()[edge.a],
-                                 b_mesh.vertices()[edge.b]};
-                for (auto &t_id :
-                     a_tree.get_leaf_triangles_which_intersect(b_edge)) {
+            for (size_t a_face_id = 0; a_face_id < a_mesh.faces().size();
+                 a_face_id++) {
+                auto &a_tree = a_trees[a_face_id];
+                auto t_ids = a_tree.get_leaf_triangles_which_intersect(b_edge);
+
+                for (auto &t_id : t_ids) {
                     a_tree.split_triangle(b_edge, t_id);
                 }
             }
@@ -161,13 +161,14 @@ trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
         trimesh_2d_t::merge_vertices(vertices, faces);
 
     // Removes vertices that are not used by any face and remaps faces.
-    auto [new_vertices, new_faces] =
-        trimesh_2d_t::remove_unused_vertices(remapped_vertices, remapped_faces);
-    return {new_vertices, new_faces, validate};
-
     // auto [new_vertices, new_faces] =
-    //     trimesh_2d_t::merge_triangles(remapped_vertices, remapped_faces);
+    //     trimesh_2d_t::remove_unused_vertices(remapped_vertices,
+    //     remapped_faces);
     // return {new_vertices, new_faces, validate};
+
+    auto [new_vertices, new_faces] =
+        trimesh_2d_t::merge_triangles(remapped_vertices, remapped_faces);
+    return {new_vertices, new_faces, validate};
 }
 
 trimesh_2d_t combine(const trimesh_2d_t &a, const trimesh_2d_t &b,
