@@ -184,13 +184,17 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
 
             // Chooses an inside and outside point (although the outside point
             // may actually be the intersection point).
-            auto p_in = p1_in_t ? l.p1 : l.p2;
-            auto fi = add_point(ia.value());
+            std::optional<point_2d_t> p_in = std::nullopt;
+            if (p1_in_t && l.p1 != ia.value())
+                p_in = l.p1;
+            else if (p2_in_t && l.p2 != ia.value())
+                p_in = l.p2;
 
-            if (p_in == ia.value()) {
+            auto fi = add_point(ia.value());
+            if (!p_in.has_value()) {
                 add_triangles({{fa, fi, fc}, {fb, fc, fi}}, i);
             } else {
-                auto fp = add_point(p_in);
+                auto fp = add_point(p_in.value());
                 add_triangles(
                     {{fa, fi, fp}, {fa, fp, fc}, {fb, fp, fi}, {fb, fc, fp}},
                     i);
@@ -201,7 +205,7 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
     }
 
     // Cuts the triangle when both points are entirely inside.
-    if (t.contains_point(l.p1) && t.contains_point(l.p2)) {
+    if (p1_in_t && p2_in_t) {
         auto new_point_1 = add_point(l.p1), new_point_2 = add_point(l.p2);
         line_2d_t l_p1_b{l.p1, vertices[f.b]}, l_p2_c{l.p2, vertices[f.c]};
         if (l_p1_b.line_intersection(l_p2_c).has_value()) {

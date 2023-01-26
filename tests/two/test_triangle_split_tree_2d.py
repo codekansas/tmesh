@@ -11,17 +11,17 @@ from tmesh import Face, Line2D, Point2D, Triangle2D, TriangleSplitTree2D
         (
             Line2D(Point2D(1, -1), Point2D(1, 3)),
             [
+                Triangle2D(Point2D(1, 1), Point2D(0, 2), Point2D(0, 0)),
                 Triangle2D(Point2D(0, 0), Point2D(1, 0), Point2D(1, 1)),
                 Triangle2D(Point2D(1, 0), Point2D(2, 0), Point2D(1, 1)),
-                Triangle2D(Point2D(1, 1), Point2D(0, 2), Point2D(0, 0)),
             ],
         ),
         (
             Line2D(Point2D(-1, 1), Point2D(3, 1)),
             [
                 Triangle2D(Point2D(1, 1), Point2D(0, 2), Point2D(0, 1)),
-                Triangle2D(Point2D(2, 0), Point2D(1, 1), Point2D(0, 1)),
                 Triangle2D(Point2D(0, 1), Point2D(0, 0), Point2D(2, 0)),
+                Triangle2D(Point2D(2, 0), Point2D(1, 1), Point2D(0, 1)),
             ],
         ),
         (
@@ -77,8 +77,8 @@ def test_triangle_split_tree_2d_split_at_lines_through_vertex() -> None:
     triangles = sorted([tree[i] for i in leaf_triangles])
 
     assert triangles == [
-        Triangle2D(Point2D(0, 0), Point2D(2, 0), Point2D(1, 1)),
         Triangle2D(Point2D(1, 1), Point2D(0, 2), Point2D(0, 0)),
+        Triangle2D(Point2D(0, 0), Point2D(2, 0), Point2D(1, 1)),
     ]
 
 

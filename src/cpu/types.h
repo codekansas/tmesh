@@ -25,7 +25,7 @@ struct edge_t {
 };
 
 struct __edge_hash_fn {
-    std::size_t operator()(const edge_t &e) const {
+    size_t operator()(const edge_t &e) const {
         auto hf = std::hash<size_t>();
         auto [a, b, directed] = e;
         if (!directed && a > b) std::swap(a, b);
@@ -56,7 +56,7 @@ struct face_t {
 };
 
 struct __face_hash_fn {
-    std::size_t operator()(const face_t &e) const {
+    size_t operator()(const face_t &e) const {
         auto hf = std::hash<size_t>();
         return hf(e.a) ^ hf(e.b) ^ hf(e.c);
     }

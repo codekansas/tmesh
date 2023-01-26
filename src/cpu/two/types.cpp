@@ -320,7 +320,18 @@ bool triangle_2d_t::operator!=(const triangle_2d_t &other) const {
 }
 
 bool triangle_2d_t::operator<(const triangle_2d_t &other) const {
-    return *this != other && (p1 < other.p1 || p2 < other.p2 || p3 < other.p3);
+    if (*this == other) return false;
+
+    // Sorts triangles.
+    auto [p1, p2, p3] = *this;
+    auto [q1, q2, q3] = other;
+    if (p1 < p2) std::swap(p1, p2);
+    if (p1 < p3) std::swap(p1, p3);
+    if (p2 < p3) std::swap(p2, p3);
+    if (q1 < q2) std::swap(q1, q2);
+    if (q1 < q3) std::swap(q1, q3);
+    if (q2 < q3) std::swap(q2, q3);
+    return p1 < q1 || p2 < q2 || p3 < q3;
 }
 
 triangle_2d_t triangle_2d_t::operator<<=(const affine_2d_t &a) {

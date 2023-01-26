@@ -162,8 +162,7 @@ trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
 
     // Removes vertices that are not used by any face and remaps faces.
     auto [new_vertices, new_faces] =
-        trimesh_2d_t::remove_unused_vertices(remapped_vertices,
-        remapped_faces);
+        trimesh_2d_t::remove_unused_vertices(remapped_vertices, remapped_faces);
     return {new_vertices, new_faces, validate};
 
     // auto [new_vertices, new_faces] =
@@ -195,9 +194,9 @@ trimesh_2d_t combine(const trimesh_2d_t &a, const trimesh_2d_t &b,
 trimesh_2d_t mesh_union(const trimesh_2d_t &a, const trimesh_2d_t &b) {
     auto c = mesh_op(b, a, COMPLEMENT, false);
     auto d = mesh_op(a, b, COMPLEMENT, false);
-    // auto e = mesh_op(a, b, INTERSECTION, false);
-    // auto f = combine(c, d, false);
-    // return combine(f, e, true);
+    auto e = mesh_op(a, b, INTERSECTION, false);
+    auto f = combine(c, d, false);
+    return combine(f, e, true);
     return c;
 }
 

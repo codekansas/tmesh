@@ -18,34 +18,35 @@ from tmesh import Affine2D, regular_polygon_mesh
 # mesh_a = regular_polygon_mesh(5.0, n=3)
 # mesh_b = regular_polygon_mesh(2.0, n=7)
 
-scale = Affine2D(scale=1.0)
-rotate = Affine2D(rot=math.pi / 3)
-translate = Affine2D(trans=(0.9, 0.5))
+# scale = Affine2D(scale=1.0)
+# rotate = Affine2D(rot=math.pi / 3)
+# translate = Affine2D(trans=(0.9, 0.5))
 
-mesh = regular_polygon_mesh(1.0, n=3)
+# mesh = regular_polygon_mesh(1.0, n=3)
 
-mesh_union = (mesh & (mesh << scale @ rotate @ translate)) << Affine2D(trans=(2.0, 0.0))
-mesh_intersection = (mesh | (mesh << scale @ rotate @ translate)) << Affine2D(trans=(4.0, 0.0))
-mesh_difference = (mesh - (mesh << scale @ rotate @ translate)) << Affine2D(trans=(-2.0, 0.0))
+# mesh_union = (mesh & (mesh << scale @ rotate @ translate)) << Affine2D(trans=(2.0, 0.0))
+# mesh_intersection = (mesh | (mesh << scale @ rotate @ translate)) << Affine2D(trans=(4.0, 0.0))
+# mesh_difference = (mesh - (mesh << scale @ rotate @ translate)) << Affine2D(trans=(-2.0, 0.0))
+# mesh_difference_2 = ((mesh << scale @ rotate @ translate) - mesh) << Affine2D(trans=(2.0, 0.0))
 
 # print("Intersection faces:", len((mesh_a | mesh_b).faces))
 # print("Intersection vertices:", len((mesh_a | mesh_b).vertices))
 
-for face in mesh_union.faces:
-    print(face)
-
 # To plot things, add them to this list.
 THINGS_TO_PLOT: List[Thing] = [
-    mesh,
-    mesh << scale @ rotate @ translate,
-    mesh_union,
+    # mesh,
+    # mesh << scale @ rotate @ translate,
+    # mesh_union,
     # mesh_intersection,
-    mesh_difference,
+    # mesh_difference,
+    # mesh_difference_2,
     # mesh_a,
     # mesh_b,
     # mesh_a & mesh_b,
     # mesh_a | mesh_b,
     # mesh_a - mesh_b,
+    Line2D(Point2D(1, -1), Point2D(1, 3)),
+    *[Triangle2D(Point2D(1, 1), Point2D(0, 2), Point2D(0, 0)), Triangle2D(Point2D(0, 0), Point2D(1, 0), Point2D(1, 1)), Triangle2D(Point2D(1, 0), Point2D(2, 0), Point2D(1, 1))]
 ]
 
 ALPHA = 1.0
