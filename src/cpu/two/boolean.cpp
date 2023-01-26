@@ -1,7 +1,6 @@
 #include "boolean.h"
 
 #include <algorithm>
-#include <iostream>
 
 #include "bvh.h"
 
@@ -9,7 +8,7 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
-enum boolean_2d_op { UNION, INTERSECTION, DIFFERENCE };
+enum boolean_2d_op { INTERSECTION, COMPLEMENT };
 
 trimesh_2d_t triangulation(const triangle_2d_t &triangle,
                            const std::vector<point_2d_t> &points) {
@@ -71,32 +70,23 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
     // Checks each triangle in B against each triangle in A.
     // This could be made more efficient by indexing the vertices of B to
     // efficiently find the vertices which intersect a triangle in A.
-    for (size_t a_face_id = 0; a_face_id < a_mesh.faces().size(); a_face_id++) {
-        auto &a_tree = a_trees[a_face_id];
+    for (size_t b_face_id = 0; b_face_id < b_mesh.faces().size(); b_face_id++) {
+        auto &b_face = b_mesh.faces()[b_face_id];
+        auto &[b_a, b_b, b_c] = b_face;
+        auto &b_tri = b_mesh.get_triangle(b_face);
 
-        for (size_t b_face_id = 0; b_face_id < b_mesh.faces().size();
-             b_face_id++) {
-            auto &b_face = b_mesh.faces()[b_face_id];
-            auto &[b_a, b_b, b_c] = b_face;
-            auto &b_tri = b_mesh.get_triangle(b_face);
+        // Splits triangles at edges.
+        for (auto &edge : b_face.get_edges()) {
+            line_2d_t b_edge{b_mesh.vertices()[edge.a],
+                             b_mesh.vertices()[edge.b]};
 
-            // Splits triangles at vertices.
-            for (auto &b_id : {b_a, b_b, b_c}) {
-                for (auto &t_id :
-                     a_tree.get_leaf_triangles_which_intersect_point(
-                         b_mesh.vertices()[b_id])) {
-                    a_tree.split_triangle_at_point(b_mesh.vertices()[b_id],
-                                                   t_id);
-                }
-            }
+            for (size_t a_face_id = 0; a_face_id < a_mesh.faces().size();
+                 a_face_id++) {
+                auto &a_tree = a_trees[a_face_id];
+                auto t_ids = a_tree.get_leaf_triangles_which_intersect(b_edge);
 
-            // Splits triangles at edges.
-            for (auto &[b_id_a, b_id_b] : b_face.get_edges()) {
-                line_2d_t b_edge{b_mesh.vertices()[b_id_a],
-                                 b_mesh.vertices()[b_id_b]};
-                for (auto &t_id :
-                     a_tree.get_leaf_triangles_which_intersect_line(b_edge)) {
-                    a_tree.split_triangle_at_line(b_edge, t_id);
+                for (auto &t_id : t_ids) {
+                    a_tree.split_triangle(b_edge, t_id);
                 }
             }
         }
@@ -121,7 +111,7 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
 }
 
 trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
-                     boolean_2d_op op) {
+                     boolean_2d_op op, bool validate) {
     const trimesh_2d_t a_split = split_at_all_intersections(mesh_a, mesh_b),
                        b_split = split_at_all_intersections(mesh_b, mesh_a);
 
@@ -158,64 +148,65 @@ trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
          a_face_id++) {
         auto &a_face = a_split.faces()[a_face_id];
         switch (op) {
-            case UNION:
-                faces.insert(a_face);
-                break;
             case INTERSECTION:
                 if (a_face_inside[a_face_id]) faces.insert(a_face);
                 break;
-            case DIFFERENCE:
+            case COMPLEMENT:
                 if (!a_face_inside[a_face_id]) faces.insert(a_face);
                 break;
         }
     }
-    if (op == UNION) {
-        vertices.insert(vertices.end(), b_split.vertices().begin(),
-                        b_split.vertices().end());
-        for (size_t b_face_id = 0; b_face_id < b_split.faces().size();
-             b_face_id++) {
-            auto &b_face = b_split.faces()[b_face_id];
-            if (!b_face_inside[b_face_id])
-                faces.insert({b_face.a + a_split.vertices().size(),
-                              b_face.b + a_split.vertices().size(),
-                              b_face.c + a_split.vertices().size()});
-        }
-    }
 
-    // Merges any vertices which are within the tolerance of each other.
-    // This works because point_2d_t::operator< will be false if the points
-    // are within the tolerance of each other. We can therefore remap
-    // vertices to the lowest matched vertex ID.
-    std::map<point_2d_t, size_t> vertex_to_id_map;
-    for (size_t i = 0; i < vertices.size(); i++) {
-        auto &v = vertices[i];
-        if (vertex_to_id_map.find(v) == vertex_to_id_map.end())
-            vertex_to_id_map[v] = i;
-    }
-    face_set_t remaped_faces;
-    for (auto f : faces) {
-        remaped_faces.insert({vertex_to_id_map[vertices[f.a]],
-                              vertex_to_id_map[vertices[f.b]],
-                              vertex_to_id_map[vertices[f.c]]});
-    }
+    auto [remapped_vertices, remapped_faces] =
+        trimesh_2d_t::merge_vertices(vertices, faces);
 
     // Removes vertices that are not used by any face and remaps faces.
-    auto [new_vertices, new_faces] =
-        trimesh_2d_t::remove_unused_vertices(vertices, remaped_faces);
+    // auto [new_vertices, new_faces] =
+    //     trimesh_2d_t::remove_unused_vertices(remapped_vertices,
+    //     remapped_faces);
+    // return {new_vertices, new_faces, validate};
 
-    return {new_vertices, new_faces};
+    auto [new_vertices, new_faces] =
+        trimesh_2d_t::merge_triangles(remapped_vertices, remapped_faces);
+    return {new_vertices, new_faces, validate};
+}
+
+trimesh_2d_t combine(const trimesh_2d_t &a, const trimesh_2d_t &b,
+                     bool validate) {
+    std::vector<point_2d_t> vertices;
+    vertices.insert(vertices.end(), a.vertices().begin(), a.vertices().end());
+    vertices.insert(vertices.end(), b.vertices().begin(), b.vertices().end());
+
+    face_set_t faces;
+    faces.insert(a.faces().begin(), a.faces().end());
+    size_t offset = a.vertices().size();
+    for (auto &face : b.faces()) {
+        faces.insert(face + offset);
+    }
+
+    auto [remapped_vertices, remapped_faces] =
+        trimesh_2d_t::merge_vertices(vertices, faces);
+
+    auto [new_vertices, new_faces] =
+        trimesh_2d_t::remove_unused_vertices(remapped_vertices, remapped_faces);
+    return {new_vertices, new_faces, validate};
 }
 
 trimesh_2d_t mesh_union(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    return mesh_op(a, b, UNION);
+    auto c = mesh_op(b, a, COMPLEMENT, false);
+    auto d = mesh_op(a, b, COMPLEMENT, false);
+    auto e = mesh_op(a, b, INTERSECTION, false);
+    auto f = combine(c, d, false);
+    return combine(f, e, true);
+    return c;
 }
 
 trimesh_2d_t mesh_intersection(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    return mesh_op(a, b, INTERSECTION);
+    return mesh_op(a, b, INTERSECTION, true);
 }
 
 trimesh_2d_t mesh_difference(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    return mesh_op(a, b, DIFFERENCE);
+    return mesh_op(a, b, COMPLEMENT, true);
 }
 
 void add_2d_boolean_modules(py::module &m) {

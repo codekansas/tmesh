@@ -10,6 +10,43 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
+/* ------ *
+ * edge_t *
+ * ------ */
+
+edge_t::edge_t(size_t a, size_t b, bool directed)
+    : a(a), b(b), directed(directed) {}
+
+bool edge_t::operator==(const edge_t &e) const {
+    if (e.directed != directed) throw std::runtime_error("Cannot compare");
+    if (directed) return a == e.a && b == e.b;
+    return (a == e.a && b == e.b) || (a == e.b && b == e.a);
+}
+
+bool edge_t::operator!=(const edge_t &f) const { return !(*this == f); }
+
+bool edge_t::operator<(const edge_t &f) const {
+    if (f.directed != directed) throw std::runtime_error("Cannot compare");
+    auto a1 = a, b1 = b, a2 = f.a, b2 = f.b;
+    if (!directed) {
+        if (a1 > b1) std::swap(a1, b1);
+        if (a2 > b2) std::swap(a2, b2);
+    }
+    return std::tie(a1, b1) < std::tie(a2, b2);
+}
+
+std::string edge_t::to_string() const {
+    if (directed)
+        return "(" + std::to_string(a) + ", " + std::to_string(b) +
+               ", directed)";
+    if (a < b) return "(" + std::to_string(a) + ", " + std::to_string(b) + ")";
+    return "(" + std::to_string(b) + ", " + std::to_string(a) + ")";
+}
+
+/* ------ *
+ * face_t *
+ * ------ */
+
 face_t::face_t(size_t a, size_t b, size_t c) : a(a), b(b), c(c) {}
 
 bool face_t::operator==(const face_t &f) const {
@@ -24,10 +61,27 @@ bool face_t::operator<(const face_t &f) const {
     return *this != f && std::tie(a, b, c) < std::tie(f.a, f.b, f.c);
 }
 
+face_t face_t::operator+(size_t offset) const {
+    return {a + offset, b + offset, c + offset};
+}
+
 std::vector<size_t> face_t::get_vertices() const { return {a, b, c}; }
 
-std::vector<std::tuple<size_t, size_t>> face_t::get_edges() const {
-    return {{a, b}, {b, c}, {c, a}};
+std::vector<edge_t> face_t::get_edges(bool directed) const {
+    return {{a, b, directed}, {b, c, directed}, {c, a, directed}};
+}
+
+bool face_t::has_edge(const edge_t &e) const {
+    return (e.a == a && e.b == b) || (e.a == b && e.b == a) ||
+           (e.a == b && e.b == c) || (e.a == c && e.b == b) ||
+           (e.a == c && e.b == a) || (e.a == a && e.b == c);
+}
+
+size_t face_t::get_other_vertex(const edge_t &e) const {
+    if ((e.a == a && e.b == b) || (e.a == b && e.b == a)) return c;
+    if ((e.a == b && e.b == c) || (e.a == c && e.b == b)) return a;
+    if ((e.a == c && e.b == a) || (e.a == a && e.b == c)) return b;
+    throw std::runtime_error("Edge is not part of face");
 }
 
 std::string face_t::to_string() const {
@@ -63,9 +117,22 @@ std::string barycentric_coordinates_t::to_string() const {
 void add_types_modules(py::module &m) {
     // Defines the classes first, so that methods can resolve types
     // correctly.
+    auto edge = py::class_<edge_t>(m, "Edge");
     auto face = py::class_<face_t>(m, "Face");
     auto barycentric_coordinates =
         py::class_<barycentric_coordinates_t>(m, "BarycentricCoordinates");
+
+    // Defines Edge methods.
+    edge.def(py::init<size_t, size_t, bool>(), "a"_a, "b"_a,
+             "directed"_a = false, "Defines a directed triangle edge")
+        .def("__eq__", &edge_t::operator==, "other"_a,
+             "Checks if two edges are equal.", py::is_operator())
+        .def("__ne__", &edge_t::operator!=, "other"_a,
+             "Checks if two edges are not equal.", py::is_operator())
+        .def("__lt__", &edge_t::operator<, "other"_a,
+             "Checks if one face is less than another.", py::is_operator())
+        .def("__repr__", &edge_t::to_string, "Returns a string representation.",
+             py::is_operator());
 
     // Defines Face methods.
     face.def(py::init<size_t, size_t, size_t>(), "a"_a, "b"_a, "c"_a,
@@ -80,7 +147,8 @@ void add_types_modules(py::module &m) {
         .def("__lt__", &face_t::operator<, "other"_a,
              "Checks if one face is less than another.", py::is_operator())
         .def("get_vertices", &face_t::get_vertices, "Returns the vertices.")
-        .def("get_edges", &face_t::get_edges, "Returns the edges.")
+        .def("get_edges", &face_t::get_edges, "directed"_a = false,
+             "Returns the edges.")
         .def("__repr__", &face_t::to_string, "Returns a string representation.",
              py::is_operator());
 

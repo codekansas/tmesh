@@ -27,58 +27,98 @@ triangle_split_tree_2d_t::triangle_split_tree_2d_t(
 
 void triangle_split_tree_2d_t::add_triangle(const face_t &f,
                                             const size_t parent) {
-    triangle_2d_t t{vertices[f.a], vertices[f.b], vertices[f.c]};
-    if (t.area() < get_tolerance()) return;
+    triangle_2d_t t{vertices[f.a], vertices[f.b], vertices[f.c]},
+        pt{vertices[faces[parent].a], vertices[faces[parent].b],
+           vertices[faces[parent].c]};
+    if (t.area() < std::sqrt(get_tolerance())) return;
+    if (t.is_clockwise() != pt.is_clockwise()) {
+        throw std::runtime_error(
+            "Child faces are not oriented the same as the parent face.");
+    }
 
     this->faces.push_back({f.a, f.b, f.c});
     this->children.push_back(std::vector<size_t>{});
     this->children[parent].push_back(this->children.size() - 1);
 }
 
-size_t triangle_split_tree_2d_t::add_point(const point_2d_t &p) {
-    this->vertices.push_back(p);
-    return this->vertices.size() - 1;
+void triangle_split_tree_2d_t::add_triangles(const std::vector<face_t> &fs,
+                                             size_t parent) {
+    // Checks that parent doesn't have any triangles yet.
+    if (!this->children[parent].empty()) {
+        std::stringstream ss;
+        ss << "Parent face " << get_triangle(parent).to_string()
+           << " already has children.";
+        throw std::runtime_error(ss.str());
+    }
+
+    const auto &parent_face = this->faces[parent];
+    const auto parent_triangle = get_triangle(parent);
+    const auto parent_area = parent_triangle.area();
+    const auto &parent_vertices = parent_triangle.vertices();
+
+    // Checks that all non-shared vertices of the parent face are contained in
+    // the child faces.
+    for (const auto &f : fs) {
+        const auto &child_vertices = get_triangle_from_face(f).vertices();
+        for (const auto &v : parent_vertices) {
+            if (std::find(child_vertices.begin(), child_vertices.end(), v) ==
+                    child_vertices.end() &&
+                !v.is_inside_triangle(parent_triangle)) {
+                std::stringstream ss;
+                ss << "Parent face " << parent_triangle.to_string()
+                   << " contains vertex " << v.to_string()
+                   << " which is not contained in child face "
+                   << get_triangle_from_face(f).to_string() << ".";
+                throw std::runtime_error(ss.str());
+            }
+        }
+    }
+
+    // Checks that the signed area of each child equals the signed area of the
+    // parent.
+    const auto child_area = std::accumulate(
+        fs.begin(), fs.end(), 0.0, [&](double area, const face_t &f) {
+            return area + get_triangle_from_face(f).area();
+        });
+    if (std::abs(parent_area - child_area) > std::sqrt(get_tolerance())) {
+        std::stringstream ss;
+        ss << "Child faces do not have the same area as the parent face. "
+           << "Parent area: " << parent_area << ". Child areas:";
+        for (const auto &f : fs) {
+            ss << " " << get_triangle_from_face(f).area();
+        }
+        ss << " (sum: " << child_area << ").";
+        throw std::runtime_error(ss.str());
+    }
+
+    for (auto &f : fs) add_triangle(f, parent);
 }
 
-size_t triangle_split_tree_2d_t::maybe_add_point(const point_2d_t &p,
-                                                 const size_t a,
-                                                 const point_2d_t &pa,
-                                                 const size_t b,
-                                                 const point_2d_t &pb) {
-    if (p == pa) return a;
-    if (p == pb) return b;
-    return add_point(p);
+size_t triangle_split_tree_2d_t::add_point(const point_2d_t &p) {
+    // TODO: Probably there is a better way to do this.
+    for (size_t i = 0; i < this->vertices.size(); i++) {
+        if (this->vertices[i] == p) return i;
+    }
+    this->vertices.push_back(p);
+    return this->vertices.size() - 1;
 }
 
 bool triangle_split_tree_2d_t::is_leaf(size_t i) const {
     return this->children[i].empty();
 }
 
-std::vector<size_t>
-triangle_split_tree_2d_t::get_leaf_triangles_which_intersect_point(
-    const point_2d_t &p) const {
-    std::unordered_set<size_t> leaf_triangles;
-    std::queue<size_t> q;
-    q.push(0);
-    while (!q.empty()) {
-        size_t i = q.front();
-        q.pop();
-        auto t = get_triangle(i);
-        if (t.contains_point(p)) {
-            if (is_leaf(i)) {
-                leaf_triangles.insert(i);
-            } else {
-                for (auto &child : this->children[i]) {
-                    q.push(child);
-                }
-            }
+std::vector<size_t> triangle_split_tree_2d_t::get_leaf_triangles() const {
+    std::vector<size_t> leaf_triangles;
+    for (size_t i = 0; i < children.size(); i++) {
+        if (is_leaf(i)) {
+            leaf_triangles.push_back(i);
         }
     }
-    return std::vector<size_t>(leaf_triangles.begin(), leaf_triangles.end());
+    return leaf_triangles;
 }
 
 std::vector<size_t>
-triangle_split_tree_2d_t::get_leaf_triangles_which_intersect_line(
+triangle_split_tree_2d_t::get_leaf_triangles_which_intersect(
     const line_2d_t &l) const {
     std::unordered_set<size_t> leaf_triangles;
     std::queue<size_t> q;
@@ -100,84 +140,109 @@ triangle_split_tree_2d_t::get_leaf_triangles_which_intersect_line(
     return std::vector<size_t>(leaf_triangles.begin(), leaf_triangles.end());
 }
 
-void triangle_split_tree_2d_t::split_triangle_at_point(const point_2d_t &p,
-                                                       size_t i) {
-    const auto f = faces[i];
-    const auto t = get_triangle(i);
-
-    // Ignore points which are close to vertices.
-    if (t.p1 == p || t.p2 == p | t.p3 == p) return;
-
-    // Adds a new point.
-    size_t p4 = add_point(p);
-
-    // Create three new triangles.
-    add_triangle({p4, f.a, f.b}, i);
-    add_triangle({p4, f.b, f.c}, i);
-    add_triangle({f.c, p4, f.a}, i);
-}
-
-void triangle_split_tree_2d_t::split_triangle_at_line(const line_2d_t &l,
-                                                      size_t i) {
+void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
     const auto f = faces[i];
     const auto t = get_triangle(i);
 
     // Gets the intersection points the line and each edge of the triangle.
     line_2d_t l1{t.p1, t.p2}, l2{t.p2, t.p3}, l3{t.p3, t.p1};
+
     auto i1 = l1.line_intersection(l), i2 = l2.line_intersection(l),
          i3 = l3.line_intersection(l);
 
+    // Invariant views of the triangle to check.
+    std::vector<std::tuple<std::optional<point_2d_t>, std::optional<point_2d_t>,
+                           size_t, size_t, size_t>>
+        invariants{{i1, i2, f.a, f.b, f.c},
+                   {i2, i3, f.b, f.c, f.a},
+                   {i3, i1, f.c, f.a, f.b}};
+
     // Cuts the triangle when it passes through two intersections.
-    if (i1.has_value() && i2.has_value()) {
-        auto new_point_1 = maybe_add_point(i1.value(), f.a, t.p1, f.b, t.p2),
-             new_point_2 = maybe_add_point(i2.value(), f.b, t.p2, f.c, t.p3);
-        add_triangle({f.a, new_point_1, new_point_2}, i);
-        add_triangle({new_point_1, f.b, new_point_2}, i);
-        add_triangle({new_point_2, f.c, f.a}, i);
-        return;
+    bool intersects_corner = false;
+    for (auto &[ia, ib, fa, fb, fc] : invariants) {
+        if (ia.has_value() && ib.has_value()) {
+            if (ia.value() == ib.value()) {
+                intersects_corner = true;
+                continue;
+            }
+
+            auto new_point_1 = add_point(ia.value()),
+                 new_point_2 = add_point(ib.value());
+            add_triangles({{fa, new_point_1, new_point_2},
+                           {new_point_1, fb, new_point_2},
+                           {new_point_2, fc, fa}},
+                          i);
+            return;
+        }
     }
-    if (i2.has_value() && i3.has_value()) {
-        auto new_point_1 = maybe_add_point(i2.value(), f.b, t.p2, f.c, t.p3),
-             new_point_2 = maybe_add_point(i3.value(), f.c, t.p3, f.a, t.p1);
-        add_triangle({f.b, new_point_1, new_point_2}, i);
-        add_triangle({new_point_1, f.c, new_point_2}, i);
-        add_triangle({new_point_2, f.a, f.b}, i);
-        return;
+
+    // Lines which just intersect at a corner are ignored.
+    if (intersects_corner) return;
+
+    bool p1_in_t = t.contains_point(l.p1), p2_in_t = t.contains_point(l.p2);
+
+    // Cuts the triangle when it passes through a single intersection.
+    for (auto &[ia, ib, fa, fb, fc] : invariants) {
+        if (ia.has_value()) {
+            // Checks that at least one of the points is inside or on an edge.
+            if (!p1_in_t && !p2_in_t)
+                throw std::runtime_error("Unexpected intersection");
+
+            // Chooses an inside and outside point (although the outside point
+            // may actually be the intersection point).
+            std::optional<point_2d_t> p_in = std::nullopt;
+            if (p1_in_t && l.p1 != ia.value())
+                p_in = l.p1;
+            else if (p2_in_t && l.p2 != ia.value())
+                p_in = l.p2;
+
+            if (!p_in.has_value()) {
+                auto fi = add_point(ia.value());
+                add_triangles({{fa, fi, fc}, {fb, fc, fi}}, i);
+            } else {
+                auto fi = add_point(ia.value());
+                auto fp = add_point(p_in.value());
+                add_triangles(
+                    {{fa, fi, fp}, {fa, fp, fc}, {fb, fp, fi}, {fb, fc, fp}},
+                    i);
+            }
+
+            return;
+        }
     }
-    if (i3.has_value() && i1.has_value()) {
-        auto new_point_1 = maybe_add_point(i3.value(), f.c, t.p3, f.a, t.p1),
-             new_point_2 = maybe_add_point(i1.value(), f.a, t.p1, f.b, t.p2);
-        add_triangle({f.c, new_point_1, new_point_2}, i);
-        add_triangle({new_point_1, f.a, new_point_2}, i);
-        add_triangle({new_point_2, f.b, f.c}, i);
+
+    // Cuts the triangle when both points are entirely inside.
+    if (p1_in_t && p2_in_t) {
+        auto new_point_1 = add_point(l.p1), new_point_2 = add_point(l.p2);
+        line_2d_t l_p1_b{l.p1, vertices[f.b]}, l_p2_c{l.p2, vertices[f.c]};
+        if (l_p1_b.line_intersection(l_p2_c).has_value()) {
+            add_triangles({{f.a, new_point_1, new_point_2},
+                           {f.a, new_point_1, f.c},
+                           {f.a, new_point_2, f.b}},
+                          i);
+        } else {
+            add_triangles({{f.a, new_point_1, new_point_2},
+                           {f.a, new_point_1, f.b},
+                           {f.a, new_point_2, f.c}},
+                          i);
+        }
         return;
     }
 
-    // Cuts the triangle when it passes through a single intersection
-    // (meaning that it just touches an edge).
-    if (i1.has_value()) {
-        auto new_point = maybe_add_point(i1.value(), f.a, t.p1, f.b, t.p2);
-        add_triangle({f.a, new_point, f.c}, i);
-        add_triangle({new_point, f.b, f.c}, i);
-        return;
-    }
-    if (i2.has_value()) {
-        auto new_point = maybe_add_point(i2.value(), f.b, t.p2, f.c, t.p3);
-        add_triangle({f.b, new_point, f.a}, i);
-        add_triangle({new_point, f.c, f.a}, i);
-        return;
-    }
-    if (i3.has_value()) {
-        auto new_point = maybe_add_point(i3.value(), f.c, t.p3, f.a, t.p1);
-        add_triangle({f.c, new_point, f.b}, i);
-        add_triangle({new_point, f.a, f.b}, i);
-        return;
-    }
+    // Throw an error because we should only be considering splitting
+    // for lines which intersect a triangle.
+    throw std::runtime_error("Triangle split failed.");
 }
 
 triangle_2d_t triangle_split_tree_2d_t::get_triangle(size_t i) const {
-    const auto &[p1, p2, p3] = faces[i];
-    const auto v1 = vertices[p1], v2 = vertices[p2], v3 = vertices[p3];
+    return get_triangle_from_face(this->faces[i]);
+}
+
+triangle_2d_t triangle_split_tree_2d_t::get_triangle_from_face(
+    const face_t &f) const {
+    const auto &[p1, p2, p3] = f;
+    const auto v1 = this->vertices[p1], v2 = this->vertices[p2],
+               v3 = this->vertices[p3];
     triangle_2d_t ret_val{v1, v2, v3};
     return ret_val;
 }
@@ -212,7 +277,7 @@ const std::vector<face_t> triangle_split_tree_2d_t::get_leaf_faces(
 }
 
 const std::vector<point_2d_t> triangle_split_tree_2d_t::get_vertices() const {
-    std::vector<point_2d_t> v(vertices.begin() + 3, vertices.end());
+    std::vector<point_2d_t> v(this->vertices.begin() + 3, this->vertices.end());
     return v;
 }
 
@@ -339,8 +404,8 @@ std::optional<face_t> get_containing_face_helper(
 
     auto &[face_id, lhs, rhs, box] = tree[id];
 
-    // If some part of the triangle is outside the current bounding box, then
-    // the triangle is not inside the mesh.
+    // If some part of the triangle is outside the current bounding box,
+    // then the triangle is not inside the mesh.
     if (!box.contains_triangle(t)) {
         return std::nullopt;
     }
@@ -386,19 +451,11 @@ void add_2d_bvh_modules(py::module &m) {
              "of vertices.")
         .def("is_leaf", &triangle_split_tree_2d_t::is_leaf, "i"_a,
              "Returns true if the node is a leaf.")
-        .def(
-            "get_leaf_triangles_which_intersect_point",
-            &triangle_split_tree_2d_t::get_leaf_triangles_which_intersect_point,
-            "point"_a, "Returns the triangles which intersect the point.")
-        .def("get_leaf_triangles_which_intersect_line",
-             &triangle_split_tree_2d_t::get_leaf_triangles_which_intersect_line,
+        .def("get_leaf_triangles_which_intersect",
+             &triangle_split_tree_2d_t::get_leaf_triangles_which_intersect,
              "line"_a, "Returns the triangles which intersect the line.")
-        .def("split_triangle_at_point",
-             &triangle_split_tree_2d_t::split_triangle_at_point, "point"_a,
-             "i"_a, "Splits a triangle at a point.")
-        .def("split_triangle_at_line",
-             &triangle_split_tree_2d_t::split_triangle_at_line, "line"_a, "i"_a,
-             "Splits a triangle at a line.")
+        .def("split_triangle", &triangle_split_tree_2d_t::split_triangle,
+             "line"_a, "i"_a, "Splits a triangle at a line.")
         .def("get_triangle", &triangle_split_tree_2d_t::get_triangle, "i"_a,
              "Returns the triangle associated with the node.")
         .def("get_children", &triangle_split_tree_2d_t::get_children, "i"_a,

@@ -50,12 +50,13 @@ def plot_point(point: Point2D, i: int) -> None:
     plt.plot(point.x, point.y, get_color(i) + "o", alpha=ALPHA)
 
 
-def plot_triangle(triangle: Triangle2D, i: int) -> None:
+def plot_triangle(triangle: Triangle2D, i: int, labels: tuple[str, str, str] | None = None) -> None:
     """Plots a triangle.
 
     Args:
         triangle: Triangle to plot.
         i: Index of triangle.
+        labels: Labels for triangle vertices.
     """
 
     plt.plot(
@@ -64,6 +65,11 @@ def plot_triangle(triangle: Triangle2D, i: int) -> None:
         get_color(i),
         alpha=ALPHA,
     )
+
+    if labels is not None:
+        plt.text(triangle.p1.x, triangle.p1.y, labels[0])
+        plt.text(triangle.p2.x, triangle.p2.y, labels[1])
+        plt.text(triangle.p3.x, triangle.p3.y, labels[2])
 
 
 def plot_trimesh(trimesh: Trimesh2D, i: int) -> None:
@@ -74,8 +80,10 @@ def plot_trimesh(trimesh: Trimesh2D, i: int) -> None:
         i: Index of trimesh.
     """
 
-    for triangle in trimesh.get_triangles():
-        plot_triangle(triangle, i)
+    vertices = trimesh.vertices
+    for face in trimesh.faces:
+        triangle = Triangle2D(vertices[face.a], vertices[face.b], vertices[face.c])
+        plot_triangle(triangle, i, labels=(str(face.a), str(face.b), str(face.c)))
 
 
 def main() -> None:

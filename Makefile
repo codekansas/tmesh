@@ -9,7 +9,7 @@ Implementation of some operations on triangular meshes, with C++ and CUDA backen
 Getting Started:
 	1. Create a new Conda environment: 'conda create --name tmesh python=3.10'
 	2. Activate the environment: 'conda activate tmesh'
-	3. Install dependencies: 'make install-conda'
+	3. Install dependencies: 'make install-conda ; make install-pip'
 	4. Build the project: 'make build'
 
 Usage:

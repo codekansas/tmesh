@@ -1,7 +1,5 @@
 #include "ops.h"
 
-#include <iostream>
-
 #include "three/types.h"
 #include "two/types.h"
 
@@ -45,8 +43,13 @@ trimesh_3d_t linear_extrude(
     size_t top_offset = mesh.vertices().size();
 
     // Adds bottom and top faces.
+    edge_set_t edges;
     for (auto &face : mesh.faces()) {
         auto &[a, b, c] = face;
+        edge_t ab{a, b}, bc{b, c}, ca{c, a};
+        edges.insert(ab);
+        edges.insert(bc);
+        edges.insert(ca);
         faces.insert({a, c, b});
         faces.insert({a + top_offset, b + top_offset, c + top_offset});
     }
@@ -56,8 +59,15 @@ trimesh_3d_t linear_extrude(
         for (size_t i = 0; i < poly_inds.size(); i++) {
             auto &a = poly_inds[i];
             auto &b = poly_inds[(i + 1) % poly_inds.size()];
-            faces.insert({a, b, b + top_offset});
-            faces.insert({a, b + top_offset, a + top_offset});
+            edge_t edge{a, b};
+            bool has_edge = edges.find(edge) == edges.end();
+            if (has_edge) {
+                faces.insert({a, b + top_offset, b});
+                faces.insert({a, a + top_offset, b + top_offset});
+            } else {
+                faces.insert({a, b, b + top_offset});
+                faces.insert({a, b + top_offset, a + top_offset});
+            }
         }
     }
 
