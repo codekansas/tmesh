@@ -4,7 +4,7 @@ namespace trimesh {
 
 using namespace pybind11::literals;
 
-float __global_tolerance = 1e-6;
+float __global_tolerance = 1e-5;
 
 void set_tolerance(float tolerance) { __global_tolerance = tolerance; }
 

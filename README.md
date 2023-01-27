@@ -20,20 +20,23 @@ import math
 
 from tmesh import *
 
-# Create some cuboids.
-a = cuboid(1.0, 1.0, 1.0, center=True)
-b = cuboid(1.0, 1.0, 1.0, center=True)
+# Create a cuboid.
+a = regular_polygon_mesh(1.0, n=4)
+b = regular_polygon_mesh(1.0, n=4)
 
 # Move the second cuboid around.
-rot = Affine3D(rot=(math.pi / 4, 0.0, 0.0))
-trans = Affine3D(trans=(0.0, 0.5, 0.0))
+rot = Affine2D(rot=math.pi / 4)
+trans = Affine2D(trans=(0.0, 0.5))
 b <<= rot @ trans
 
+# Extrudes the intersection to a 3D shape with height 1.
+cube = linear_extrude(a | b, 1.0)
+
 # Save the resulting mesh.
-save_stl_text("simple_example_ascii.stl", a + b)
-save_stl("simple_example.stl", a + b)
-save_obj("simple_example.obj", a + b)
-save_ply("simple_example.ply", a + b)
+save_stl_text("simple_example_ascii.stl", cube)
+save_stl("simple_example.stl", cube)
+save_obj("simple_example.obj", cube)
+save_ply("simple_example.ply", cube)
 ```
 
 ## Motivation

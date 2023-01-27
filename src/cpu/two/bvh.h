@@ -16,7 +16,6 @@ struct triangle_split_tree_2d_t {
     std::vector<face_t> faces;
     std::vector<std::vector<size_t>> children;
     std::vector<point_2d_t> vertices;
-    std::map<point_2d_t, size_t> vertex_ids;
 
     void add_triangle(const face_t &f, size_t parent);
     void add_triangles(const std::vector<face_t> &fs, size_t parent);

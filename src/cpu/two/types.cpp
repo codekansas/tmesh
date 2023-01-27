@@ -1,5 +1,6 @@
 #include "types.h"
 
+#include <iostream>
 #include <numeric>
 #include <queue>
 #include <sstream>
@@ -1306,6 +1307,25 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
         return boundary_pts.find(vertex) != boundary_pts.end();
     };
 
+    auto intersects_another_edge = [&](const edge_t &edge,
+                                       const face_set_t &component) {
+        // TODO: This is pretty inefficient (O(n^2) in the number of edges).
+        // Should change to using a BVH or something.
+        for (const auto &face : component) {
+            for (auto &other_edge : face.get_edges(false)) {
+                if (edge.a == other_edge.a || edge.a == other_edge.b ||
+                    edge.b == other_edge.a || edge.b == other_edge.b) {
+                    continue;
+                }
+
+                line_2d_t line_a{_vertices[edge.a], _vertices[edge.b]},
+                    line_b{_vertices[other_edge.a], _vertices[other_edge.b]};
+                if (line_a.line_intersection(line_b).has_value()) return true;
+            }
+        }
+        return false;
+    };
+
     // Counts number of edges between boundary vertices.
     edge_map_t edge_counts;
     for (const auto &face : component) {
@@ -1321,10 +1341,16 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
     std::unordered_map<size_t, std::unordered_set<size_t>> adjacencies;
     for (const auto &face : component) {
         for (auto &edge : face.get_edges(false)) {
-            if (is_boundary(edge.a) && is_boundary(edge.b) &&
-                edge_counts[edge] == 1) {
-                adjacencies[edge.a].insert(edge.b);
-                adjacencies[edge.b].insert(edge.a);
+            if (is_boundary(edge.a) && is_boundary(edge.b) && edge_counts[edge] == 1) {
+                if (intersects_another_edge(edge, component)) {
+                    std::cout << "edge " << edge.a << " " << edge.b
+                              << " intersects another edge" << std::endl;
+                } else {
+                    std::cout << "edge " << edge.a << " " << edge.b
+                              << " doesn't intersect another edge" << std::endl;
+                    adjacencies[edge.a].insert(edge.b);
+                    adjacencies[edge.b].insert(edge.a);
+                }
             }
         }
     }
