@@ -111,7 +111,7 @@ trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
 }
 
 trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
-                     boolean_2d_op op, bool validate) {
+                     boolean_2d_op op, bool validate, bool cleanup) {
     const trimesh_2d_t a_split = split_at_all_intersections(mesh_a, mesh_b),
                        b_split = split_at_all_intersections(mesh_b, mesh_a);
 
@@ -160,19 +160,19 @@ trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
     auto [remapped_vertices, remapped_faces] =
         trimesh_2d_t::merge_vertices(vertices, faces);
 
-    // Removes vertices that are not used by any face and remaps faces.
-    // auto [new_vertices, new_faces] =
-    //     trimesh_2d_t::remove_unused_vertices(remapped_vertices,
-    //     remapped_faces);
-    // return {new_vertices, new_faces, validate};
-
-    auto [new_vertices, new_faces] =
-        trimesh_2d_t::merge_triangles(remapped_vertices, remapped_faces);
-    return {new_vertices, new_faces, validate};
+    if (cleanup) {
+        auto [new_vertices, new_faces] =
+            trimesh_2d_t::merge_triangles(remapped_vertices, remapped_faces);
+        return {new_vertices, new_faces, validate};
+    } else {
+        auto [new_vertices, new_faces] = trimesh_2d_t::remove_unused_vertices(
+            remapped_vertices, remapped_faces);
+        return {new_vertices, new_faces, validate};
+    }
 }
 
 trimesh_2d_t combine(const trimesh_2d_t &a, const trimesh_2d_t &b,
-                     bool validate) {
+                     bool validate, bool cleanup) {
     std::vector<point_2d_t> vertices;
     vertices.insert(vertices.end(), a.vertices().begin(), a.vertices().end());
     vertices.insert(vertices.end(), b.vertices().begin(), b.vertices().end());
@@ -187,26 +187,32 @@ trimesh_2d_t combine(const trimesh_2d_t &a, const trimesh_2d_t &b,
     auto [remapped_vertices, remapped_faces] =
         trimesh_2d_t::merge_vertices(vertices, faces);
 
-    auto [new_vertices, new_faces] =
-        trimesh_2d_t::remove_unused_vertices(remapped_vertices, remapped_faces);
-    return {new_vertices, new_faces, validate};
+    if (cleanup) {
+        auto [new_vertices, new_faces] =
+            trimesh_2d_t::merge_triangles(remapped_vertices, remapped_faces);
+        return {new_vertices, new_faces, validate};
+    } else {
+        auto [new_vertices, new_faces] = trimesh_2d_t::remove_unused_vertices(
+            remapped_vertices, remapped_faces);
+        return {new_vertices, new_faces, validate};
+    }
 }
 
 trimesh_2d_t mesh_union(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    auto c = mesh_op(b, a, COMPLEMENT, false);
-    auto d = mesh_op(a, b, COMPLEMENT, false);
-    auto e = mesh_op(a, b, INTERSECTION, false);
-    auto f = combine(c, d, false);
-    return combine(f, e, true);
+    auto c = mesh_op(b, a, COMPLEMENT, false, false);
+    auto d = mesh_op(a, b, COMPLEMENT, false, false);
+    auto e = mesh_op(a, b, INTERSECTION, false, false);
+    auto f = combine(c, d, false, false);
+    return combine(f, e, true, true);
     return c;
 }
 
 trimesh_2d_t mesh_intersection(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    return mesh_op(a, b, INTERSECTION, true);
+    return mesh_op(a, b, INTERSECTION, true, true);
 }
 
 trimesh_2d_t mesh_difference(const trimesh_2d_t &a, const trimesh_2d_t &b) {
-    return mesh_op(a, b, COMPLEMENT, true);
+    return mesh_op(a, b, COMPLEMENT, true, true);
 }
 
 void add_2d_boolean_modules(py::module &m) {
