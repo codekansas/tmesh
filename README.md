@@ -18,7 +18,7 @@ STL or OBJ file from a simple mesh:
 ```python
 import math
 
-from tmesh import *
+from tmesh import regular_polygon_mesh, Affine2D, linear_extrude
 
 # Create a cuboid.
 a = regular_polygon_mesh(1.0, n=4)
@@ -29,14 +29,19 @@ rot = Affine2D(rot=math.pi / 4)
 trans = Affine2D(trans=(0.0, 0.5))
 b <<= rot @ trans
 
-# Extrudes the intersection to a 3D shape with height 1.
-cube = linear_extrude(a | b, 1.0)
+# Gets the union of A and B.
+c = a | b
+
+# Extrudes the 2D mesh to a 3D mesh with height 1.0.
+mesh = linear_extrude(c, 1.0)
 
 # Save the resulting mesh.
-save_stl_text("simple_example_ascii.stl", cube)
-save_stl("simple_example.stl", cube)
-save_obj("simple_example.obj", cube)
-save_ply("simple_example.ply", cube)
+from tmesh import save_stl, save_stl_text, save_obj, save_ply
+
+save_stl_text("simple_example_ascii.stl", mesh)
+save_stl("simple_example.stl", mesh)
+save_obj("simple_example.obj", mesh)
+save_ply("simple_example.ply", mesh)
 ```
 
 ## Motivation

@@ -8,8 +8,26 @@ from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
 
 Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
 
+import math
+
+from tmesh import *
+
+# Create a cuboid.
+a = regular_polygon_mesh(1.0, n=4)
+b = regular_polygon_mesh(1.0, n=4)
+
+# Move the second cuboid around.
+rot = Affine2D(rot=math.pi / 4)
+trans = Affine2D(trans=(0.0, 0.5))
+b <<= rot @ trans
+
+c = a | b
+cube = linear_extrude(c, 1.0)
+
 # To plot things, add them to this list.
-THINGS_TO_PLOT: List[Thing] = []
+THINGS_TO_PLOT: List[Thing] = [
+    c,
+]
 
 ALPHA = 1.0
 

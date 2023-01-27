@@ -10,6 +10,7 @@
 
 #include "../options.h"
 #include "boolean.h"
+#include "bvh.h"
 
 using namespace pybind11::literals;
 
@@ -63,7 +64,9 @@ bool point_2d_t::operator!=(const point_2d_t &p) const { return !(*this == p); }
 
 bool point_2d_t::operator<(const point_2d_t &p) const {
     if (*this == p) return false;
-    return x < p.x || (x == p.x && y < p.y);
+    if (x < p.x - get_tolerance()) return true;
+    if (x > p.x + get_tolerance()) return false;
+    return y < p.y - get_tolerance();
 }
 
 point_2d_t point_2d_t::operator<<=(const affine_2d_t &a) {
@@ -1307,11 +1310,18 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
         return boundary_pts.find(vertex) != boundary_pts.end();
     };
 
+    // Builds a BVH for the faces.
+    face_list_t faces(component.begin(), component.end());
+    bvh_2d_t bvh(faces, _vertices);
+
     auto intersects_another_edge = [&](const edge_t &edge,
                                        const face_set_t &component) {
-        // TODO: This is pretty inefficient (O(n^2) in the number of edges).
-        // Should change to using a BVH or something.
-        for (const auto &face : component) {
+        // The O(n^2) version checks all edges against all other edges.
+        // Using a BVH speeds this up to O(n log(n)).
+        // for (const auto &face : component) {
+        line_2d_t line{_vertices[edge.a], _vertices[edge.b]};
+        for (const auto &face :
+             bvh.line_intersections(line, /* max_intersections */ 3)) {
             for (auto &other_edge : face.get_edges(false)) {
                 if (edge.a == other_edge.a || edge.a == other_edge.b ||
                     edge.b == other_edge.a || edge.b == other_edge.b) {
@@ -1341,16 +1351,11 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
     std::unordered_map<size_t, std::unordered_set<size_t>> adjacencies;
     for (const auto &face : component) {
         for (auto &edge : face.get_edges(false)) {
-            if (is_boundary(edge.a) && is_boundary(edge.b) && edge_counts[edge] == 1) {
-                if (intersects_another_edge(edge, component)) {
-                    std::cout << "edge " << edge.a << " " << edge.b
-                              << " intersects another edge" << std::endl;
-                } else {
-                    std::cout << "edge " << edge.a << " " << edge.b
-                              << " doesn't intersect another edge" << std::endl;
-                    adjacencies[edge.a].insert(edge.b);
-                    adjacencies[edge.b].insert(edge.a);
-                }
+            if (is_boundary(edge.a) && is_boundary(edge.b) &&
+                edge_counts[edge] == 1 &&
+                !intersects_another_edge(edge, component)) {
+                adjacencies[edge.a].insert(edge.b);
+                adjacencies[edge.b].insert(edge.a);
             }
         }
     }
@@ -1497,11 +1502,11 @@ trimesh_2d_t trimesh_2d_t::operator<<(const affine_2d_t &tf) const {
 }
 
 trimesh_2d_t trimesh_2d_t::operator|(const trimesh_2d_t &other) const {
-    return mesh_intersection(*this, other);
+    return mesh_union(*this, other);
 }
 
 trimesh_2d_t trimesh_2d_t::operator&(const trimesh_2d_t &other) const {
-    return mesh_union(*this, other);
+    return mesh_intersection(*this, other);
 }
 
 trimesh_2d_t trimesh_2d_t::operator-(const trimesh_2d_t &other) const {
@@ -1865,12 +1870,18 @@ void add_2d_types_modules(py::module &m) {
              "Converts the mesh to a string", py::is_operator())
         .def("__repr__", &trimesh_2d_t::to_string,
              "Converts the mesh to a string", py::is_operator())
+        .def("union", &trimesh_2d_t::operator|,
+             "Computes the union of two 2D meshes", "other"_a)
         .def("__or__", &trimesh_2d_t::operator|,
              "Computes the union of two 2D meshes", "other"_a,
              py::is_operator())
+        .def("intersection", &trimesh_2d_t::operator&,
+             "Computes the intersection of two 2D meshes", "other"_a)
         .def("__and__", &trimesh_2d_t::operator&,
              "Computes the intersection of two 2D meshes", "other"_a,
              py::is_operator())
+        .def("difference", &trimesh_2d_t::operator-,
+             "Computes the difference of two 2D meshes", "other"_a)
         .def("__sub__", &trimesh_2d_t::operator-,
              "Computes the difference of two 2D meshes", "other"_a,
              py::is_operator())

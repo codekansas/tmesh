@@ -1085,11 +1085,11 @@ trimesh_3d_t trimesh_3d_t::operator<<(const affine_3d_t &tf) const {
 }
 
 trimesh_3d_t trimesh_3d_t::operator|(const trimesh_3d_t &other) const {
-    return mesh_intersection(*this, other);
+    return mesh_union(*this, other);
 }
 
 trimesh_3d_t trimesh_3d_t::operator&(const trimesh_3d_t &other) const {
-    return mesh_union(*this, other);
+    return mesh_intersection(*this, other);
 }
 
 trimesh_3d_t trimesh_3d_t::operator-(const trimesh_3d_t &other) const {
@@ -1435,13 +1435,18 @@ void add_3d_types_modules(py::module &m) {
              "Converts the mesh to a string", py::is_operator())
         .def("__repr__", &trimesh_3d_t::to_string,
              "Converts the mesh to a string", py::is_operator())
+        .def("union", &trimesh_3d_t::operator|,
+             "Computes the union of two 3D meshes", "other"_a)
         .def("__or__", &trimesh_3d_t::operator|,
              "Computes the union of two 3D meshes", "other"_a,
              py::is_operator())
+        .def("intersection", &trimesh_3d_t::operator&,
+             "Computes the intersection of two 3D meshes", "other"_a)
         .def("__and__", &trimesh_3d_t::operator&,
-             "Computes the intersection of two "
-             "3D meshes",
-             "other"_a, py::is_operator())
+             "Computes the intersection of two 3D meshes", "other"_a,
+             py::is_operator())
+        .def("difference", &trimesh_3d_t::operator-,
+             "Computes the difference of two 3D meshes", "other"_a)
         .def("__sub__", &trimesh_3d_t::operator-,
              "Computes the difference of two 3D meshes", "other"_a,
              py::is_operator())

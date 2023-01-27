@@ -22,11 +22,12 @@ def main() -> None:
 
     mesh_a = cuboid(1.0, 1.0, 1.0)
     mesh_b = cuboid(1.0, 1.0, 1.0) << rot @ trans
+    mesh_union = mesh_a | mesh_b
 
     if args.output.endswith(".obj"):
-        save_obj(args.output, mesh_a & mesh_b)
+        save_obj(args.output, mesh_union)
     elif args.output.endswith(".stl"):
-        save_stl(args.output, mesh_a & mesh_b)
+        save_stl(args.output, mesh_union)
     else:
         raise ValueError(f"Unknown file extension: {args.output}")
     print(f"Saved test file to {args.output}.")
