@@ -8,31 +8,8 @@ from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
 
 Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
 
-import math
-from tmesh import Affine2D, linear_extrude, regular_polygon_mesh, save_stl
-
-scale = Affine2D(scale=1.0)
-rotate = Affine2D(rot=math.pi / 3)
-translate = Affine2D(trans=(0.75, 0.0))
-
-mesh = regular_polygon_mesh(1.0, n=3)
-
-mesh_union = mesh & (mesh << scale @ rotate @ translate)
-mesh_intersection = (mesh | (mesh << scale @ rotate @ translate)) << Affine2D(trans=(2.0, 0.0))
-mesh_difference = (mesh - (mesh << scale @ rotate @ translate)) << Affine2D(trans=(-2.0, 0.0))
-
-combined_mesh = mesh_intersection & mesh_difference & mesh_union
-
-# print("combined_mesh.faces:")
-# for f in combined_mesh.faces:
-#     print(f)
-
-linear_extrude(combined_mesh, 1.0)
-
 # To plot things, add them to this list.
-THINGS_TO_PLOT: List[Thing] = [
-    combined_mesh,
-]
+THINGS_TO_PLOT: List[Thing] = []
 
 ALPHA = 1.0
 

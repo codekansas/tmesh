@@ -21,10 +21,6 @@ trimesh_3d_t linear_extrude(
     const trimesh_2d_t &mesh,
     const std::function<float(float, float)> &height_func);
 
-trimesh_3d_t rotate_extrude(const polygon_2d_t &polygon, float angle, int n,
-                            int axis = 0);
-trimesh_3d_t rotate_extrude(const polygon_2d_t &polygon, int n, int axis = 0);
-
 void add_ops_modules(py::module &m);
 
 }  // namespace trimesh

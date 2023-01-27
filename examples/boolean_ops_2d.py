@@ -6,10 +6,6 @@ from tmesh import Affine2D, linear_extrude, regular_polygon_mesh, save_stl
 
 scale = Affine2D(scale=1.0)
 rotate = Affine2D(rot=math.pi / 3)
-# translate = Affine2D(trans=(0.75, 0.5))
-
-# For some reason, using this translation causes the boolean operations to
-# break.
 translate = Affine2D(trans=(0.75, 0.0))
 
 mesh = regular_polygon_mesh(1.0, n=3)
