@@ -25,12 +25,7 @@ struct edge_t {
 };
 
 struct __edge_hash_fn {
-    size_t operator()(const edge_t &e) const {
-        auto hf = std::hash<size_t>();
-        auto [a, b, directed] = e;
-        if (!directed && a > b) std::swap(a, b);
-        return hf(e.a) ^ hf(e.b);
-    }
+    size_t operator()(const edge_t &e) const;
 };
 
 typedef std::vector<edge_t> edge_list_t;
@@ -56,15 +51,34 @@ struct face_t {
 };
 
 struct __face_hash_fn {
-    size_t operator()(const face_t &e) const {
-        auto hf = std::hash<size_t>();
-        return hf(e.a) ^ hf(e.b) ^ hf(e.c);
-    }
+    size_t operator()(const face_t &e) const;
 };
 
 typedef std::vector<face_t> face_list_t;
 typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
 typedef std::unordered_map<face_t, size_t, __face_hash_fn> face_map_t;
+
+struct volume_t {
+    size_t a, b, c, d;
+
+    volume_t(size_t a, size_t b, size_t c, size_t d);
+    ~volume_t() = default;
+
+    bool operator==(const volume_t &f) const;
+    bool operator!=(const volume_t &f) const;
+    bool operator<(const volume_t &f) const;
+    volume_t operator+(size_t offset) const;
+
+    std::string to_string() const;
+};
+
+struct __volume_hash_fn {
+    size_t operator()(const volume_t &e) const;
+};
+
+typedef std::vector<volume_t> volume_list_t;
+typedef std::unordered_set<volume_t, __volume_hash_fn> volume_set_t;
+typedef std::unordered_map<volume_t, size_t, __volume_hash_fn> volume_map_t;
 
 struct barycentric_coordinates_t {
     float u, v, w;

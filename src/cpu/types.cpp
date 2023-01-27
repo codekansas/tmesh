@@ -43,6 +43,13 @@ std::string edge_t::to_string() const {
     return "(" + std::to_string(b) + ", " + std::to_string(a) + ")";
 }
 
+size_t __edge_hash_fn::operator()(const edge_t &e) const {
+    auto hf = std::hash<size_t>();
+    auto [a, b, directed] = e;
+    if (!directed && a > b) std::swap(a, b);
+    return hf(e.a) ^ hf(e.b);
+}
+
 /* ------ *
  * face_t *
  * ------ */
@@ -89,6 +96,45 @@ std::string face_t::to_string() const {
            std::to_string(c) + ")";
 }
 
+size_t __face_hash_fn::operator()(const face_t &e) const {
+    auto hf = std::hash<size_t>();
+    return hf(e.a) ^ hf(e.b) ^ hf(e.c);
+}
+
+/* -------- *
+ * volume_t *
+ * -------- */
+
+volume_t::volume_t(size_t a, size_t b, size_t c, size_t d)
+    : a(a), b(b), c(c), d(d) {}
+
+bool volume_t::operator==(const volume_t &f) const {
+    return (a == f.a && b == f.b && c == f.c && d == f.d) ||
+           (a == f.b && b == f.c && c == f.d && d == f.a) ||
+           (a == f.c && b == f.d && c == f.a && d == f.b) ||
+           (a == f.d && b == f.a && c == f.b && d == f.c);
+}
+
+bool volume_t::operator!=(const volume_t &f) const { return !(*this == f); }
+
+bool volume_t::operator<(const volume_t &f) const {
+    return *this != f && std::tie(a, b, c, d) < std::tie(f.a, f.b, f.c, f.d);
+}
+
+volume_t volume_t::operator+(size_t offset) const {
+    return {a + offset, b + offset, c + offset, d + offset};
+}
+
+std::string volume_t::to_string() const {
+    return "(" + std::to_string(a) + ", " + std::to_string(b) + ", " +
+           std::to_string(c) + ", " + std::to_string(d) + ")";
+}
+
+size_t __volume_hash_fn::operator()(const volume_t &e) const {
+    auto hf = std::hash<size_t>();
+    return hf(e.a) ^ hf(e.b) ^ hf(e.c) ^ hf(e.d);
+}
+
 /* ------------------------- *
  * barycentric_coordinates_t *
  * ------------------------- */
@@ -119,20 +165,23 @@ void add_types_modules(py::module &m) {
     // correctly.
     auto edge = py::class_<edge_t>(m, "Edge");
     auto face = py::class_<face_t>(m, "Face");
+    auto volume = py::class_<volume_t>(m, "Volume");
     auto barycentric_coordinates =
         py::class_<barycentric_coordinates_t>(m, "BarycentricCoordinates");
 
     // Defines Edge methods.
     edge.def(py::init<size_t, size_t, bool>(), "a"_a, "b"_a,
              "directed"_a = false, "Defines a directed triangle edge")
+        .def_readwrite("a", &edge_t::a, "First vertex index.")
+        .def_readwrite("b", &edge_t::b, "Second vertex index.")
         .def("__eq__", &edge_t::operator==, "other"_a,
              "Checks if two edges are equal.", py::is_operator())
         .def("__ne__", &edge_t::operator!=, "other"_a,
              "Checks if two edges are not equal.", py::is_operator())
         .def("__lt__", &edge_t::operator<, "other"_a,
              "Checks if one face is less than another.", py::is_operator())
-        .def("__repr__", &edge_t::to_string, "Returns a string representation.",
-             py::is_operator());
+        .def("__str__", &edge_t::to_string, py::is_operator())
+        .def("__repr__", &edge_t::to_string, py::is_operator());
 
     // Defines Face methods.
     face.def(py::init<size_t, size_t, size_t>(), "a"_a, "b"_a, "c"_a,
@@ -140,17 +189,34 @@ void add_types_modules(py::module &m) {
         .def_readwrite("a", &face_t::a, "First vertex index.")
         .def_readwrite("b", &face_t::b, "Second vertex index.")
         .def_readwrite("c", &face_t::c, "Third vertex index.")
+        .def("get_vertices", &face_t::get_vertices, "Returns the vertices.")
+        .def("get_edges", &face_t::get_edges, "directed"_a = false,
+             "Returns the edges.")
         .def("__eq__", &face_t::operator==, "other"_a,
              "Checks if two faces are equal.", py::is_operator())
         .def("__ne__", &face_t::operator!=, "other"_a,
              "Checks if two faces are not equal.", py::is_operator())
         .def("__lt__", &face_t::operator<, "other"_a,
              "Checks if one face is less than another.", py::is_operator())
-        .def("get_vertices", &face_t::get_vertices, "Returns the vertices.")
-        .def("get_edges", &face_t::get_edges, "directed"_a = false,
-             "Returns the edges.")
-        .def("__repr__", &face_t::to_string, "Returns a string representation.",
-             py::is_operator());
+        .def("__str__", &face_t::to_string, py::is_operator())
+        .def("__repr__", &face_t::to_string, py::is_operator());
+
+    // Defines Volume methods.
+    volume
+        .def(py::init<size_t, size_t, size_t, size_t>(), "a"_a, "b"_a, "c"_a,
+             "d"_a, "Defines a tetrahedron volume")
+        .def_readwrite("a", &volume_t::a, "First vertex index.")
+        .def_readwrite("b", &volume_t::b, "Second vertex index.")
+        .def_readwrite("c", &volume_t::c, "Third vertex index.")
+        .def_readwrite("d", &volume_t::d, "Fourth vertex index.")
+        .def("__eq__", &volume_t::operator==, "other"_a,
+             "Checks if two volumes are equal.", py::is_operator())
+        .def("__ne__", &volume_t::operator!=, "other"_a,
+             "Checks if two volumes are not equal.", py::is_operator())
+        .def("__lt__", &volume_t::operator<, "other"_a,
+             "Checks if one volumes is less than another.", py::is_operator())
+        .def("__str__", &volume_t::to_string, py::is_operator())
+        .def("__repr__", &volume_t::to_string, py::is_operator());
 
     // Defines BarycentricCoordinates methods.
     barycentric_coordinates
