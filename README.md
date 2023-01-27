@@ -10,7 +10,7 @@ Fast operators for triangular meshes.
 pip install tmesh
 ```
 
-See the [examples](examples) directory to see how to use the package.
+See the [examples][examples-dir] directory to see how to use the package.
 
 The following script demonstrates how to use the package to generate an
 STL or OBJ file from a simple mesh:
@@ -48,5 +48,6 @@ save_ply("simple_example.ply", mesh)
 
 At various times I have wished there were something like [OpenSCAD][openscad] for Python. Packages like [trimesh][trimesh] exist, but they come with a number of clunky dependencies (including, interestingly enough, OpenSCAD itself). This package is a standalone implementation of the core functionality of OpenSCAD, but with a Pythonic API, making it easy to integrate into existing Python code. It is also written in pure C++, so it's hopefully relatively fast.
 
+[examples-dir]: https://github.com/codekansas/tmesh/tree/master/examples
 [trimesh]: https://trimsh.org/trimesh.html
 [openscad]: https://www.openscad.org/
