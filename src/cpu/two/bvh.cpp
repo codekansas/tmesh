@@ -12,6 +12,38 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
+/* -------------- *
+ * point_2d_set_t *
+ * -------------- */
+
+point_2d_set_t::point_2d_set_t(const std::initializer_list<point_2d_t> &points)
+    : points(points) {
+    for (size_t i = 0; i < this->points.size(); ++i)
+        this->indices[this->points[i]] = i;
+}
+
+point_2d_t point_2d_set_t::operator[](size_t i) const { return points[i]; }
+
+size_t point_2d_set_t::add_point(const point_2d_t &p) {
+    if (auto it = point_id(p); it.has_value()) return it.value();
+    points.push_back(p);
+    indices[p] = points.size() - 1;
+    return points.size() - 1;
+}
+
+size_t point_2d_set_t::size() const { return points.size(); }
+
+point_2d_t point_2d_set_t::get_point(size_t i) const { return points[i]; }
+
+std::optional<size_t> point_2d_set_t::point_id(const point_2d_t &p) const {
+    if (auto it = indices.find(p); it != indices.end()) return it->second;
+    return std::nullopt;
+}
+
+const std::vector<point_2d_t> &point_2d_set_t::get_points() const {
+    return points;
+}
+
 /* ------------------------ *
  * triangle_split_tree_2d_t *
  * ------------------------ */
@@ -23,7 +55,6 @@ triangle_split_tree_2d_t::triangle_split_tree_2d_t(
     this->children = {{}};
     auto &[a, b, c] = root;
     this->vertices = {vertices[a], vertices[b], vertices[c]};
-    this->vertex_ids = {{vertices[a], 0}, {vertices[b], 1}, {vertices[c], 2}};
 }
 
 void triangle_split_tree_2d_t::add_triangle(const face_t &f,
@@ -96,12 +127,7 @@ void triangle_split_tree_2d_t::add_triangles(const std::vector<face_t> &fs,
 }
 
 size_t triangle_split_tree_2d_t::add_point(const point_2d_t &p) {
-    if (this->vertex_ids.find(p) != this->vertex_ids.end()) {
-        return this->vertex_ids[p];
-    }
-    this->vertices.push_back(p);
-    this->vertex_ids[p] = this->vertices.size() - 1;
-    return this->vertices.size() - 1;
+    return this->vertices.add_point(p);
 }
 
 bool triangle_split_tree_2d_t::is_leaf(size_t i) const {
@@ -215,7 +241,8 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
     // Cuts the triangle when both points are entirely inside.
     if (p1_in_t && p2_in_t) {
         auto new_point_1 = add_point(l.p1), new_point_2 = add_point(l.p2);
-        line_2d_t l_p1_b{l.p1, vertices[f.b]}, l_p2_c{l.p2, vertices[f.c]};
+        line_2d_t l_p1_b{l.p1, this->vertices[f.b]},
+            l_p2_c{l.p2, this->vertices[f.c]};
         if (l_p1_b.line_intersection(l_p2_c).has_value()) {
             add_triangles({{f.a, new_point_1, new_point_2},
                            {f.a, new_point_1, f.c},
@@ -278,7 +305,8 @@ const std::vector<face_t> triangle_split_tree_2d_t::get_leaf_faces(
 }
 
 const std::vector<point_2d_t> triangle_split_tree_2d_t::get_vertices() const {
-    std::vector<point_2d_t> v(this->vertices.begin() + 3, this->vertices.end());
+    auto &points = this->vertices.get_points();
+    std::vector<point_2d_t> v(points.begin() + 3, points.end());
     return v;
 }
 
@@ -353,11 +381,15 @@ void sort_bounding_boxes(const std::vector<bounding_box_2d_t> &boxes,
     sort_bounding_boxes(boxes, indices, tree, lo + mid, hi);
 }
 
-bvh_2d_t::bvh_2d_t(const trimesh_2d_t &t)
-    : trimesh(std::make_shared<trimesh_2d_t>(t)) {
+bvh_2d_t::bvh_2d_t(const trimesh_2d_t &t) : bvh_2d_t(t.faces(), t.vertices()) {}
+
+bvh_2d_t::bvh_2d_t(const face_list_t &faces,
+                   const std::vector<point_2d_t> &vertices)
+    : faces(faces), vertices(vertices) {
     std::vector<bounding_box_2d_t> boxes;
-    for (const auto &face : t.faces())
-        boxes.push_back(bounding_box_2d_t({t.get_triangle(face)}));
+    for (const auto &face : faces)
+        boxes.push_back(bounding_box_2d_t({triangle_2d_t(
+            {vertices[face.a], vertices[face.b], vertices[face.c]})}));
 
     std::vector<size_t> indices(boxes.size());
     std::iota(indices.begin(), indices.end(), 0);
@@ -365,42 +397,92 @@ bvh_2d_t::bvh_2d_t(const trimesh_2d_t &t)
     sort_bounding_boxes(boxes, indices, tree, 0, boxes.size());
 }
 
-void intersections_helper(const tree_t tree,
-                          const std::shared_ptr<trimesh_2d_t> &trimesh, int id,
-                          const triangle_2d_t &t, std::vector<face_t> &intrs) {
+void line_intersections_helper(const tree_t tree, const face_list_t &faces,
+                               const std::vector<point_2d_t> &vertices, int id,
+                               const line_2d_t &l, std::vector<face_t> &intrs,
+                               const std::optional<size_t> max_intersections) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
 
     auto &[face_id, lhs, rhs, box] = tree[id];
 
     // If the triangle doesn't intersect the current bounding box, then
     // there's no need to check child triangles.
-    if (!box.intersects_triangle(t)) {
+    if (!l.intersects_bounding_box(box)) {
         return;
     }
 
     // Checks if the line intersects the current triangle.
-    auto &face_indices = trimesh->faces()[face_id];
-    triangle_2d_t face = {trimesh->vertices()[face_indices.a],
-                          trimesh->vertices()[face_indices.b],
-                          trimesh->vertices()[face_indices.c]};
-    if (face.intersects_triangle(t)) {
+    auto &face_indices = faces[face_id];
+    triangle_2d_t face = {vertices[face_indices.a], vertices[face_indices.b],
+                          vertices[face_indices.c]};
+    if (l.intersects_triangle(face)) {
         intrs.push_back(face_indices);
     }
+    if (max_intersections && intrs.size() >= *max_intersections) return;
 
     // Recursively checks the left and right subtrees.
-    if (lhs != -1) intersections_helper(tree, trimesh, lhs, t, intrs);
-    if (rhs != -1) intersections_helper(tree, trimesh, rhs, t, intrs);
+    if (lhs != -1)
+        line_intersections_helper(tree, faces, vertices, lhs, l, intrs,
+                                  max_intersections);
+    if (max_intersections && intrs.size() >= *max_intersections) return;
+    if (rhs != -1)
+        line_intersections_helper(tree, faces, vertices, rhs, l, intrs,
+                                  max_intersections);
 }
 
-std::vector<face_t> bvh_2d_t::intersections(const triangle_2d_t &t) const {
+std::vector<face_t> bvh_2d_t::line_intersections(
+    const line_2d_t &l, const std::optional<size_t> max_intersections) const {
     std::vector<face_t> intrs;
-    intersections_helper(tree, trimesh, 0, t, intrs);
+    line_intersections_helper(tree, faces, vertices, 0, l, intrs,
+                              max_intersections);
+    return intrs;
+}
+
+void triangle_intersections_helper(
+    const tree_t tree, const face_list_t &faces,
+    const std::vector<point_2d_t> &vertices, int id, const triangle_2d_t &t,
+    std::vector<face_t> &intrs, const std::optional<size_t> max_intersections) {
+    if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
+
+    auto &[face_id, lhs, rhs, box] = tree[id];
+
+    // If the triangle doesn't intersect the current bounding box, then
+    // there's no need to check child triangles.
+    if (!t.intersects_bounding_box(box)) {
+        return;
+    }
+
+    // Checks if the line intersects the current triangle.
+    auto &face_indices = faces[face_id];
+    triangle_2d_t face = {vertices[face_indices.a], vertices[face_indices.b],
+                          vertices[face_indices.c]};
+    if (t.intersects_triangle(face)) {
+        intrs.push_back(face_indices);
+    }
+    if (max_intersections && intrs.size() >= *max_intersections) return;
+
+    // Recursively checks the left and right subtrees.
+    if (lhs != -1)
+        triangle_intersections_helper(tree, faces, vertices, lhs, t, intrs,
+                                      max_intersections);
+    if (max_intersections && intrs.size() >= *max_intersections) return;
+    if (rhs != -1)
+        triangle_intersections_helper(tree, faces, vertices, rhs, t, intrs,
+                                      max_intersections);
+}
+
+std::vector<face_t> bvh_2d_t::triangle_intersections(
+    const triangle_2d_t &l,
+    const std::optional<size_t> max_intersections) const {
+    std::vector<face_t> intrs;
+    triangle_intersections_helper(tree, faces, vertices, 0, l, intrs,
+                                  max_intersections);
     return intrs;
 }
 
 std::optional<face_t> get_containing_face_helper(
-    const tree_t tree, const std::shared_ptr<trimesh_2d_t> &trimesh, int id,
-    const triangle_2d_t &t) {
+    const tree_t tree, const face_list_t &faces,
+    const std::vector<point_2d_t> &vertices, int id, const triangle_2d_t &t) {
     if (id < 0 || id >= tree.size()) return std::nullopt;
 
     auto &[face_id, lhs, rhs, box] = tree[id];
@@ -412,30 +494,32 @@ std::optional<face_t> get_containing_face_helper(
     }
 
     // Checks if the triangle is inside the current triangle.
-    auto &face_indices = trimesh->faces()[face_id];
-    triangle_2d_t face = {trimesh->vertices()[face_indices.a],
-                          trimesh->vertices()[face_indices.b],
-                          trimesh->vertices()[face_indices.c]};
+    auto &face_indices = faces[face_id];
+    triangle_2d_t face = {vertices[face_indices.a], vertices[face_indices.b],
+                          vertices[face_indices.c]};
     if (face.contains_triangle(t)) {
         return face_indices;
     }
 
     // Recursively checks the left and right subtrees.
-    if (auto face = get_containing_face_helper(tree, trimesh, lhs, t))
+    if (auto face = get_containing_face_helper(tree, faces, vertices, lhs, t))
         return face;
-    if (auto face = get_containing_face_helper(tree, trimesh, rhs, t))
+    if (auto face = get_containing_face_helper(tree, faces, vertices, rhs, t))
         return face;
     return std::nullopt;
 }
 
 std::optional<face_t> bvh_2d_t::get_containing_face(
     const triangle_2d_t &t) const {
-    return get_containing_face_helper(tree, trimesh, 0, t);
+    return get_containing_face_helper(tree, faces, vertices, 0, t);
 }
 
 std::string bvh_2d_t::to_string() const {
     std::stringstream ss;
-    ss << "BVH2D(" << trimesh->to_string() << ")";
+    ss << "BVH(";
+    ss << "faces = " << faces.size() << ", ";
+    ss << "vertices = " << vertices.size() << ", ";
+    ss << "tree = " << tree.size() << ")";
     return ss.str();
 }
 
@@ -469,15 +553,22 @@ void add_2d_bvh_modules(py::module &m) {
              "Get a node", py::is_operator());
 
     bvh_2d
-        .def(py::init<trimesh_2d_t &>(), "Boundary volume hierarchy",
+        .def(py::init<const trimesh_2d_t &>(), "Boundary volume hierarchy",
              "trimesh"_a)
+        .def(py::init<const face_list_t &, const std::vector<point_2d_t> &>(),
+             "Boundary volume hierarchy", "faces"_a, "vertices"_a)
         .def("__str__", &bvh_2d_t::to_string, "String representation",
              py::is_operator())
         .def("__repr__", &bvh_2d_t::to_string, "String representation",
              py::is_operator())
-        .def("intersections", &bvh_2d_t::intersections, "Intersections",
-             "triangle"_a)
-        .def_property_readonly("trimesh", &bvh_2d_t::get_trimesh, "Trimesh")
+        .def("line_intersections", &bvh_2d_t::line_intersections,
+             "Intersections", "triangle"_a,
+             "max_intersections"_a = std::nullopt)
+        .def("triangle_intersections", &bvh_2d_t::triangle_intersections,
+             "Intersections", "triangle"_a,
+             "max_intersections"_a = std::nullopt)
+        .def_property_readonly("faces", &bvh_2d_t::get_faces, "Faces")
+        .def_property_readonly("vertices", &bvh_2d_t::get_vertices, "Vertices")
         .def_property_readonly("tree", &bvh_2d_t::get_tree, "Tree");
 }
 

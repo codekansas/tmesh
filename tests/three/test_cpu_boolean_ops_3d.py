@@ -17,8 +17,8 @@ def test_union_3d() -> None:
     mesh_a = tetr
     mesh_b = tetr << scale @ trans @ rot
 
-    mesh_union = mesh_a & mesh_b
-    mesh_intersection = mesh_a | mesh_b
+    mesh_union = mesh_a | mesh_b
+    mesh_intersection = mesh_a & mesh_b
     mesh_difference = mesh_a - mesh_b
 
     assert len(mesh_union.vertices) == 12

@@ -8,3 +8,7 @@ dist/
 .eggs/
 .pytest_cache/
 docs.*
+
+*.stl
+*.obj
+*.ply

@@ -10,13 +10,31 @@ namespace py = pybind11;
 
 namespace trimesh {
 
+struct point_2d_set_t {
+   private:
+    std::vector<point_2d_t> points;
+    std::map<point_2d_t, size_t> indices;
+
+   public:
+    point_2d_set_t() = default;
+    point_2d_set_t(const std::initializer_list<point_2d_t> &points);
+    ~point_2d_set_t() = default;
+
+    point_2d_t operator[](size_t i) const;
+
+    size_t add_point(const point_2d_t &p);
+    size_t size() const;
+    point_2d_t get_point(size_t i) const;
+    std::optional<size_t> point_id(const point_2d_t &p) const;
+    const std::vector<point_2d_t> &get_points() const;
+};
+
 struct triangle_split_tree_2d_t {
    private:
     const face_t root;
     std::vector<face_t> faces;
     std::vector<std::vector<size_t>> children;
-    std::vector<point_2d_t> vertices;
-    std::map<point_2d_t, size_t> vertex_ids;
+    point_2d_set_t vertices;
 
     void add_triangle(const face_t &f, size_t parent);
     void add_triangles(const std::vector<face_t> &fs, size_t parent);
@@ -49,16 +67,27 @@ struct triangle_split_tree_2d_t {
 typedef std::vector<std::tuple<size_t, int, int, bounding_box_2d_t>> tree_t;
 
 struct bvh_2d_t {
-    const std::shared_ptr<trimesh_2d_t> trimesh;
+   private:
+    const face_list_t &faces;
+    const std::vector<point_2d_t> &vertices;
     tree_t tree;
 
+   public:
     bvh_2d_t(const trimesh_2d_t &t);
+    bvh_2d_t(const face_list_t &faces, const std::vector<point_2d_t> &vertices);
     ~bvh_2d_t() = default;
-    const std::shared_ptr<trimesh_2d_t> get_trimesh() const {
-        return this->trimesh;
+    const face_list_t &get_faces() const { return this->faces; }
+    const std::vector<point_2d_t> &get_vertices() const {
+        return this->vertices;
     }
-    tree_t get_tree() const { return this->tree; }
-    std::vector<face_t> intersections(const triangle_2d_t &t) const;
+    const tree_t get_tree() const { return this->tree; }
+
+    std::vector<face_t> line_intersections(
+        const line_2d_t &l,
+        const std::optional<size_t> max_intersections = std::nullopt) const;
+    std::vector<face_t> triangle_intersections(
+        const triangle_2d_t &l,
+        const std::optional<size_t> max_intersections = std::nullopt) const;
     std::optional<face_t> get_containing_face(const triangle_2d_t &t) const;
     std::string to_string() const;
 };

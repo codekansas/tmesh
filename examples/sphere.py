@@ -1,3 +1,5 @@
+"""Example of icospheres and UV spheres."""
+
 from tmesh import Affine3D, cuboid, icosphere, save_stl, uv_sphere
 
 num_iters = 4
