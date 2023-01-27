@@ -10,9 +10,9 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
-/* ------- *
- * Point3D *
- * ------- */
+/* ---------- *
+ * point_3d_t *
+ * ---------- */
 
 point_3d_t point_3d_t::operator+=(const point_3d_t &p) {
     x += p.x;
@@ -194,14 +194,9 @@ point_3d_t operator/(const point_3d_t &p, float s) {
     return {p.x / s, p.y / s, p.z / s};
 }
 
-float triangle_signed_volume(const point_3d_t &a, const point_3d_t &b,
-                             const point_3d_t &c, const point_3d_t &d) {
-    return (1.0 / 6.0) * (b - a).cross(c - a).dot(d - a);
-}
-
-/* ------ *
- * Line3D *
- * ------ */
+/* --------- *
+ * line_3d_t *
+ * --------- */
 
 bool line_3d_t::operator==(const line_3d_t &other) const {
     return p1 == other.p1 && p2 == other.p2;
@@ -320,9 +315,9 @@ std::string line_3d_t::to_string() const {
     return ss.str();
 }
 
-/* -------------- *
- * Circumcircle3D *
- * -------------- */
+/* ----------------- *
+ * circumcircle_3d_t *
+ * ----------------- */
 
 bool circumcircle_3d_t::operator==(const circumcircle_3d_t &c) const {
     return center == c.center && std::abs(radius - c.radius) < get_tolerance();
@@ -342,9 +337,9 @@ std::string circumcircle_3d_t::to_string() const {
     return ss.str();
 }
 
-/* ---------- *
- * Triangle3D *
- * ---------- */
+/* ------------- *
+ * triangle_3d_t *
+ * ------------- */
 
 bool triangle_3d_t::operator==(const triangle_3d_t &t) const {
     return (p1 == t.p1 && p2 == t.p2 && p3 == t.p3) ||
@@ -458,9 +453,37 @@ std::string triangle_3d_t::to_string() const {
     return ss.str();
 }
 
-/* ------------- *
- * BoundingBox3D *
- * ------------- */
+/* ---------------- *
+ * tetrahedron_3d_t *
+ * ---------------- */
+
+bool tetrahedron_3d_t::operator==(const tetrahedron_3d_t &t) const {
+    return p1 == t.p1 && p2 == t.p2 && p3 == t.p3 && p4 == t.p4;
+}
+
+bool tetrahedron_3d_t::operator!=(const tetrahedron_3d_t &t) const {
+    return !(*this == t);
+}
+
+tetrahedron_3d_t tetrahedron_3d_t::operator<<=(const affine_3d_t &a) {
+    p1 <<= a;
+    p2 <<= a;
+    p3 <<= a;
+    p4 <<= a;
+    return *this;
+}
+
+float tetrahedron_3d_t::signed_volume() const {
+    return (1.0 / 6.0) * (p2 - p1).cross(p3 - p1).dot(p4 - p1);
+}
+
+std::vector<triangle_3d_t> tetrahedron_3d_t::faces() const {
+    return {{p1, p2, p3}, {p1, p3, p4}, {p1, p4, p2}, {p2, p3, p4}};
+}
+
+/* ----------------- *
+ * bounding_box_3d_t *
+ * ----------------- */
 
 bounding_box_3d_t::bounding_box_3d_t() {
     min = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max(),
@@ -579,7 +602,7 @@ bool bounding_box_3d_t::operator==(const bounding_box_3d_t &b) const {
 }
 
 bool bounding_box_3d_t::operator!=(const bounding_box_3d_t &b) const {
-    return min != b.min || max != b.max;
+    return !(*this == b);
 }
 
 bounding_box_3d_t bounding_box_3d_t::operator<<=(const affine_3d_t &a) {
@@ -639,9 +662,9 @@ std::string bounding_box_3d_t::to_string() const {
     return ss.str();
 }
 
-/* --------- *
- * Polygon3D *
- * --------- */
+/* ------------ *
+ * polygon_3d_t *
+ * ------------ */
 
 polygon_3d_t::polygon_3d_t(const std::vector<point_3d_t> &points)
     : points(points) {}
@@ -710,9 +733,9 @@ std::string polygon_3d_t::to_string() const {
     return ss.str();
 }
 
-/* -------- *
- * Affine3D *
- * -------- */
+/* ----------- *
+ * affine_3d_t *
+ * ----------- */
 
 affine_3d_t::affine_3d_t(float r00, float r01, float r02, float r10, float r11,
                          float r12, float r20, float r21, float r22, float tx,
@@ -897,9 +920,29 @@ polygon_3d_t operator<<(const polygon_3d_t &p, const affine_3d_t &a) {
     return a >> p;
 }
 
-/* --------- *
- * Trimesh3D *
- * --------- */
+trimesh_3d_t operator>>(const affine_3d_t &a, const trimesh_3d_t &t) {
+    std::vector<point_3d_t> points;
+    for (const auto &v : t.vertices()) {
+        points.push_back(a >> v);
+    }
+    return {points, t.faces()};
+}
+
+trimesh_3d_t operator<<(const trimesh_3d_t &p, const affine_3d_t &a) {
+    return a >> p;
+}
+
+tetrahedron_3d_t operator>>(const affine_3d_t &a, const tetrahedron_3d_t &t) {
+    return {a >> t.p1, a >> t.p2, a >> t.p3, a >> t.p4};
+}
+
+tetrahedron_3d_t operator<<(const tetrahedron_3d_t &p, const affine_3d_t &a) {
+    return a >> p;
+}
+
+/* ------------ *
+ * trimesh_3d_t *
+ * ------------ */
 
 trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices,
                            const face_set_t &faces)
@@ -974,8 +1017,8 @@ float trimesh_3d_t::signed_volume() const {
     point_3d_t center = {0, 0, 0};
     float volume = 0;
     for (auto &triangle : get_triangles()) {
-        volume += triangle_signed_volume(center, triangle.p1, triangle.p2,
-                                         triangle.p3);
+        tetrahedron_3d_t tetr{center, triangle.p1, triangle.p2, triangle.p3};
+        volume += tetr.signed_volume();
     }
     return volume;
 }
@@ -1103,6 +1146,7 @@ void add_3d_types_modules(py::module &m) {
     auto line_3d = py::class_<line_3d_t>(m, "Line3D");
     auto circumcircle_3d = py::class_<circumcircle_3d_t>(m, "Circumcircle3D");
     auto triangle_3d = py::class_<triangle_3d_t>(m, "Triangle3D");
+    auto tetrahedron_3d = py::class_<tetrahedron_3d_t>(m, "Tetrahedron3D");
     auto bbox_3d = py::class_<bounding_box_3d_t>(m, "BoundingBox3D");
     auto polygon_3d = py::class_<polygon_3d_t>(m, "Polygon3D");
     auto affine_3d = py::class_<affine_3d_t>(m, "Affine3D");
@@ -1299,6 +1343,26 @@ void add_3d_types_modules(py::module &m) {
              &triangle_3d_t::point_from_barycentric_coords,
              "The point from barycentric coordinates", "b"_a);
 
+    // Defines Tetrahedron3D methods.
+    tetrahedron_3d
+        .def(py::init<const point_3d_t &, const point_3d_t &,
+                      const point_3d_t &, const point_3d_t &>(),
+             "Creates a tetrahedron from four points", "a"_a, "b"_a, "c"_a,
+             "d"_a)
+        .def("__eq__", &tetrahedron_3d_t::operator==,
+             "Checks if two tetrahedrons are equal", "other"_a,
+             py::is_operator())
+        .def("__ne__", &tetrahedron_3d_t::operator!=,
+             "Checks if two tetrahedrons are not equal", "other"_a,
+             py::is_operator())
+        .def("__lshift__",
+             py::overload_cast<const tetrahedron_3d_t &, const affine_3d_t &>(
+                 &operator<<),
+             "Applies a affine transformation to the tetrahedron",
+             "transform"_a, py::is_operator())
+        .def_property_readonly("faces", &tetrahedron_3d_t::faces,
+                               "The faces of the tetrahedron");
+
     // Defines BoundingBox3D methods.
     bbox_3d
         .def(py::init<const point_3d_t &, const point_3d_t &>(),
@@ -1326,8 +1390,8 @@ void add_3d_types_modules(py::module &m) {
         .def("__lshift__",
              py::overload_cast<const bounding_box_3d_t &, const affine_3d_t &>(
                  &operator<<),
-             "Applies a affine transformation to the bounding box", "other"_a,
-             py::is_operator())
+             "Applies a affine transformation to the bounding box",
+             "transform"_a, py::is_operator())
         .def("__ilshift__", &bounding_box_3d_t::operator<<=,
              "Applies a affine transformation to the bounding box", "other"_a,
              py::is_operator())
@@ -1355,7 +1419,7 @@ void add_3d_types_modules(py::module &m) {
         .def("__lshift__",
              py::overload_cast<const polygon_3d_t &, const affine_3d_t &>(
                  &operator<<),
-             "Applies a affine transformation to the polygon", "other"_a,
+             "Applies a affine transformation to the polygon", "transform"_a,
              py::is_operator())
         .def("__ilshift__", &polygon_3d_t::operator<<=,
              "Applies a affine transformation to the polygon", "other"_a,
@@ -1381,35 +1445,41 @@ void add_3d_types_modules(py::module &m) {
         .def("__matmul__",
              py::overload_cast<const affine_3d_t &, const affine_3d_t &>(
                  &operator*),
-             "Combine two affine transformations", "other"_a, py::is_operator())
+             "Combine two affine transformations", "transform"_a,
+             py::is_operator())
         .def("__imatmul__", &affine_3d_t::operator*=,
              "Applies an affine transformation to a point", "other"_a,
              py::is_operator())
         .def("__rshift__",
              py::overload_cast<const affine_3d_t &, const point_3d_t &>(
                  &operator>>),
-             "Applies an affine transformation to a point", "other"_a,
+             "Applies an affine transformation to a point", "point"_a,
              py::is_operator())
         .def("__rshift__",
              py::overload_cast<const affine_3d_t &, const line_3d_t &>(
                  &operator>>),
-             "Applies an affine transformation to a line", "other"_a,
+             "Applies an affine transformation to a line", "line"_a,
              py::is_operator())
         .def("__rshift__",
              py::overload_cast<const affine_3d_t &, const triangle_3d_t &>(
                  &operator>>),
-             "Applies an affine transformation to a triangle", "other"_a,
+             "Applies an affine transformation to a triangle", "triangle"_a,
              py::is_operator())
         .def("__rshift__",
              py::overload_cast<const affine_3d_t &, const bounding_box_3d_t &>(
                  &operator>>),
-             "Applies an affine transformation to a bounding box", "other"_a,
+             "Applies an affine transformation to a bounding box", "bbox"_a,
              py::is_operator())
         .def("__rshift__",
              py::overload_cast<const affine_3d_t &, const polygon_3d_t &>(
                  &operator>>),
-             "Applies an affine transformation to a polygon", "other"_a,
+             "Applies an affine transformation to a polygon", "poly"_a,
              py::is_operator())
+        .def("__rshift__",
+             py::overload_cast<const affine_3d_t &, const trimesh_3d_t &>(
+                 &operator>>),
+             "Applies an affine transformation to a triangular mesh",
+             "trimesh"_a, py::is_operator())
         .def("inverse", &affine_3d_t::inverse,
              "The inverse of the affine transformation");
 

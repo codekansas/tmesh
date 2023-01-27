@@ -16,6 +16,7 @@ struct point_3d_t;
 struct line_3d_t;
 struct circumcircle_3d_t;
 struct triangle_3d_t;
+struct tetrahedron_3d_t;
 struct bounding_box_3d_t;
 struct polygon_3d_t;
 struct affine_3d_t;
@@ -65,9 +66,6 @@ point_3d_t operator*(const point_3d_t &p, float s);
 point_3d_t operator/(const point_3d_t &p1, const point_3d_t &p2);
 point_3d_t operator/(const point_3d_t &p, float s);
 point_3d_t operator<<(const point_3d_t &p, const affine_3d_t &q);
-
-float triangle_signed_volume(const point_3d_t &a, const point_3d_t &b,
-                             const point_3d_t &c, const point_3d_t &d);
 
 struct line_3d_t {
     point_3d_t p1, p2;
@@ -126,6 +124,17 @@ struct triangle_3d_t {
     std::string to_string() const;
 };
 
+struct tetrahedron_3d_t {
+    point_3d_t p1, p2, p3, p4;
+
+    bool operator==(const tetrahedron_3d_t &t) const;
+    bool operator!=(const tetrahedron_3d_t &t) const;
+    tetrahedron_3d_t operator<<=(const affine_3d_t &a);
+
+    float signed_volume() const;
+    std::vector<triangle_3d_t> faces() const;
+};
+
 struct bounding_box_3d_t {
     point_3d_t min, max;
 
@@ -138,7 +147,7 @@ struct bounding_box_3d_t {
 
     bool operator==(const bounding_box_3d_t &bb) const;
     bool operator!=(const bounding_box_3d_t &bb) const;
-    bounding_box_3d_t operator<<=(const affine_3d_t &q);
+    bounding_box_3d_t operator<<=(const affine_3d_t &a);
 
     std::vector<face_t> triangle_indices() const;
     std::vector<point_3d_t> corners() const;
