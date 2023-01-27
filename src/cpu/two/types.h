@@ -40,6 +40,7 @@ struct point_2d_t {
     float length() const;
     float dot(const point_2d_t &other) const;
     float cross(const point_2d_t &other) const;
+    float angle(const point_2d_t &other) const;
 
     barycentric_coordinates_t barycentric_coordinates(
         const triangle_2d_t &t) const;

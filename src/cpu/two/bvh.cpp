@@ -23,6 +23,7 @@ triangle_split_tree_2d_t::triangle_split_tree_2d_t(
     this->children = {{}};
     auto &[a, b, c] = root;
     this->vertices = {vertices[a], vertices[b], vertices[c]};
+    this->vertex_ids = {{vertices[a], 0}, {vertices[b], 1}, {vertices[c], 2}};
 }
 
 void triangle_split_tree_2d_t::add_triangle(const face_t &f,
@@ -95,11 +96,11 @@ void triangle_split_tree_2d_t::add_triangles(const std::vector<face_t> &fs,
 }
 
 size_t triangle_split_tree_2d_t::add_point(const point_2d_t &p) {
-    // TODO: Probably there is a better way to do this.
-    for (size_t i = 0; i < this->vertices.size(); i++) {
-        if (this->vertices[i] == p) return i;
+    if (this->vertex_ids.find(p) != this->vertex_ids.end()) {
+        return this->vertex_ids[p];
     }
     this->vertices.push_back(p);
+    this->vertex_ids[p] = this->vertices.size() - 1;
     return this->vertices.size() - 1;
 }
 

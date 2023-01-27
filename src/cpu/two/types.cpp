@@ -1,9 +1,9 @@
 #include "types.h"
 
-#include <iostream>
 #include <numeric>
 #include <queue>
 #include <sstream>
+#include <stack>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -61,7 +61,8 @@ bool point_2d_t::operator==(const point_2d_t &p) const {
 bool point_2d_t::operator!=(const point_2d_t &p) const { return !(*this == p); }
 
 bool point_2d_t::operator<(const point_2d_t &p) const {
-    return *this != p && (x < p.x || (x == p.x && y < p.y));
+    if (*this == p) return false;
+    return x < p.x || (x == p.x && y < p.y);
 }
 
 point_2d_t point_2d_t::operator<<=(const affine_2d_t &a) {
@@ -94,6 +95,12 @@ float point_2d_t::dot(const point_2d_t &other) const {
 
 float point_2d_t::cross(const point_2d_t &other) const {
     return x * other.y - y * other.x;
+}
+
+float point_2d_t::angle(const point_2d_t &other) const {
+    float dot = this->dot(other);
+    float det = this->determinant(other);
+    return std::atan2(det, dot);
 }
 
 barycentric_coordinates_t point_2d_t::barycentric_coordinates(
@@ -1098,6 +1105,14 @@ trimesh_2d_t::merge_triangles(const std::vector<point_2d_t> &init_vertices,
         new_vertices.clear();
         new_faces.clear();
 
+        // Gets the number of faces for each vertex.
+        std::vector<size_t> num_vertex_faces(vertices.size(), 0);
+        for (const auto &face : face_list) {
+            num_vertex_faces[face.a]++;
+            num_vertex_faces[face.b]++;
+            num_vertex_faces[face.c]++;
+        }
+
         // Gets edges for adjacent faces.
         std::unordered_map<edge_t, std::vector<size_t>, __edge_hash_fn> adj_map;
         for (size_t i = 0; i < face_list.size(); i++) {
@@ -1154,10 +1169,14 @@ trimesh_2d_t::merge_triangles(const std::vector<point_2d_t> &init_vertices,
             // Checks if either edge point is colinear with the two
             // other points. If so, create a new face with the
             // remaining point, and mark the two old faces as merged.
-            bool a_colinear = std::abs((v1 - va).normalize().cross(
-                                  (v2 - va).normalize())) < get_tolerance(),
-                 b_colinear = std::abs((v1 - vb).normalize().cross(
-                                  (v2 - vb).normalize())) < get_tolerance();
+            bool a_colinear =
+                     std::abs((v1 - va).normalize().cross(
+                         (v2 - va).normalize())) < std::sqrt(get_tolerance()) &&
+                     num_vertex_faces[edge.a] == 2,
+                 b_colinear =
+                     std::abs((v1 - vb).normalize().cross(
+                         (v2 - vb).normalize())) < std::sqrt(get_tolerance()) &&
+                     num_vertex_faces[edge.b] == 2;
             if (!a_colinear && !b_colinear) continue;
 
             // Creates a new face.
@@ -1256,58 +1275,80 @@ const std::vector<face_set_t> trimesh_2d_t::get_connected_components() const {
 
 const std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>>
 trimesh_2d_t::get_polygon(const face_set_t &component) const {
-    // First, counts the number of faces that each edge is part of.
-    std::map<const std::tuple<size_t, size_t>, size_t> edge_counts;
-    for (auto &[vi, vj, vk] : component) {
-        edge_counts[{vi, vj}]++;
-        edge_counts[{vj, vi}]++;
-        edge_counts[{vj, vk}]++;
-        edge_counts[{vk, vj}]++;
-        edge_counts[{vk, vi}]++;
-        edge_counts[{vi, vk}]++;
+    auto get_abs_angle = [](const point_2d_t &a, const point_2d_t &b,
+                            const point_2d_t &c) {
+        double angle = (b - a).angle(c - a);
+        if (angle < 0) angle += 2 * M_PI;
+        auto rad_angle = std::min(angle, 2 * M_PI - angle);
+        auto deg_angle = (rad_angle * 180 / M_PI);
+        return (float)deg_angle;
+    };
+
+    // First, gets the sum of the angles at each vertex.
+    std::unordered_map<size_t, double> angles;
+    for (const auto &face : component) {
+        auto &[a, b, c] = face;
+        auto &va = _vertices[a], &vb = _vertices[b], &vc = _vertices[c];
+        angles[a] += get_abs_angle(va, vb, vc);
+        angles[b] += get_abs_angle(vb, vc, va);
+        angles[c] += get_abs_angle(vc, va, vb);
     }
 
-    // Checks that each edge is part of exactly one or two faces.
-    for (auto &[edge, count] : edge_counts) {
-        if (count != 1 && count != 2) {
-            throw std::invalid_argument("Edge is part of more than two faces");
+    // Determine if each vertex is a boundary vertex.
+    std::unordered_set<size_t> boundary_pts;
+    for (auto &[i, angle] : angles) {
+        if (std::abs(angles[i] - 360.0f) > 0.1f) {
+            boundary_pts.insert(i);
         }
     }
 
-    // Next, get the adjacencies of each vertex for the endpoints of the
-    // edges that are part of only one face.
-    std::unordered_map<size_t, std::set<size_t>> adjacencies;
-    for (auto &[edge, count] : edge_counts) {
-        if (count == 1) {
-            auto &[vi, vj] = edge;
-            adjacencies[vi].insert(vj);
-            adjacencies[vj].insert(vi);
-        }
-    }
+    auto is_boundary = [&](const size_t &vertex) {
+        return boundary_pts.find(vertex) != boundary_pts.end();
+    };
 
-    // Finally, find the starting vertex and walk around the polygon.
-    std::unordered_set<size_t> used;
-    auto current = adjacencies.begin()->first;
-    std::vector<std::vector<size_t>> polygon_inds;
-    for (auto &[edge, edge_set] : adjacencies) {
-        if (used.find(edge) == used.end()) {
-            std::optional<size_t> next = edge;
-            std::vector<size_t> cur_polygon_inds;
-            while (next.has_value()) {
-                cur_polygon_inds.push_back(next.value());
-                used.insert(next.value());
-                auto &next_adjs = adjacencies[next.value()];
-                next = std::nullopt;
-                for (auto &adj_vertex : next_adjs) {
-                    if (used.find(adj_vertex) == used.end()) {
-                        used.insert(adj_vertex);
-                        next = adj_vertex;
-                        break;
-                    }
-                }
+    // Counts number of edges between boundary vertices.
+    edge_map_t edge_counts;
+    for (const auto &face : component) {
+        for (auto &edge : face.get_edges(false)) {
+            if (is_boundary(edge.a) && is_boundary(edge.b)) {
+                edge_counts[edge]++;
             }
-            polygon_inds.push_back(cur_polygon_inds);
         }
+    }
+
+    // Next, get the adjacencies between boundary vertices. Don't include
+    // edges that are shared by more than one face.
+    std::unordered_map<size_t, std::unordered_set<size_t>> adjacencies;
+    for (const auto &face : component) {
+        for (auto &edge : face.get_edges(false)) {
+            if (is_boundary(edge.a) && is_boundary(edge.b) &&
+                edge_counts[edge] == 1) {
+                adjacencies[edge.a].insert(edge.b);
+                adjacencies[edge.b].insert(edge.a);
+            }
+        }
+    }
+
+    // Flood fills to get vertices that are part of the same polygon.
+    std::unordered_set<size_t> used;
+    std::vector<std::vector<size_t>> polygon_inds;
+    for (auto &[vertex, adj_vertices] : adjacencies) {
+        if (used.find(vertex) != used.end()) continue;
+        std::stack<size_t> stack;
+        stack.push(vertex);
+        used.insert(vertex);
+        std::vector<size_t> cur_polygon_inds;
+        while (!stack.empty()) {
+            size_t cur_vertex = stack.top();
+            stack.pop();
+            cur_polygon_inds.push_back(cur_vertex);
+            for (auto &adj_vertex : adjacencies[cur_vertex]) {
+                if (used.find(adj_vertex) != used.end()) continue;
+                used.insert(adj_vertex);
+                stack.push(adj_vertex);
+            }
+        }
+        polygon_inds.push_back(cur_polygon_inds);
     }
 
     // Gets the polygons for each set of vertices.
@@ -1317,6 +1358,7 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
         for (auto &ind : cur_polygon_inds) {
             polygon_vertices.push_back(_vertices[ind]);
         }
+        if (polygon_vertices.size() < 3) continue;
         polygon_2d_t polygon{polygon_vertices};
         return_val.push_back({polygon, cur_polygon_inds});
     }
@@ -1524,6 +1566,8 @@ void add_2d_types_modules(py::module &m) {
         .def("dot", &point_2d_t::dot, "Dot product with another point",
              "other"_a)
         .def("cross", &point_2d_t::cross, "Cross product with another point",
+             "other"_a)
+        .def("angle", &point_2d_t::angle, "Angle between two vectors",
              "other"_a)
         .def("barycentric_coordinates", &point_2d_t::barycentric_coordinates,
              "Barycentric coordinates of a point in a triangle", "t"_a)
