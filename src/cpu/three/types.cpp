@@ -477,6 +477,10 @@ float tetrahedron_3d_t::signed_volume() const {
     return (1.0 / 6.0) * (p2 - p1).cross(p3 - p1).dot(p4 - p1);
 }
 
+tetrahedron_3d_t tetrahedron_3d_t::flip_inside_out() const {
+    return {p1, p2, p4, p3};
+}
+
 std::vector<triangle_3d_t> tetrahedron_3d_t::faces() const {
     return {{p1, p2, p3}, {p1, p3, p4}, {p1, p4, p2}, {p2, p3, p4}};
 }
@@ -1360,6 +1364,10 @@ void add_3d_types_modules(py::module &m) {
                  &operator<<),
              "Applies a affine transformation to the tetrahedron",
              "transform"_a, py::is_operator())
+        .def("signed_volume", &tetrahedron_3d_t::signed_volume,
+             "The signed volume of the tetrahedron")
+        .def("flip_inside_out", &tetrahedron_3d_t::flip_inside_out,
+             "Gets a tetrahedron which is flipped inside out")
         .def_property_readonly("faces", &tetrahedron_3d_t::faces,
                                "The faces of the tetrahedron");
 

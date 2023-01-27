@@ -132,6 +132,7 @@ struct tetrahedron_3d_t {
     tetrahedron_3d_t operator<<=(const affine_3d_t &a);
 
     float signed_volume() const;
+    tetrahedron_3d_t flip_inside_out() const;
     std::vector<triangle_3d_t> faces() const;
 };
 
