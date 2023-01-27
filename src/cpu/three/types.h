@@ -134,6 +134,8 @@ struct tetrahedron_3d_t {
     float signed_volume() const;
     tetrahedron_3d_t flip_inside_out() const;
     std::vector<triangle_3d_t> faces() const;
+
+    std::string to_string() const;
 };
 
 struct bounding_box_3d_t {

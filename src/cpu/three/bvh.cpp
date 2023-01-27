@@ -172,10 +172,8 @@ void add_3d_bvh_modules(py::module &m) {
     bvh_3d
         .def(py::init<trimesh_3d_t &>(), "Boundary volume hierarchy",
              "trimesh"_a)
-        .def("__str__", &bvh_3d_t::to_string, "String representation",
-             py::is_operator())
-        .def("__repr__", &bvh_3d_t::to_string, "String representation",
-             py::is_operator())
+        .def("__str__", &bvh_3d_t::to_string, py::is_operator())
+        .def("__repr__", &bvh_3d_t::to_string, py::is_operator())
         .def("intersections", &bvh_3d_t::intersections, "Intersections",
              "line"_a)
         .def_property_readonly("trimesh", &bvh_3d_t::get_trimesh, "Trimesh")

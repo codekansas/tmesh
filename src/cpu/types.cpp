@@ -163,7 +163,7 @@ void add_types_modules(py::module &m) {
         .def_readwrite("w", &barycentric_coordinates_t::w,
                        "The third barycentric coordinate")
         .def("__str__", &barycentric_coordinates_t::to_string,
-             "Returns a string representation.", py::is_operator())
+             py::is_operator())
         .def("__repr__", &barycentric_coordinates_t::to_string,
              py::is_operator())
         .def("__eq__", &barycentric_coordinates_t::operator==,

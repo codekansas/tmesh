@@ -1,6 +1,5 @@
 #include "types.h"
 
-#include <iostream>
 #include <numeric>
 #include <queue>
 #include <sstream>
@@ -1386,9 +1385,21 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
     std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>> return_val;
     for (auto &cur_polygon_inds : polygon_inds) {
         std::vector<point_2d_t> polygon_vertices;
+
+        auto is_colinear = [&](const point_2d_t &p) {
+            if (polygon_vertices.size() <= 1) return false;
+            auto &p1 = polygon_vertices[polygon_vertices.size() - 2],
+                 &p2 = polygon_vertices[polygon_vertices.size() - 1];
+            return std::abs((p1 - p2).cross(p - p2)) < get_tolerance();
+        };
+
         for (auto &ind : cur_polygon_inds) {
-            polygon_vertices.push_back(_vertices[ind]);
+            auto &p = _vertices[ind];
+            if (is_colinear(p)) polygon_vertices.pop_back();
+            polygon_vertices.push_back(p);
         }
+
+        if (is_colinear(polygon_vertices[0])) polygon_vertices.pop_back();
         if (polygon_vertices.size() < 3) continue;
         polygon_2d_t polygon{polygon_vertices};
         return_val.push_back({polygon, cur_polygon_inds});
@@ -1866,22 +1877,20 @@ void add_2d_types_modules(py::module &m) {
         .def("subdivide", &trimesh_2d_t::subdivide,
              "Splits each triangle into four smaller triangles",
              "at_edges"_a = true)
-        .def("__str__", &trimesh_2d_t::to_string,
-             "Converts the mesh to a string", py::is_operator())
-        .def("__repr__", &trimesh_2d_t::to_string,
-             "Converts the mesh to a string", py::is_operator())
         .def("union", &trimesh_2d_t::operator|,
              "Computes the union of two 2D meshes", "other"_a)
+        .def("intersection", &trimesh_2d_t::operator&,
+             "Computes the intersection of two 2D meshes", "other"_a)
+        .def("difference", &trimesh_2d_t::operator-,
+             "Computes the difference of two 2D meshes", "other"_a)
+        .def("__str__", &trimesh_2d_t::to_string, py::is_operator())
+        .def("__repr__", &trimesh_2d_t::to_string, py::is_operator())
         .def("__or__", &trimesh_2d_t::operator|,
              "Computes the union of two 2D meshes", "other"_a,
              py::is_operator())
-        .def("intersection", &trimesh_2d_t::operator&,
-             "Computes the intersection of two 2D meshes", "other"_a)
         .def("__and__", &trimesh_2d_t::operator&,
              "Computes the intersection of two 2D meshes", "other"_a,
              py::is_operator())
-        .def("difference", &trimesh_2d_t::operator-,
-             "Computes the difference of two 2D meshes", "other"_a)
         .def("__sub__", &trimesh_2d_t::operator-,
              "Computes the difference of two 2D meshes", "other"_a,
              py::is_operator())

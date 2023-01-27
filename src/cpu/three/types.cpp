@@ -485,6 +485,11 @@ std::vector<triangle_3d_t> tetrahedron_3d_t::faces() const {
     return {{p1, p2, p3}, {p1, p3, p4}, {p1, p4, p2}, {p2, p3, p4}};
 }
 
+std::string tetrahedron_3d_t::to_string() const {
+    return "Tetrahedron3D(" + p1.to_string() + ", " + p2.to_string() + ", " +
+           p3.to_string() + ", " + p4.to_string() + ")";
+}
+
 /* ----------------- *
  * bounding_box_3d_t *
  * ----------------- */
@@ -661,9 +666,7 @@ float bounding_box_3d_t::volume() const {
 }
 
 std::string bounding_box_3d_t::to_string() const {
-    std::ostringstream ss;
-    ss << "BoundingBox3D(" << min.to_string() << ", " << max.to_string() << ")";
-    return ss.str();
+    return "BoundingBox3D(" + min.to_string() + ", " + max.to_string() + ")";
 }
 
 /* ------------ *
@@ -1353,6 +1356,8 @@ void add_3d_types_modules(py::module &m) {
                       const point_3d_t &, const point_3d_t &>(),
              "Creates a tetrahedron from four points", "a"_a, "b"_a, "c"_a,
              "d"_a)
+        .def("__str__", &tetrahedron_3d_t::to_string, py::is_operator())
+        .def("__repr__", &tetrahedron_3d_t::to_string, py::is_operator())
         .def("__eq__", &tetrahedron_3d_t::operator==,
              "Checks if two tetrahedrons are equal", "other"_a,
              py::is_operator())
@@ -1443,8 +1448,7 @@ void add_3d_types_modules(py::module &m) {
         .def(py::init<std::optional<std::tuple<float, float, float>>,
                       std::optional<std::tuple<float, float, float>>,
                       std::optional<float>>(),
-             "Initialize affine transformation from rotation and "
-             "translation "
+             "Initialize affine transformation from rotation and translation "
              "vectors",
              "rot"_a = std::nullopt, "trans"_a = std::nullopt,
              "scale"_a = std::nullopt)
@@ -1509,10 +1513,8 @@ void add_3d_types_modules(py::module &m) {
              "Flips the mesh inside out")
         .def("subdivide", &trimesh_3d_t::subdivide,
              "Subdivides the mesh into smaller triangles", "at_edges"_a = true)
-        .def("__str__", &trimesh_3d_t::to_string,
-             "Converts the mesh to a string", py::is_operator())
-        .def("__repr__", &trimesh_3d_t::to_string,
-             "Converts the mesh to a string", py::is_operator())
+        .def("__str__", &trimesh_3d_t::to_string, py::is_operator())
+        .def("__repr__", &trimesh_3d_t::to_string, py::is_operator())
         .def("union", &trimesh_3d_t::operator|,
              "Computes the union of two 3D meshes", "other"_a)
         .def("__or__", &trimesh_3d_t::operator|,

@@ -557,10 +557,8 @@ void add_2d_bvh_modules(py::module &m) {
              "trimesh"_a)
         .def(py::init<const face_list_t &, const std::vector<point_2d_t> &>(),
              "Boundary volume hierarchy", "faces"_a, "vertices"_a)
-        .def("__str__", &bvh_2d_t::to_string, "String representation",
-             py::is_operator())
-        .def("__repr__", &bvh_2d_t::to_string, "String representation",
-             py::is_operator())
+        .def("__str__", &bvh_2d_t::to_string, py::is_operator())
+        .def("__repr__", &bvh_2d_t::to_string, py::is_operator())
         .def("line_intersections", &bvh_2d_t::line_intersections,
              "Intersections", "triangle"_a,
              "max_intersections"_a = std::nullopt)
