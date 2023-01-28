@@ -8,8 +8,29 @@ from tmesh import Line3D, Point3D, Tetrahedron3D, Triangle3D, Trimesh3D
 
 Thing = Union[Line3D, Point3D, Tetrahedron3D, Triangle3D, Trimesh3D]
 
+import math
+
+from tmesh import Affine3D
+
+points = [
+    [
+        Point3D(0, 0, 1),
+        Point3D(0, 0, 1) << Affine3D(rot=(2 * math.pi / 3, 0, 0)),
+        Point3D(0, 0, 1) << Affine3D(rot=(4 * math.pi / 3, 0, 0)),
+    ],
+    [
+        Point3D(1, 0, 1),
+        Point3D(1, 0, 1) << Affine3D(rot=(2 * math.pi / 3, 0, 0)),
+        Point3D(1, 0, 1) << Affine3D(rot=(4 * math.pi / 3, 0, 0)),
+    ],
+]
+
 # To plot things, add them to this list.
-THINGS_TO_PLOT: List[Thing] = []
+THINGS_TO_PLOT: List[Thing] = [
+    Tetrahedron3D(points[0][0], points[0][1], points[0][2], points[1][1]),
+    Tetrahedron3D(points[1][0], points[1][1], points[0][0], points[1][2]),
+    Tetrahedron3D(points[0][2], points[1][2], points[0][0], points[1][1]),
+]
 
 ALPHA = 1.0
 
