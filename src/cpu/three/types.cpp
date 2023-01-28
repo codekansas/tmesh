@@ -620,9 +620,15 @@ bounding_box_3d_t bounding_box_3d_t::operator<<=(const affine_3d_t &a) {
     return *this;
 }
 
-std::vector<face_t> bounding_box_3d_t::triangle_indices() const {
+std::vector<face_t> bounding_box_3d_t::triangle_faces() const {
     return {{0, 2, 1}, {0, 3, 2}, {0, 5, 4}, {0, 1, 5}, {1, 6, 5}, {1, 2, 6},
             {2, 7, 6}, {2, 3, 7}, {3, 4, 7}, {3, 0, 4}, {4, 6, 7}, {4, 5, 6}};
+}
+
+std::vector<volume_t> bounding_box_3d_t::tetrahedron_volumes() const {
+    // TODO: Need to check if this is actually correct...
+    return {{0, 1, 2, 3}, {4, 5, 6, 7}, {0, 1, 5, 4},
+            {1, 2, 6, 5}, {2, 3, 7, 6}, {3, 0, 4, 7}};
 }
 
 std::vector<point_3d_t> bounding_box_3d_t::corners() const {
@@ -650,13 +656,24 @@ std::vector<line_3d_t> bounding_box_3d_t::edges() const {
 
 std::vector<triangle_3d_t> bounding_box_3d_t::triangles() const {
     std::vector<triangle_3d_t> triangles;
-    auto indices = this->triangle_indices();
+    auto faces = this->triangle_faces();
     auto corners = this->corners();
-    for (auto &index : indices) {
+    for (auto &index : faces) {
         triangles.push_back(
             {corners[index.a], corners[index.b], corners[index.c]});
     }
     return triangles;
+}
+
+std::vector<tetrahedron_3d_t> bounding_box_3d_t::tetrahedrons() const {
+    std::vector<tetrahedron_3d_t> tetrahedrons;
+    auto face = this->tetrahedron_volumes();
+    auto corners = this->corners();
+    for (auto &index : face) {
+        tetrahedrons.push_back({corners[index.a], corners[index.b],
+                                corners[index.c], corners[index.d]});
+    }
+    return tetrahedrons;
 }
 
 point_3d_t bounding_box_3d_t::center() const { return (min + max) / 2.0f; }
@@ -947,6 +964,18 @@ tetrahedron_3d_t operator<<(const tetrahedron_3d_t &p, const affine_3d_t &a) {
     return a >> p;
 }
 
+tetramesh_3d_t operator>>(const affine_3d_t &a, const tetramesh_3d_t &p) {
+    std::vector<point_3d_t> points;
+    for (const auto &v : p.vertices()) {
+        points.push_back(a >> v);
+    }
+    return {points, p.volumes()};
+}
+
+tetramesh_3d_t operator<<(const tetramesh_3d_t &p, const affine_3d_t &a) {
+    return a >> p;
+}
+
 /* ------------ *
  * trimesh_3d_t *
  * ------------ */
@@ -1097,6 +1126,10 @@ trimesh_3d_t trimesh_3d_t::subdivide(bool at_edges) const {
     return {vertices, faces};
 }
 
+tetramesh_3d_t trimesh_3d_t::to_tetramesh() const {
+    throw std::runtime_error("Not implemented");
+}
+
 std::string trimesh_3d_t::to_string() const {
     std::stringstream ss;
     ss << "Trimesh3D(" << std::endl;
@@ -1113,8 +1146,7 @@ std::string trimesh_3d_t::to_string() const {
     ss << "  " << _faces.size() << " faces = [" << std::endl;
     i = 0;
     for (auto &face : _faces) {
-        ss << "    (" << face.a << ", " << face.b << ", " << face.c << "),"
-           << std::endl;
+        ss << "    " << face.to_string() << "," << std::endl;
         if (i++ > 10) {
             ss << "    ..." << std::endl;
             break;
@@ -1134,15 +1166,130 @@ trimesh_3d_t trimesh_3d_t::operator<<(const affine_3d_t &tf) const {
     return {vertices, faces};
 }
 
-trimesh_3d_t trimesh_3d_t::operator|(const trimesh_3d_t &other) const {
+/* ------------ *
+ * trimesh_3d_t *
+ * ------------ */
+
+tetramesh_3d_t::tetramesh_3d_t(const std::vector<point_3d_t> &vertices,
+                               const volume_set_t &volumes)
+    : _vertices(vertices), _volumes(volumes.begin(), volumes.end()) {
+    validate();
+}
+
+tetramesh_3d_t::tetramesh_3d_t(const std::vector<point_3d_t> &vertices,
+                               const volume_list_t &volumes)
+    : _vertices(vertices), _volumes(volumes) {
+    validate();
+}
+
+void tetramesh_3d_t::validate() const {
+    // Checks that there is at least one face.
+    if (_volumes.empty()) {
+        throw std::runtime_error("No faces");
+    }
+
+    // Check that all vertices are valid.
+    for (auto &volume : _volumes) {
+        auto &[vi, vj, vk, vl] = volume;
+        if (vi >= _vertices.size() || vj >= _vertices.size() ||
+            vk >= _vertices.size() || vl >= _vertices.size()) {
+            throw std::runtime_error("Invalid face");
+        }
+    }
+
+    // Check that all vertices are used.
+    std::vector<bool> used(_vertices.size(), false);
+    for (auto &volume : _volumes) {
+        auto &[vi, vj, vk, vl] = volume;
+        used[vi] = true;
+        used[vj] = true;
+        used[vk] = true;
+        used[vl] = true;
+    }
+    for (bool b : used) {
+        if (!b) {
+            throw std::runtime_error("Unused vertex");
+        }
+    }
+
+    // Check that all volumes are tetrahedrons.
+    for (auto &volume : _volumes) {
+        auto &[vi, vj, vk, vl] = volume;
+        if (vi == vj || vi == vk || vj == vk || vi == vl || vj == vl ||
+            vk == vl) {
+            throw std::runtime_error("Degenerate volume");
+        }
+    }
+}
+
+const std::vector<point_3d_t> &tetramesh_3d_t::vertices() const {
+    return _vertices;
+}
+
+const volume_list_t &tetramesh_3d_t::volumes() const { return _volumes; }
+
+tetrahedron_3d_t tetramesh_3d_t::get_tetrahedron(const volume_t &volume) const {
+    auto &[vi, vj, vk, vl] = volume;
+    return {this->_vertices[vi], this->_vertices[vj], this->_vertices[vk],
+            this->_vertices[vl]};
+}
+
+std::vector<tetrahedron_3d_t> tetramesh_3d_t::get_tetrahedrons() const {
+    std::vector<tetrahedron_3d_t> tetrahedrons;
+    for (auto &volume : _volumes) {
+        tetrahedrons.push_back(get_tetrahedron(volume));
+    }
+    return tetrahedrons;
+}
+
+trimesh_3d_t tetramesh_3d_t::to_trimesh() const {
+    throw std::runtime_error("Not implemented");
+}
+
+std::string tetramesh_3d_t::to_string() const {
+    std::stringstream ss;
+    ss << "Tetramesh3D(" << std::endl;
+    ss << "  " << _vertices.size() << " vertices = [" << std::endl;
+    size_t i = 0;
+    for (auto &vertex : _vertices) {
+        ss << "    " << vertex.to_string() << "," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]," << std::endl;
+    ss << "  " << _volumes.size() << " volumes = [" << std::endl;
+    i = 0;
+    for (auto &volume : _volumes) {
+        ss << "    " << volume.to_string() << "," << std::endl;
+        if (i++ > 10) {
+            ss << "    ..." << std::endl;
+            break;
+        }
+    }
+    ss << "  ]" << std::endl;
+    ss << ")" << std::endl;
+    return ss.str();
+}
+
+tetramesh_3d_t tetramesh_3d_t::operator<<(const affine_3d_t &tf) const {
+    std::vector<point_3d_t> vertices;
+    std::transform(this->_vertices.begin(), this->_vertices.end(),
+                   std::back_inserter(vertices),
+                   [&tf](const point_3d_t &vertex) { return vertex << tf; });
+    return {vertices, this->_volumes};
+}
+
+tetramesh_3d_t tetramesh_3d_t::operator|(const tetramesh_3d_t &other) const {
     return mesh_union(*this, other);
 }
 
-trimesh_3d_t trimesh_3d_t::operator&(const trimesh_3d_t &other) const {
+tetramesh_3d_t tetramesh_3d_t::operator&(const tetramesh_3d_t &other) const {
     return mesh_intersection(*this, other);
 }
 
-trimesh_3d_t trimesh_3d_t::operator-(const trimesh_3d_t &other) const {
+tetramesh_3d_t tetramesh_3d_t::operator-(const tetramesh_3d_t &other) const {
     return mesh_difference(*this, other);
 }
 
@@ -1159,6 +1306,9 @@ void add_3d_types_modules(py::module &m) {
     auto affine_3d = py::class_<affine_3d_t>(m, "Affine3D");
     auto trimesh_3d =
         py::class_<trimesh_3d_t, std::shared_ptr<trimesh_3d_t>>(m, "Trimesh3D");
+    auto tetramesh_3d =
+        py::class_<tetramesh_3d_t, std::shared_ptr<tetramesh_3d_t>>(
+            m, "Tetramesh3D");
 
     // Defines Point3D methods.
     point_3d
@@ -1408,8 +1558,10 @@ void add_3d_types_modules(py::module &m) {
         .def("__ilshift__", &bounding_box_3d_t::operator<<=,
              "Applies a affine transformation to the bounding box", "other"_a,
              py::is_operator())
-        .def("triangle_indices", &bounding_box_3d_t::triangle_indices,
-             "The indices of the triangles that make up the bounding box")
+        .def("triangle_faces", &bounding_box_3d_t::triangle_faces,
+             "The faces of the triangles that make up the bounding box")
+        .def("tetrahedron_volumes", &bounding_box_3d_t::tetrahedron_volumes,
+             "The volumes of the triangles that make up the bounding box")
         .def("corners", &bounding_box_3d_t::corners,
              "The bounding box's corners")
         .def("triangles", &bounding_box_3d_t::triangles,
@@ -1492,6 +1644,16 @@ void add_3d_types_modules(py::module &m) {
                  &operator>>),
              "Applies an affine transformation to a triangular mesh",
              "trimesh"_a, py::is_operator())
+        .def("__rshift__",
+             py::overload_cast<const affine_3d_t &, const tetrahedron_3d_t &>(
+                 &operator>>),
+             "Applies an affine transformation to a tetrahedron",
+             "tetrahedron"_a, py::is_operator())
+        .def("__rshift__",
+             py::overload_cast<const affine_3d_t &, const tetramesh_3d_t &>(
+                 &operator>>),
+             "Applies an affine transformation to a tetrahedron mesh",
+             "tetramesh"_a, py::is_operator())
         .def("inverse", &affine_3d_t::inverse,
              "The inverse of the affine transformation");
 
@@ -1515,22 +1677,41 @@ void add_3d_types_modules(py::module &m) {
              "Subdivides the mesh into smaller triangles", "at_edges"_a = true)
         .def("__str__", &trimesh_3d_t::to_string, py::is_operator())
         .def("__repr__", &trimesh_3d_t::to_string, py::is_operator())
-        .def("union", &trimesh_3d_t::operator|,
+        .def("__lshift__", &trimesh_3d_t::operator<<,
+             "Applies affine transformation to 3D mesh", "affine"_a,
+             py::is_operator());
+
+    // Defines Tetramesh3D methods.
+    tetramesh_3d
+        // .def(py::init<vertices3d_t &, volume_set_t &>(),
+        //      "Creates a trimesh from vertices and volumes", "vertices"_a,
+        //      "volumes"_a)
+        .def_property_readonly("vertices", &tetramesh_3d_t::vertices,
+                               "The mesh vertices")
+        .def_property_readonly("volumes", &tetramesh_3d_t::volumes,
+                               "The mesh volumes")
+        .def("get_tetrahedron", &tetramesh_3d_t::get_tetrahedron,
+             "Gets a mesh tetrahedron from a volume", "volume"_a)
+        .def("get_tetraherdons", &tetramesh_3d_t::get_tetrahedrons,
+             "Gets all mesh tetrahedrons")
+        .def("union", &tetramesh_3d_t::operator|,
              "Computes the union of two 3D meshes", "other"_a)
-        .def("__or__", &trimesh_3d_t::operator|,
+        .def("__or__", &tetramesh_3d_t::operator|,
              "Computes the union of two 3D meshes", "other"_a,
              py::is_operator())
-        .def("intersection", &trimesh_3d_t::operator&,
+        .def("intersection", &tetramesh_3d_t::operator&,
              "Computes the intersection of two 3D meshes", "other"_a)
-        .def("__and__", &trimesh_3d_t::operator&,
+        .def("__and__", &tetramesh_3d_t::operator&,
              "Computes the intersection of two 3D meshes", "other"_a,
              py::is_operator())
-        .def("difference", &trimesh_3d_t::operator-,
+        .def("difference", &tetramesh_3d_t::operator-,
              "Computes the difference of two 3D meshes", "other"_a)
-        .def("__sub__", &trimesh_3d_t::operator-,
+        .def("__sub__", &tetramesh_3d_t::operator-,
              "Computes the difference of two 3D meshes", "other"_a,
              py::is_operator())
-        .def("__lshift__", &trimesh_3d_t::operator<<,
+        .def("__str__", &tetramesh_3d_t::to_string, py::is_operator())
+        .def("__repr__", &tetramesh_3d_t::to_string, py::is_operator())
+        .def("__lshift__", &tetramesh_3d_t::operator<<,
              "Applies affine transformation to 3D mesh", "affine"_a,
              py::is_operator());
 }

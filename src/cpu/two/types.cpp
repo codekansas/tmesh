@@ -1805,10 +1805,10 @@ void add_2d_types_modules(py::module &m) {
         .def("bounding_box", &polygon_2d_t::bounding_box,
              "Returns the polygon's bounding box")
         .def("center", &polygon_2d_t::center, "Returns the polygon's center")
-        .def("is_ear", &polygon_2d_t::is_ear,
-             "Returns true if the polygon's point "
-             "is an ear (for triangulation)",
-             "vi"_a, "vj"_a, "vk"_a)
+        .def(
+            "is_ear", &polygon_2d_t::is_ear,
+            "Returns true if the polygon's point is an ear (for triangulation)",
+            "vi"_a, "vj"_a, "vk"_a)
         .def("get_trimesh", &polygon_2d_t::get_trimesh,
              "Returns a triangle mesh representation of the polygon",
              "is_convex"_a = false);

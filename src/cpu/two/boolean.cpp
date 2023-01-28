@@ -10,53 +10,6 @@ namespace trimesh {
 
 enum boolean_2d_op { INTERSECTION, COMPLEMENT };
 
-trimesh_2d_t triangulation(const triangle_2d_t &triangle,
-                           const std::vector<point_2d_t> &points) {
-    std::vector<point_2d_t> vertices;
-    face_set_t faces;
-
-    // Checks that all points are inside the triangle.
-    for (auto &point : points) {
-        if (!triangle.contains_point(point))
-            throw std::runtime_error("Point " + point.to_string() +
-                                     " is not inside triangle " +
-                                     triangle.to_string() + ".");
-    }
-
-    // Adds vertices to mesh.
-    for (auto &point : triangle.vertices()) vertices.push_back(point);
-    for (auto &point : points) vertices.push_back(point);
-
-    // Adds super triangle to mesh.
-    faces.insert(face_t(0, 1, 2));
-
-    for (size_t i = 0; i < points.size(); i++) {
-        auto &point = points[i];
-
-        // Gets the triangle that contains the point.
-        bool found_triangle = false;
-        for (auto &face : faces) {
-            auto &[a, b, c] = face;
-            triangle_2d_t triangle{vertices[a], vertices[b], vertices[c]};
-            if (point.is_inside_triangle(triangle)) {
-                faces.insert(face_t(a, b, i + 3));
-                faces.insert(face_t(b, c, i + 3));
-                faces.insert(face_t(c, a, i + 3));
-                faces.erase(face);
-                found_triangle = true;
-                break;
-            }
-        }
-        if (!found_triangle) {
-            throw std::runtime_error("Point " + point.to_string() +
-                                     " was outside of the triangle " +
-                                     triangle.to_string());
-        }
-    }
-
-    return {vertices, faces};
-}
-
 trimesh_2d_t split_at_all_intersections(const trimesh_2d_t &a_mesh,
                                         const trimesh_2d_t &b_mesh) {
     std::vector<point_2d_t> vertices = a_mesh.vertices();
@@ -216,9 +169,6 @@ trimesh_2d_t mesh_difference(const trimesh_2d_t &a, const trimesh_2d_t &b) {
 }
 
 void add_2d_boolean_modules(py::module &m) {
-    m.def("triangulation", &triangulation,
-          "Gets a triangulation of a triangle and a set of points",
-          "triangle"_a, "points"_a);
     m.def("union", &mesh_union, "Union of two meshes", "a"_a, "b"_a);
     m.def("intersection", &mesh_intersection, "Intersection of two meshes",
           "a"_a, "b"_a);

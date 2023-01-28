@@ -21,6 +21,7 @@ struct bounding_box_3d_t;
 struct polygon_3d_t;
 struct affine_3d_t;
 struct trimesh_3d_t;
+struct tetramesh_3d_t;
 
 struct point_3d_t {
     float x, y, z;
@@ -152,10 +153,12 @@ struct bounding_box_3d_t {
     bool operator!=(const bounding_box_3d_t &bb) const;
     bounding_box_3d_t operator<<=(const affine_3d_t &a);
 
-    std::vector<face_t> triangle_indices() const;
+    std::vector<face_t> triangle_faces() const;
+    std::vector<volume_t> tetrahedron_volumes() const;
     std::vector<point_3d_t> corners() const;
     std::vector<line_3d_t> edges() const;
     std::vector<triangle_3d_t> triangles() const;
+    std::vector<tetrahedron_3d_t> tetrahedrons() const;
 
     point_3d_t center() const;
     float volume() const;
@@ -215,6 +218,12 @@ bounding_box_3d_t operator>>(const affine_3d_t &a, const bounding_box_3d_t &bb);
 bounding_box_3d_t operator<<(const bounding_box_3d_t &bb, const affine_3d_t &a);
 polygon_3d_t operator>>(const affine_3d_t &a, const polygon_3d_t &p);
 polygon_3d_t operator<<(const polygon_3d_t &p, const affine_3d_t &a);
+trimesh_3d_t operator>>(const affine_3d_t &a, const trimesh_3d_t &p);
+trimesh_3d_t operator<<(const trimesh_3d_t &p, const affine_3d_t &a);
+tetrahedron_3d_t operator>>(const affine_3d_t &a, const tetrahedron_3d_t &p);
+tetrahedron_3d_t operator<<(const tetrahedron_3d_t &p, const affine_3d_t &a);
+tetramesh_3d_t operator>>(const affine_3d_t &a, const tetramesh_3d_t &p);
+tetramesh_3d_t operator<<(const tetramesh_3d_t &p, const affine_3d_t &a);
 
 struct trimesh_3d_t {
    private:
@@ -235,12 +244,35 @@ struct trimesh_3d_t {
     float signed_volume() const;
     trimesh_3d_t flip_inside_out() const;
     trimesh_3d_t subdivide(bool at_edges = true) const;
+    tetramesh_3d_t to_tetramesh() const;
     std::string to_string() const;
 
     trimesh_3d_t operator<<(const affine_3d_t &tf) const;
-    trimesh_3d_t operator|(const trimesh_3d_t &other) const;
-    trimesh_3d_t operator&(const trimesh_3d_t &other) const;
-    trimesh_3d_t operator-(const trimesh_3d_t &other) const;
+};
+
+struct tetramesh_3d_t {
+   private:
+    const std::vector<point_3d_t> _vertices;
+    const volume_list_t _volumes;
+    void validate() const;
+
+   public:
+    tetramesh_3d_t(const std::vector<point_3d_t> &vertices,
+                   const volume_set_t &volumes);
+    tetramesh_3d_t(const std::vector<point_3d_t> &vertices,
+                   const volume_list_t &volumes);
+
+    const std::vector<point_3d_t> &vertices() const;
+    const volume_list_t &volumes() const;
+    tetrahedron_3d_t get_tetrahedron(const volume_t &volume) const;
+    std::vector<tetrahedron_3d_t> get_tetrahedrons() const;
+    trimesh_3d_t to_trimesh() const;
+    std::string to_string() const;
+
+    tetramesh_3d_t operator<<(const affine_3d_t &tf) const;
+    tetramesh_3d_t operator|(const tetramesh_3d_t &other) const;
+    tetramesh_3d_t operator&(const tetramesh_3d_t &other) const;
+    tetramesh_3d_t operator-(const tetramesh_3d_t &other) const;
 };
 
 void add_3d_types_modules(py::module &m);

@@ -63,7 +63,7 @@ trimesh_3d_t cuboid(float width, float height, float depth, bool center) {
 
     std::vector<point_3d_t> vertices = bbox.corners();
     face_set_t faces;
-    for (auto &face : bbox.triangle_indices()) faces.insert(face);
+    for (auto &face : bbox.triangle_faces()) faces.insert(face);
 
     return {vertices, faces};
 }
