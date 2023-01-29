@@ -774,12 +774,11 @@ bool is_ear(const bvh_2d_t &bvh, const std::vector<point_2d_t> &points, int vi,
     // }
 
     // Faster version using BVH.
-    const auto &intrs = bvh.triangle_intersections({pi, pj, pk});
+    const auto &intrs =
+        bvh.triangle_intersections({pi, pj, pk}, /* max_intersections */ 4);
     for (const auto &intr : intrs) {
         auto l = intr.a;  // a, b, c are all the same for this BVH.
         if (l == vi || l == vj || l == vk) continue;
-        triangle_2d_t triangle{pi, pj, pk};
-        if (points[l].is_inside_triangle(triangle)) return false;
         return false;
     }
 
