@@ -165,7 +165,6 @@ struct polygon_2d_t {
     polygon_2d_t convex_hull() const;
     bounding_box_2d_t bounding_box() const;
     point_2d_t center() const;
-    bool is_ear(int vi, int vj, int vk) const;
     trimesh_2d_t get_trimesh(bool is_convex = false) const;
 
     std::string to_string() const;

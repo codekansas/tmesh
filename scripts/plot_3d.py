@@ -4,9 +4,9 @@ from typing import List, Union
 
 import matplotlib.pyplot as plt
 
-from tmesh import Line3D, Point3D, Tetrahedron3D, Triangle3D, Trimesh3D
+from tmesh import Line3D, Point3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D
 
-Thing = Union[Line3D, Point3D, Tetrahedron3D, Triangle3D, Trimesh3D]
+Thing = Union[Line3D, Point3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D]
 
 import math
 
@@ -117,6 +117,19 @@ def plot_trimesh(axes: plt.Axes, trimesh: Trimesh3D, i: int) -> None:
         plot_triangle(axes, triangle, i)
 
 
+def plot_tetramesh(axes: plt.Axes, tetramesh: Tetramesh3D, i: int) -> None:
+    """Plots a tetramesh.
+
+    Args:
+        axes: Axes to plot on.
+        tetramesh: Tetramesh to plot.
+        i: Index of tetramesh.
+    """
+
+    for tetrahedron in tetramesh.get_tetraherdons():
+        plot_tetrahedron(axes, tetrahedron, i)
+
+
 def main() -> None:
     """Plots the things in THINGS_TO_PLOT.
 
@@ -137,6 +150,8 @@ def main() -> None:
             plot_trimesh(axes, thing, i)
         elif isinstance(thing, Tetrahedron3D):
             plot_tetrahedron(axes, thing, i)
+        elif isinstance(thing, Tetramesh3D):
+            plot_tetramesh(axes, thing, i)
         else:
             raise ValueError(f"Unknown thing to plot: {thing}")
 

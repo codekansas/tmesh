@@ -757,17 +757,30 @@ point_2d_t polygon_2d_t::center() const {
     return center;
 }
 
-bool polygon_2d_t::is_ear(int vi, int vj, int vk) const {
+bool is_ear(const bvh_2d_t &bvh, const std::vector<point_2d_t> &points, int vi,
+            int vj, int vk) {
     point_2d_t pi = points[vi], pj = points[vj], pk = points[vk];
 
     // Checks if the triangle is convex.
     if (!is_convex(pi, pj, pk)) return false;
 
     // Checks if the triangle contains any other points.
-    for (int l = 0; l < points.size(); l++) {
+
+    // Linear complexity version, slow.
+    // for (int l = 0; l < points.size(); l++) {
+    //     if (l == vi || l == vj || l == vk) continue;
+    //     triangle_2d_t triangle{pi, pj, pk};
+    //     if (points[l].is_inside_triangle(triangle)) return false;
+    // }
+
+    // Faster version using BVH.
+    const auto &intrs = bvh.triangle_intersections({pi, pj, pk});
+    for (const auto &intr : intrs) {
+        auto l = intr.a;  // a, b, c are all the same for this BVH.
         if (l == vi || l == vj || l == vk) continue;
-        triangle_2d_t triangle = {pi, pj, pk};
+        triangle_2d_t triangle{pi, pj, pk};
         if (points[l].is_inside_triangle(triangle)) return false;
+        return false;
     }
 
     return true;
@@ -788,6 +801,13 @@ trimesh_2d_t polygon_2d_t::get_trimesh(bool is_convex) const {
     std::vector<point_2d_t> vertices(points);
     face_list_t faces;
 
+    // Builds a BVH where each face is a single point.
+    face_list_t bvh_faces;
+    for (size_t i = 0; i < points.size(); i++) {
+        bvh_faces.push_back({i, i, i});
+    }
+    bvh_2d_t bvh{bvh_faces, vertices};
+
     // Runs ear clipping algorithm.
     while (indices.size() > 3) {
         bool found = false;
@@ -797,7 +817,7 @@ trimesh_2d_t polygon_2d_t::get_trimesh(bool is_convex) const {
             size_t k = (i + 2) % n;
             size_t vi = indices[i], vj = indices[j], vk = indices[k];
             point_2d_t pi = points[vi], pj = points[vj], pk = points[vk];
-            if (is_convex || is_ear(vi, vj, vk)) {
+            if (is_convex || is_ear(bvh, points, vi, vj, vk)) {
                 faces.push_back({vi, vj, vk});
                 indices.erase(indices.begin() + j);
                 found = true;
@@ -1805,12 +1825,10 @@ void add_2d_types_modules(py::module &m) {
         .def("bounding_box", &polygon_2d_t::bounding_box,
              "Returns the polygon's bounding box")
         .def("center", &polygon_2d_t::center, "Returns the polygon's center")
-        .def(
-            "is_ear", &polygon_2d_t::is_ear,
-            "Returns true if the polygon's point is an ear (for triangulation)",
-            "vi"_a, "vj"_a, "vk"_a)
         .def("get_trimesh", &polygon_2d_t::get_trimesh,
-             "Returns a triangle mesh representation of the polygon",
+             "Returns a triangle mesh representation of the polygon. Set "
+             "`is_convex` to True if the polygon is definitely convex; this "
+             "will speed up the computation",
              "is_convex"_a = false);
 
     // Defines Affine2D methods.

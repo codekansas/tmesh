@@ -64,13 +64,13 @@ struct triangle_split_tree_2d_t {
 // and right_child are the indices of the left and right children in the tree
 // (-1 if there is no child), and box is the bounding box for the current
 // node.
-typedef std::vector<std::tuple<size_t, int, int, bounding_box_2d_t>> tree_t;
+typedef std::vector<std::tuple<size_t, int, int, bounding_box_2d_t>> bvh_tree_t;
 
 struct bvh_2d_t {
    private:
     const face_list_t &faces;
     const std::vector<point_2d_t> &vertices;
-    tree_t tree;
+    bvh_tree_t tree;
 
    public:
     bvh_2d_t(const trimesh_2d_t &t);
@@ -80,7 +80,7 @@ struct bvh_2d_t {
     const std::vector<point_2d_t> &get_vertices() const {
         return this->vertices;
     }
-    const tree_t get_tree() const { return this->tree; }
+    const bvh_tree_t get_tree() const { return this->tree; }
 
     std::vector<face_t> line_intersections(
         const line_2d_t &l,

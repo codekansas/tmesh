@@ -324,9 +324,9 @@ const size_t triangle_split_tree_2d_t::count_leaf_triangles() const {
  * bvh_2d_t *
  * -------- */
 
-void sort_bounding_boxes(const std::vector<bounding_box_2d_t> &boxes,
-                         std::vector<size_t> &indices, tree_t &tree, size_t lo,
-                         size_t hi) {
+void sort_bounding_boxes_for_bvh(const std::vector<bounding_box_2d_t> &boxes,
+                                 std::vector<size_t> &indices, bvh_tree_t &tree,
+                                 size_t lo, size_t hi) {
     if (hi - lo < 2) {
         tree[lo] = {indices[lo], -1, -1, boxes[indices[lo]]};
         return;
@@ -377,8 +377,8 @@ void sort_bounding_boxes(const std::vector<bounding_box_2d_t> &boxes,
                 mid == (hi - lo) ? -1 : lo + mid,
                 {{min_x, min_y}, {max_x, max_y}}};
 
-    sort_bounding_boxes(boxes, indices, tree, lo + 1, lo + mid);
-    sort_bounding_boxes(boxes, indices, tree, lo + mid, hi);
+    sort_bounding_boxes_for_bvh(boxes, indices, tree, lo + 1, lo + mid);
+    sort_bounding_boxes_for_bvh(boxes, indices, tree, lo + mid, hi);
 }
 
 bvh_2d_t::bvh_2d_t(const trimesh_2d_t &t) : bvh_2d_t(t.faces(), t.vertices()) {}
@@ -394,10 +394,10 @@ bvh_2d_t::bvh_2d_t(const face_list_t &faces,
     std::vector<size_t> indices(boxes.size());
     std::iota(indices.begin(), indices.end(), 0);
     tree.resize(boxes.size());
-    sort_bounding_boxes(boxes, indices, tree, 0, boxes.size());
+    sort_bounding_boxes_for_bvh(boxes, indices, tree, 0, boxes.size());
 }
 
-void line_intersections_helper(const tree_t tree, const face_list_t &faces,
+void line_intersections_helper(const bvh_tree_t tree, const face_list_t &faces,
                                const std::vector<point_2d_t> &vertices, int id,
                                const line_2d_t &l, std::vector<face_t> &intrs,
                                const std::optional<size_t> max_intersections) {
@@ -439,7 +439,7 @@ std::vector<face_t> bvh_2d_t::line_intersections(
 }
 
 void triangle_intersections_helper(
-    const tree_t tree, const face_list_t &faces,
+    const bvh_tree_t tree, const face_list_t &faces,
     const std::vector<point_2d_t> &vertices, int id, const triangle_2d_t &t,
     std::vector<face_t> &intrs, const std::optional<size_t> max_intersections) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
@@ -481,7 +481,7 @@ std::vector<face_t> bvh_2d_t::triangle_intersections(
 }
 
 std::optional<face_t> get_containing_face_helper(
-    const tree_t tree, const face_list_t &faces,
+    const bvh_tree_t tree, const face_list_t &faces,
     const std::vector<point_2d_t> &vertices, int id, const triangle_2d_t &t) {
     if (id < 0 || id >= tree.size()) return std::nullopt;
 
