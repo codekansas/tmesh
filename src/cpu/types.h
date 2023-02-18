@@ -69,6 +69,8 @@ struct volume_t {
     bool operator<(const volume_t &f) const;
     volume_t operator+(size_t offset) const;
 
+    face_list_t faces() const;
+
     std::string to_string() const;
 };
 

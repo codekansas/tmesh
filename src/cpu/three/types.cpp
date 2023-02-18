@@ -1127,7 +1127,7 @@ trimesh_3d_t trimesh_3d_t::subdivide(bool at_edges) const {
 }
 
 tetramesh_3d_t trimesh_3d_t::to_tetramesh() const {
-    throw std::runtime_error("Not implemented");
+    throw std::runtime_error("not implemented");
 }
 
 std::string trimesh_3d_t::to_string() const {
@@ -1243,7 +1243,23 @@ std::vector<tetrahedron_3d_t> tetramesh_3d_t::get_tetrahedrons() const {
 }
 
 trimesh_3d_t tetramesh_3d_t::to_trimesh() const {
-    throw std::runtime_error("Not implemented");
+    std::vector<point_3d_t> vertices;
+    face_set_t faces, duplicate_faces;
+
+    // Any face that appears twice is an interior face. This gets all exterior
+    // faces by getting all faces which only appear once.
+    for (const auto &volume : _volumes) {
+        for (const auto &face : volume.faces()) {
+            if (duplicate_faces.find(face) != duplicate_faces.end()) continue;
+            if (faces.find(face) != faces.end()) {
+                faces.erase(face);
+                duplicate_faces.insert(face);
+            }
+            faces.insert(face);
+        }
+    }
+
+    return {vertices, faces};
 }
 
 std::string tetramesh_3d_t::to_string() const {

@@ -125,6 +125,10 @@ volume_t volume_t::operator+(size_t offset) const {
     return {a + offset, b + offset, c + offset, d + offset};
 }
 
+face_list_t volume_t::faces() const {
+    return {{a, b, c}, {a, c, d}, {a, d, b}, {b, c, d}};
+}
+
 std::string volume_t::to_string() const {
     return "(" + std::to_string(a) + ", " + std::to_string(b) + ", " +
            std::to_string(c) + ", " + std::to_string(d) + ")";

@@ -815,7 +815,6 @@ trimesh_2d_t polygon_2d_t::get_trimesh(bool is_convex) const {
             size_t j = (i + 1) % n;
             size_t k = (i + 2) % n;
             size_t vi = indices[i], vj = indices[j], vk = indices[k];
-            point_2d_t pi = points[vi], pj = points[vj], pk = points[vk];
             if (is_convex || is_ear(bvh, points, vi, vj, vk)) {
                 faces.push_back({vi, vj, vk});
                 indices.erase(indices.begin() + j);
