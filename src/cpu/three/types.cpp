@@ -1127,6 +1127,9 @@ trimesh_3d_t trimesh_3d_t::subdivide(bool at_edges) const {
 }
 
 tetramesh_3d_t trimesh_3d_t::to_tetramesh() const {
+    // Converts a trimesh to a tetramesh.
+    // Description of algorithm is here:
+    // https://www.youtube.com/watch?v=sNxz_Ht6Y1Y
     throw std::runtime_error("not implemented");
 }
 
