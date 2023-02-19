@@ -236,6 +236,7 @@ struct trimesh_3d_t {
                  const face_set_t &faces);
     trimesh_3d_t(const std::vector<point_3d_t> &vertices,
                  const face_list_t &faces);
+    trimesh_3d_t(const std::vector<point_3d_t> &vertices);
 
     const std::vector<point_3d_t> &vertices() const;
     const face_list_t &faces() const;

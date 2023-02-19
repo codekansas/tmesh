@@ -979,6 +979,12 @@ trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices,
     if (validate) this->validate();
 }
 
+trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices) {
+    // TODO: Implement constructor which takes the vertices without associated
+    // faces and creates a Delaunay triangulation.
+    throw std::runtime_error("Not implemented");
+}
+
 void trimesh_2d_t::validate() const {
     // Checks that there is at least one face.
     if (_faces.empty()) {

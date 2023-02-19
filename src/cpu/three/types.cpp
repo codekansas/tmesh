@@ -992,6 +992,12 @@ trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices,
     validate();
 }
 
+trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices) {
+    // TODO: Implement Delaunay triangulation in 3D for creating a trimesh
+    // from a set of points without associated faces.
+    throw std::runtime_error("Not implemented");
+}
+
 void trimesh_3d_t::validate() const {
     // Checks that there is at least one face.
     if (_faces.empty()) {
