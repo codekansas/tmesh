@@ -47,9 +47,13 @@ struct triangle_split_tree_2d_t {
 
     bool is_leaf(size_t i) const;
     std::vector<size_t> get_leaf_triangles() const;
+    std::optional<size_t> get_leaf_triangle_which_contains(
+        const point_2d_t &p) const;
     std::vector<size_t> get_leaf_triangles_which_intersect(
         const line_2d_t &l) const;
+    void split_triangle(const point_2d_t &p, size_t i);
     void split_triangle(const line_2d_t &l, size_t i);
+    const face_t &get_face(size_t i) const;
     triangle_2d_t get_triangle(size_t i) const;
     triangle_2d_t get_triangle_from_face(const face_t &f) const;
     const std::vector<size_t> get_children(size_t i) const;

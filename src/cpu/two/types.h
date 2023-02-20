@@ -215,7 +215,8 @@ struct trimesh_2d_t {
                  const face_set_t &faces, bool validate = true);
     trimesh_2d_t(const std::vector<point_2d_t> &vertices,
                  const face_list_t &faces, bool validate = true);
-    trimesh_2d_t(const std::vector<point_2d_t> &vertices);
+
+    static trimesh_2d_t triangulate(const std::vector<point_2d_t> &points);
 
     void validate() const;
     const std::vector<point_2d_t> &vertices() const;

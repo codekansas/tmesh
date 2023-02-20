@@ -144,6 +144,28 @@ std::vector<size_t> triangle_split_tree_2d_t::get_leaf_triangles() const {
     return leaf_triangles;
 }
 
+std::optional<size_t>
+triangle_split_tree_2d_t::get_leaf_triangle_which_contains(
+    const point_2d_t &p) const {
+    std::queue<size_t> q;
+    q.push(0);
+    while (!q.empty()) {
+        size_t i = q.front();
+        q.pop();
+        auto t = get_triangle(i);
+        if (p.is_inside_triangle(t)) {
+            if (is_leaf(i)) {
+                return i;
+            } else {
+                for (auto &child : this->children[i]) {
+                    q.push(child);
+                }
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 std::vector<size_t>
 triangle_split_tree_2d_t::get_leaf_triangles_which_intersect(
     const line_2d_t &l) const {
@@ -167,13 +189,47 @@ triangle_split_tree_2d_t::get_leaf_triangles_which_intersect(
     return std::vector<size_t>(leaf_triangles.begin(), leaf_triangles.end());
 }
 
+void triangle_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
+    const auto f = faces[i];
+    const auto t = get_triangle(i);
+
+    auto intersects_edge = [&](const line_2d_t &l) {
+        return l.distance_to_point(p) < get_tolerance();
+    };
+
+    std::vector<std::tuple<point_2d_t, point_2d_t, size_t, size_t, size_t>>
+        invariants{{t.p1, t.p2, f.a, f.b, f.c},
+                   {t.p2, t.p3, f.b, f.c, f.a},
+                   {t.p3, t.p1, f.c, f.a, f.b}};
+
+    // Checks if the point is on an edge of the triangle.
+    for (auto &[p1, p2, fa, fb, fc] : invariants) {
+        if (intersects_edge({p1, p2})) {
+            auto new_point = add_point(p);
+            add_triangles({{fa, new_point, fc}, {fb, fc, new_point}}, i);
+            return;
+        }
+    }
+
+    // Checks if the point is inside the triangle.
+    if (p.is_inside_triangle(t)) {
+        auto new_point = add_point(p);
+        add_triangles({{f.a, f.b, new_point},
+                       {f.b, f.c, new_point},
+                       {f.c, f.a, new_point}},
+                      i);
+        return;
+    }
+
+    throw std::runtime_error("Point is outside the triangle.");
+}
+
 void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
     const auto f = faces[i];
     const auto t = get_triangle(i);
 
     // Gets the intersection points the line and each edge of the triangle.
     line_2d_t l1{t.p1, t.p2}, l2{t.p2, t.p3}, l3{t.p3, t.p1};
-
     auto i1 = l1.line_intersection(l), i2 = l2.line_intersection(l),
          i3 = l3.line_intersection(l);
 
@@ -260,6 +316,10 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
     // Throw an error because we should only be considering splitting
     // for lines which intersect a triangle.
     throw std::runtime_error("Triangle split failed.");
+}
+
+const face_t &triangle_split_tree_2d_t::get_face(size_t i) const {
+    return this->faces[i];
 }
 
 triangle_2d_t triangle_split_tree_2d_t::get_triangle(size_t i) const {
@@ -539,7 +599,13 @@ void add_2d_bvh_modules(py::module &m) {
         .def("get_leaf_triangles_which_intersect",
              &triangle_split_tree_2d_t::get_leaf_triangles_which_intersect,
              "line"_a, "Returns the triangles which intersect the line.")
-        .def("split_triangle", &triangle_split_tree_2d_t::split_triangle,
+        .def("split_triangle",
+             py::overload_cast<const point_2d_t &, size_t>(
+                 &triangle_split_tree_2d_t::split_triangle),
+             "point"_a, "i"_a, "Splits a triangle at a point.")
+        .def("split_triangle",
+             py::overload_cast<const line_2d_t &, size_t>(
+                 &triangle_split_tree_2d_t::split_triangle),
              "line"_a, "i"_a, "Splits a triangle at a line.")
         .def("get_triangle", &triangle_split_tree_2d_t::get_triangle, "i"_a,
              "Returns the triangle associated with the node.")

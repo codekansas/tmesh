@@ -1,5 +1,6 @@
 #include "types.h"
 
+#include <iostream>
 #include <numeric>
 #include <queue>
 #include <sstream>
@@ -979,10 +980,50 @@ trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices,
     if (validate) this->validate();
 }
 
-trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices) {
-    // TODO: Implement constructor which takes the vertices without associated
-    // faces and creates a Delaunay triangulation.
-    throw std::runtime_error("Not implemented");
+trimesh_2d_t trimesh_2d_t::triangulate(const std::vector<point_2d_t> &points) {
+    // Implements Delaunay triangulation to generate faces from only vertices.
+
+    // Checks that there are at least three vertices.
+    if (points.size() < 3) {
+        throw std::invalid_argument("Not enough vertices");
+    }
+
+    // Creates a super triangle.
+    bounding_box_2d_t bb{points};
+    float dx = bb.max.x - bb.min.x, dy = bb.max.y - bb.min.y;
+    point_2d_t p1 = {bb.min.x - dx / 2, bb.min.y};
+    point_2d_t p2 = {bb.max.x + dx / 2, bb.min.y};
+    point_2d_t p3 = {bb.min.x + dx / 2, bb.max.y + dy};
+    triangle_split_tree_2d_t tree{{0, 1, 2}, {p1, p2, p3}};
+
+    std::cout << "super triangle: " << p1.to_string() << ", " << p2.to_string()
+              << ", " << p3.to_string() << std::endl;
+
+    // Adds points one by one.
+    for (const auto &p : points) {
+        std::cout << "adding " << p.to_string() << std::endl;
+        auto i = tree.get_leaf_triangle_which_contains(p);
+        if (!i.has_value())
+            throw std::invalid_argument("Point is outside the super triangle");
+        tree.split_triangle(p, i.value());
+    }
+
+    // Gets all triangles which aren't from the super triangle.
+    std::vector<point_2d_t> vertices = tree.get_vertices();
+    vertices.insert(vertices.begin(), {p1, p2, p3});
+    face_list_t faces;
+    for (const auto &i : tree.get_leaf_triangles()) {
+        const auto &f = tree.get_face(i);
+        std::cout << "face: " << f.to_string() << std::endl;
+        // if (f.a < 3 || f.b < 3 || f.c < 3) continue;
+        faces.push_back(f);
+    }
+
+    std::cout << "final result" << std::endl;
+    for (auto &p : vertices) std::cout << p.to_string() << std::endl;
+    for (auto &f : faces) std::cout << f.to_string() << std::endl;
+
+    return {vertices, faces};
 }
 
 void trimesh_2d_t::validate() const {
@@ -1884,9 +1925,15 @@ void add_2d_types_modules(py::module &m) {
 
     // Defines Trimesh2D methods.
     trimesh_2d
-        // .def(py::init<vertices2d_t &, face_set_t &>(),
+        // .def(py::init<const std::vector<point_2d_t> &, const face_set_t &,
+        //               bool>(),
         //      "Creates a trimesh from vertices and faces", "vertices"_a,
-        //      "faces"_a)
+        //      "faces"_a, "validate"_a = false)
+        // .def(py::init<const std::vector<point_2d_t> &, const face_list_t &,
+        //               bool>(),
+        //      "Creates a trimesh from vertices and faces", "vertices"_a,
+        //      "faces"_a, "validate"_a = false)
+        .def_static("triangulate", &trimesh_2d_t::triangulate)
         .def_property_readonly("vertices", &trimesh_2d_t::vertices,
                                "The mesh vertices")
         .def_property_readonly("faces", &trimesh_2d_t::faces, "The mesh faces")

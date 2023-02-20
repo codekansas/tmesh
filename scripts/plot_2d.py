@@ -8,8 +8,13 @@ from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
 
 Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
 
+points = [Point2D(0, 0), Point2D(1, 0), Point2D(1, 1), Point2D(0, 1)]
+trimesh = Trimesh2D.triangulate(points)
+
 # To plot things, add them to this list.
-THINGS_TO_PLOT: List[Thing] = []
+THINGS_TO_PLOT: List[Thing] = [
+    trimesh,
+]
 
 ALPHA = 1.0
 
