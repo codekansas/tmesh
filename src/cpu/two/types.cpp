@@ -370,6 +370,21 @@ bool triangle_2d_t::is_clockwise() const {
     return (p3 - p1).cross(p2 - p1) < 0.0f;
 }
 
+bool triangle_2d_t::is_inside_circumcircle(const point_2d_t &p) const {
+    float a = p1.x - p.x;
+    float b = p1.y - p.y;
+    float c = p2.x - p.x;
+    float d = p2.y - p.y;
+    float e = p3.x - p.x;
+    float f = p3.y - p.y;
+
+    float det = a * d - b * c;
+    float s = a * f - e * b;
+    float t = e * d - c * f;
+
+    return s * t <= det * det;
+}
+
 bool triangle_2d_t::contains_point(const point_2d_t &p) const {
     return p.is_inside_triangle(*this);
 }
@@ -461,8 +476,16 @@ circle_2d_t::circle_2d_t(const point_2d_t &c, float r) {
 }
 
 circle_2d_t::circle_2d_t(const triangle_2d_t &t) {
-    center = (t.p1 + t.p2 + t.p3) / 3.0f;
-    radius = t.p1.distance_to_point(center);
+    float a = t.p1.distance_to_point(t.p2);
+    float b = t.p2.distance_to_point(t.p3);
+    float c = t.p3.distance_to_point(t.p1);
+    float s = (a + b + c) / 2.0f;
+    float area = std::sqrt(s * (s - a) * (s - b) * (s - c));
+    float r = a * b * c / (4.0f * area);
+    float x = (a * t.p1.x + b * t.p2.x + c * t.p3.x) / (a + b + c);
+    float y = (a * t.p1.y + b * t.p2.y + c * t.p3.y) / (a + b + c);
+    center = {x, y};
+    radius = r;
 }
 
 bool circle_2d_t::operator==(const circle_2d_t &c) const {
@@ -472,6 +495,10 @@ bool circle_2d_t::operator==(const circle_2d_t &c) const {
 bool circle_2d_t::operator!=(const circle_2d_t &c) const {
     return !(*this == c);
 }
+
+float circle_2d_t::area() const { return M_PI * radius * radius; }
+
+float circle_2d_t::circumference() const { return 2.0f * M_PI * radius; }
 
 bool circle_2d_t::contains_point(const point_2d_t &p) const {
     return center.distance_to_point(p) <= radius + get_tolerance();
@@ -1018,114 +1045,10 @@ trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices,
 }
 
 trimesh_2d_t trimesh_2d_t::triangulate(const std::vector<point_2d_t> &points) {
-    /*
-    Pseudocode:
+    // Need to implement the algorithm described in
+    // https://www.youtube.com/watch?v=1TUUevxkvp4
 
-    1. Collect all the vertices of the triangular mesh,
-       and create a point set P.
-    2. Create a supertriangle that contains all the points in
-       P. The supertriangle should be a triangle that is larger
-       than any triangle in the triangular mesh, and whose
-       vertices are outside the convex hull of the points in P.
-    3. Add the vertices of the supertriangle to the point set P.
-    4. Create an empty Delaunay triangulation T.
-    5. Add the supertriangle to T.
-    6. For each point in P, locate the triangle in T that contains it.
-    7. If the point is inside the triangle, create three new
-       triangles by connecting the point to each of the vertices
-       of the containing triangle.
-    8. Remove the containing triangle from T.
-    9. For each new triangle, calculate the circumcenter and circumradius.
-    10. If the circumcenter is inside the remaining triangles in T,
-        add the new triangle to T.
-    11. Repeat steps 7-11 for each point in P until all points
-        have been processed.
-    12. Remove any triangles in T that share an edge with the
-        supertriangle.
-    13. Remove the supertriangle vertices from P.
-    14. Return T.
-    */
-
-    std::vector<point_2d_t> vertices = points;
-
-    bounding_box_2d_t bb(points);
-    auto [min, max] = bb;
-    auto [dx, dy] = max - min;
-    auto d = std::max(dx, dy);
-    point_2d_t p1{min.x - 3 * d, min.y - d};
-    point_2d_t p2{min.x - d, min.y + 3 * d};
-    point_2d_t p3{min.x + 3 * d, min.y - d};
-
-    auto vi = vertices.size();
-    vertices.push_back(p1);
-    vertices.push_back(p2);
-    vertices.push_back(p3);
-
-    face_list_t faces;
-
-    // Adds the super triangle face first.
-    faces.push_back({vi, vi + 1, vi + 2});
-
-    for (size_t pi = 0; pi < vertices.size(); pi++) {
-        auto &p = vertices[pi];
-
-        std::cout << "D " << p.to_string() << std::endl;
-
-        auto it =
-            std::find_if(faces.begin(), faces.end(), [&](const face_t &face) {
-                auto &[vi, vj, vk] = face;
-                auto &p1 = vertices[vi];
-                auto &p2 = vertices[vj];
-                auto &p3 = vertices[vk];
-                triangle_2d_t t{p1, p2, p3};
-                return t.contains_point(p);
-            });
-        if (it == faces.end()) continue;
-
-        std::cout << "G" << std::endl;
-
-        auto &face = *it;
-        auto &[vi, vj, vk] = face;
-        auto &p1 = vertices[vi];
-        auto &p2 = vertices[vj];
-        auto &p3 = vertices[vk];
-
-        faces.erase(it);
-
-        circle_2d_t c1{{p, p1, p2}};
-        circle_2d_t c2{{p, p2, p3}};
-        circle_2d_t c3{{p, p3, p1}};
-
-        for (auto &face : faces) {
-            auto &[vi, vj, vk] = face;
-            auto &p1 = vertices[vi];
-            auto &p2 = vertices[vj];
-            auto &p3 = vertices[vk];
-            circle_2d_t c{{p1, p2, p3}};
-            if (c.contains_point(c1.center)) faces.push_back({vi, vj, pi});
-            if (c.contains_point(c2.center)) faces.push_back({vj, vk, pi});
-            if (c.contains_point(c3.center)) faces.push_back({vk, vi, pi});
-        }
-
-        faces.push_back({vi, vi + 3, vi + 5});
-        faces.push_back({vi + 3, vi + 4, vi + 5});
-        faces.push_back({vi + 3, vj, vi + 4});
-        faces.push_back({vi + 5, vi + 4, vk});
-    }
-
-    faces.erase(std::remove_if(faces.begin(), faces.end(),
-                               [&](const face_t &face) {
-                                   return face.a == vi || face.a == vi + 1 ||
-                                          face.a == vi + 2 || face.b == vi ||
-                                          face.b == vi + 1 ||
-                                          face.b == vi + 2 || face.c == vi ||
-                                          face.c == vi + 1 || face.c == vi + 2;
-                               }),
-                faces.end());
-
-    vertices.erase(vertices.end() - 3, vertices.end());
-
-    return {vertices, faces};
+    throw std::runtime_error("Not implemented");
 }
 
 void trimesh_2d_t::validate() const {
@@ -1865,6 +1788,8 @@ void add_2d_types_modules(py::module &m) {
         .def("edges", &triangle_2d_t::edges, "The triangle's edges")
         .def("is_clockwise", &triangle_2d_t::is_clockwise,
              "Is the triangle clockwise")
+        .def("is_inside_circumcircle", &triangle_2d_t::is_inside_circumcircle,
+             "Is the point inside the circumcircle of the triangle", "p"_a)
         .def("contains_point", &triangle_2d_t::contains_point,
              "Does the triangle contain a point", "p"_a)
         .def("contains_triangle", &triangle_2d_t::contains_triangle,
@@ -1892,6 +1817,9 @@ void add_2d_types_modules(py::module &m) {
              "center"_a, "radius"_a)
         .def_readwrite("center", &circle_2d_t::center, "The circle's center")
         .def_readwrite("radius", &circle_2d_t::radius, "The circle's radius")
+        .def_property_readonly("area", &circle_2d_t::area, "The circle's area")
+        .def_property_readonly("circumference", &circle_2d_t::circumference,
+                               "The circle's circumference")
         .def("__str__", &circle_2d_t::to_string, py::is_operator())
         .def("__repr__", &circle_2d_t::to_string, py::is_operator())
         .def("__eq__", &circle_2d_t::operator==, "Equality with another circle",

@@ -104,6 +104,7 @@ struct triangle_2d_t {
     std::vector<line_2d_t> edges() const;
     bool is_clockwise() const;
 
+    bool is_inside_circumcircle(const point_2d_t &p) const;
     bool contains_point(const point_2d_t &p) const;
     bool contains_triangle(const triangle_2d_t &t) const;
     bool intersects_bounding_box(const bounding_box_2d_t &bb) const;
@@ -130,6 +131,8 @@ struct circle_2d_t {
     bool operator==(const circle_2d_t &c) const;
     bool operator!=(const circle_2d_t &c) const;
 
+    float area() const;
+    float circumference() const;
     bool contains_point(const point_2d_t &p) const;
 
     std::string to_string() const;
