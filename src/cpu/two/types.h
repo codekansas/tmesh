@@ -15,6 +15,7 @@ namespace trimesh {
 struct point_2d_t;
 struct line_2d_t;
 struct triangle_2d_t;
+struct circle_2d_t;
 struct bounding_box_2d_t;
 struct polygon_2d_t;
 struct affine_2d_t;
@@ -114,6 +115,22 @@ struct triangle_2d_t {
     float distance_to_bounding_box(const bounding_box_2d_t &bb) const;
     point_2d_t point_from_barycentric_coords(
         const barycentric_coordinates_t &b) const;
+
+    std::string to_string() const;
+};
+
+struct circle_2d_t {
+    point_2d_t center;
+    float radius;
+
+    circle_2d_t();
+    circle_2d_t(const point_2d_t &c, float r);
+    circle_2d_t(const triangle_2d_t &t);
+
+    bool operator==(const circle_2d_t &c) const;
+    bool operator!=(const circle_2d_t &c) const;
+
+    bool contains_point(const point_2d_t &p) const;
 
     std::string to_string() const;
 };

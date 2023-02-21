@@ -446,6 +446,43 @@ std::string triangle_2d_t::to_string() const {
     return ss.str();
 }
 
+/* ----------- *
+ * circle_2d_t *
+ * ----------- */
+
+circle_2d_t::circle_2d_t() {
+    center = {0.0f, 0.0f};
+    radius = 0.0f;
+}
+
+circle_2d_t::circle_2d_t(const point_2d_t &c, float r) {
+    center = c;
+    radius = r;
+}
+
+circle_2d_t::circle_2d_t(const triangle_2d_t &t) {
+    center = (t.p1 + t.p2 + t.p3) / 3.0f;
+    radius = t.p1.distance_to_point(center);
+}
+
+bool circle_2d_t::operator==(const circle_2d_t &c) const {
+    return center == c.center && std::abs(radius - c.radius) < get_tolerance();
+}
+
+bool circle_2d_t::operator!=(const circle_2d_t &c) const {
+    return !(*this == c);
+}
+
+bool circle_2d_t::contains_point(const point_2d_t &p) const {
+    return center.distance_to_point(p) <= radius + get_tolerance();
+}
+
+std::string circle_2d_t::to_string() const {
+    std::ostringstream ss;
+    ss << "Circle2D(" << center.to_string() << ", " << radius << ")";
+    return ss.str();
+}
+
 /* ----------------- *
  * bounding_box_2d_t *
  * ----------------- */
@@ -981,47 +1018,112 @@ trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices,
 }
 
 trimesh_2d_t trimesh_2d_t::triangulate(const std::vector<point_2d_t> &points) {
-    // Implements Delaunay triangulation to generate faces from only vertices.
+    /*
+    Pseudocode:
 
-    // Checks that there are at least three vertices.
-    if (points.size() < 3) {
-        throw std::invalid_argument("Not enough vertices");
-    }
+    1. Collect all the vertices of the triangular mesh,
+       and create a point set P.
+    2. Create a supertriangle that contains all the points in
+       P. The supertriangle should be a triangle that is larger
+       than any triangle in the triangular mesh, and whose
+       vertices are outside the convex hull of the points in P.
+    3. Add the vertices of the supertriangle to the point set P.
+    4. Create an empty Delaunay triangulation T.
+    5. Add the supertriangle to T.
+    6. For each point in P, locate the triangle in T that contains it.
+    7. If the point is inside the triangle, create three new
+       triangles by connecting the point to each of the vertices
+       of the containing triangle.
+    8. Remove the containing triangle from T.
+    9. For each new triangle, calculate the circumcenter and circumradius.
+    10. If the circumcenter is inside the remaining triangles in T,
+        add the new triangle to T.
+    11. Repeat steps 7-11 for each point in P until all points
+        have been processed.
+    12. Remove any triangles in T that share an edge with the
+        supertriangle.
+    13. Remove the supertriangle vertices from P.
+    14. Return T.
+    */
 
-    // Creates a super triangle.
-    bounding_box_2d_t bb{points};
-    float dx = bb.max.x - bb.min.x, dy = bb.max.y - bb.min.y;
-    point_2d_t p1 = {bb.min.x - dx / 2, bb.min.y};
-    point_2d_t p2 = {bb.max.x + dx / 2, bb.min.y};
-    point_2d_t p3 = {bb.min.x + dx / 2, bb.max.y + dy};
-    triangle_split_tree_2d_t tree{{0, 1, 2}, {p1, p2, p3}};
+    std::vector<point_2d_t> vertices = points;
 
-    std::cout << "super triangle: " << p1.to_string() << ", " << p2.to_string()
-              << ", " << p3.to_string() << std::endl;
+    bounding_box_2d_t bb(points);
+    auto [min, max] = bb;
+    auto [dx, dy] = max - min;
+    auto d = std::max(dx, dy);
+    point_2d_t p1{min.x - 3 * d, min.y - d};
+    point_2d_t p2{min.x - d, min.y + 3 * d};
+    point_2d_t p3{min.x + 3 * d, min.y - d};
 
-    // Adds points one by one.
-    for (const auto &p : points) {
-        std::cout << "adding " << p.to_string() << std::endl;
-        auto i = tree.get_leaf_triangle_which_contains(p);
-        if (!i.has_value())
-            throw std::invalid_argument("Point is outside the super triangle");
-        tree.split_triangle(p, i.value());
-    }
+    auto vi = vertices.size();
+    vertices.push_back(p1);
+    vertices.push_back(p2);
+    vertices.push_back(p3);
 
-    // Gets all triangles which aren't from the super triangle.
-    std::vector<point_2d_t> vertices = tree.get_vertices();
-    vertices.insert(vertices.begin(), {p1, p2, p3});
     face_list_t faces;
-    for (const auto &i : tree.get_leaf_triangles()) {
-        const auto &f = tree.get_face(i);
-        std::cout << "face: " << f.to_string() << std::endl;
-        // if (f.a < 3 || f.b < 3 || f.c < 3) continue;
-        faces.push_back(f);
+
+    // Adds the super triangle face first.
+    faces.push_back({vi, vi + 1, vi + 2});
+
+    for (size_t pi = 0; pi < vertices.size(); pi++) {
+        auto &p = vertices[pi];
+
+        std::cout << "D " << p.to_string() << std::endl;
+
+        auto it =
+            std::find_if(faces.begin(), faces.end(), [&](const face_t &face) {
+                auto &[vi, vj, vk] = face;
+                auto &p1 = vertices[vi];
+                auto &p2 = vertices[vj];
+                auto &p3 = vertices[vk];
+                triangle_2d_t t{p1, p2, p3};
+                return t.contains_point(p);
+            });
+        if (it == faces.end()) continue;
+
+        std::cout << "G" << std::endl;
+
+        auto &face = *it;
+        auto &[vi, vj, vk] = face;
+        auto &p1 = vertices[vi];
+        auto &p2 = vertices[vj];
+        auto &p3 = vertices[vk];
+
+        faces.erase(it);
+
+        circle_2d_t c1{{p, p1, p2}};
+        circle_2d_t c2{{p, p2, p3}};
+        circle_2d_t c3{{p, p3, p1}};
+
+        for (auto &face : faces) {
+            auto &[vi, vj, vk] = face;
+            auto &p1 = vertices[vi];
+            auto &p2 = vertices[vj];
+            auto &p3 = vertices[vk];
+            circle_2d_t c{{p1, p2, p3}};
+            if (c.contains_point(c1.center)) faces.push_back({vi, vj, pi});
+            if (c.contains_point(c2.center)) faces.push_back({vj, vk, pi});
+            if (c.contains_point(c3.center)) faces.push_back({vk, vi, pi});
+        }
+
+        faces.push_back({vi, vi + 3, vi + 5});
+        faces.push_back({vi + 3, vi + 4, vi + 5});
+        faces.push_back({vi + 3, vj, vi + 4});
+        faces.push_back({vi + 5, vi + 4, vk});
     }
 
-    std::cout << "final result" << std::endl;
-    for (auto &p : vertices) std::cout << p.to_string() << std::endl;
-    for (auto &f : faces) std::cout << f.to_string() << std::endl;
+    faces.erase(std::remove_if(faces.begin(), faces.end(),
+                               [&](const face_t &face) {
+                                   return face.a == vi || face.a == vi + 1 ||
+                                          face.a == vi + 2 || face.b == vi ||
+                                          face.b == vi + 1 ||
+                                          face.b == vi + 2 || face.c == vi ||
+                                          face.c == vi + 1 || face.c == vi + 2;
+                               }),
+                faces.end());
+
+    vertices.erase(vertices.end() - 3, vertices.end());
 
     return {vertices, faces};
 }
@@ -1595,6 +1697,7 @@ void add_2d_types_modules(py::module &m) {
     auto point_2d = py::class_<point_2d_t>(m, "Point2D");
     auto line_2d = py::class_<line_2d_t>(m, "Line2D");
     auto triangle_2d = py::class_<triangle_2d_t>(m, "Triangle2D");
+    auto circle_2d = py::class_<circle_2d_t>(m, "Circle2D");
     auto bbox_2d = py::class_<bounding_box_2d_t>(m, "BoundingBox2D");
     auto polygon_2d = py::class_<polygon_2d_t>(m, "Polygon2D");
     auto affine_2d = py::class_<affine_2d_t>(m, "Affine2D");
@@ -1782,6 +1885,21 @@ void add_2d_types_modules(py::module &m) {
         .def("point_from_barycentric_coords",
              &triangle_2d_t::point_from_barycentric_coords,
              "Returns a point from barycentric coordinates", "b"_a);
+
+    // Defines Circle2D methods.
+    circle_2d
+        .def(py::init<const point_2d_t &, double>(), "A circle in 2D space",
+             "center"_a, "radius"_a)
+        .def_readwrite("center", &circle_2d_t::center, "The circle's center")
+        .def_readwrite("radius", &circle_2d_t::radius, "The circle's radius")
+        .def("__str__", &circle_2d_t::to_string, py::is_operator())
+        .def("__repr__", &circle_2d_t::to_string, py::is_operator())
+        .def("__eq__", &circle_2d_t::operator==, "Equality with another circle",
+             "other"_a, py::is_operator())
+        .def("__ne__", &circle_2d_t::operator!=,
+             "Inequality with another circle", "other"_a, py::is_operator())
+        .def("contains_point", &circle_2d_t::contains_point,
+             "Does the circle contain a point", "p"_a);
 
     // Defines BoundingBox2D methods.
     bbox_2d
