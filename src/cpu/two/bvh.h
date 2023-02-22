@@ -62,6 +62,30 @@ struct triangle_split_tree_2d_t {
     const size_t count_leaf_triangles() const;
 };
 
+struct delaunay_split_tree_2d_t {
+   private:
+    const triangle_2d_t root;
+    std::vector<face_t> faces;
+    std::vector<std::vector<size_t>> children;
+    std::vector<std::vector<size_t>> parents;
+    point_2d_set_t vertices;
+
+    std::optional<size_t> neighbor(size_t i, const edge_t &edge) const;
+    void make_delaunay(size_t i);
+    void add_triangle(const face_t &f,
+                      const std::initializer_list<size_t> &parents);
+    void add_triangles(const std::vector<face_t> &fs,
+                       const std::initializer_list<size_t> &parents);
+
+   public:
+    delaunay_split_tree_2d_t(const triangle_2d_t &root);
+    ~delaunay_split_tree_2d_t() = default;
+
+    bool is_leaf(size_t i) const;
+    std::vector<size_t> get_leaf_triangles() const;
+    void split_triangle(const point_2d_t &p, size_t i);
+};
+
 // Defines the hierarchical box tree structure to support 2D queries.
 // Each element in the vector is (triangle_id, left_child, right_child, box)
 // where triangle_id is the index of the triangle in the trimesh, left_child

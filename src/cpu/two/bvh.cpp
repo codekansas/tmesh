@@ -380,6 +380,108 @@ const size_t triangle_split_tree_2d_t::count_leaf_triangles() const {
     return count;
 }
 
+/* ------------------------ *
+ * delaunay_split_tree_2d_t *
+ * ------------------------ */
+
+std::optional<size_t> delaunay_split_tree_2d_t::neighbor(
+    size_t i, const edge_t &edge) const {
+    for (const auto &parent : this->parents[i]) {
+        for (const auto &sibling : this->children[parent]) {
+            if (sibling == i) continue;
+            const auto &face = this->faces[sibling];
+            if (face.has_edge(edge)) return sibling;
+        }
+    }
+    return {};
+}
+
+void delaunay_split_tree_2d_t::make_delaunay(size_t i) {
+    if (!this->children[i].empty()) return;
+    const auto &face = this->faces[i];
+    const triangle_2d_t t{this->vertices[face.a], this->vertices[face.b],
+                          this->vertices[face.c]};
+    for (const auto &edge : this->faces[i].get_edges(/* directed */ false)) {
+        const auto neighbor = this->neighbor(i, edge);
+        if (!neighbor.has_value()) continue;
+        const auto &neighbor_face = this->faces[neighbor.value()];
+
+        // Gets the vertex IDs which are not part of the current edge.
+        const auto &vc = face.get_other_vertex(edge),
+                   &vn = neighbor_face.get_other_vertex(edge);
+
+        // Gets the actual points which are not part of the current edge.
+        const auto &pc = this->vertices[vc], &pn = this->vertices[vn];
+
+        // Gets the other triangle.
+        const triangle_2d_t t2{this->vertices[edge.b], this->vertices[edge.a],
+                               pn};
+
+        // If the other point is inside the circumcircle of this triangle,
+        // then we need to flip the edge. We add the two new triangles as
+        // children of both the current triangle and the neighbor.
+        if (t.is_inside_circumcircle(pn) || t2.is_inside_circumcircle(pc)) {
+            this->add_triangles({{face.a, edge.b, vc}, {face.b, edge.a, vn}},
+                                {i, neighbor.value()});
+            return;
+        }
+    }
+}
+
+void delaunay_split_tree_2d_t::add_triangle(
+    const face_t &f, const std::initializer_list<size_t> &parents) {
+    for (const auto &parent : parents) {
+        this->children[parent].push_back(this->faces.size());
+    }
+    this->faces.push_back(f);
+    this->parents.push_back(parents);
+    this->children.push_back({});
+}
+
+void delaunay_split_tree_2d_t::add_triangles(
+    const std::vector<face_t> &fs,
+    const std::initializer_list<size_t> &parents) {
+    for (const auto &f : fs) {
+        this->add_triangle(f, parents);
+    }
+    for (size_t i = this->faces.size() - fs.size(); i < this->faces.size();
+         i++) {
+        this->make_delaunay(i);
+    }
+}
+
+delaunay_split_tree_2d_t::delaunay_split_tree_2d_t(const triangle_2d_t &root)
+    : root(root) {
+    this->faces = {{0, 1, 2}};
+    this->children = {{}};
+    this->parents = {{}};
+    this->vertices = {root.p1, root.p2, root.p3};
+}
+
+bool delaunay_split_tree_2d_t::is_leaf(size_t i) const {
+    return this->children[i].empty();
+}
+
+std::vector<size_t> delaunay_split_tree_2d_t::get_leaf_triangles() const {
+    std::vector<size_t> leaf_triangles;
+    for (size_t i = 0; i < this->faces.size(); i++) {
+        if (is_leaf(i)) {
+            leaf_triangles.push_back(i);
+        }
+    }
+    return leaf_triangles;
+}
+
+void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
+    const auto pi = this->vertices.add_point(p);
+    const auto &f = this->faces[i];
+    const auto &a = this->vertices[f.a], &b = this->vertices[f.b],
+               &c = this->vertices[f.c];
+
+    // Add the new triangles.
+    this->add_triangles({{f.a, f.b, pi}, {f.b, f.c, pi}, {f.c, f.a, pi}}, {i});
+}
+
 /* -------- *
  * bvh_2d_t *
  * -------- */
@@ -587,6 +689,9 @@ void add_2d_bvh_modules(py::module &m) {
     auto ttree_2d = py::class_<triangle_split_tree_2d_t,
                                std::shared_ptr<triangle_split_tree_2d_t>>(
         m, "TriangleSplitTree2D");
+    auto dtree_2d = py::class_<delaunay_split_tree_2d_t,
+                               std::shared_ptr<delaunay_split_tree_2d_t>>(
+        m, "DelaunaySplitTree2D");
     auto bvh_2d = py::class_<bvh_2d_t, std::shared_ptr<bvh_2d_t>>(m, "BVH2D");
 
     ttree_2d
@@ -617,6 +722,18 @@ void add_2d_bvh_modules(py::module &m) {
              "Returns the number of leaf triangles", py::is_operator())
         .def("__getitem__", &triangle_split_tree_2d_t::get_triangle, "i"_a,
              "Get a node", py::is_operator());
+
+    dtree_2d
+        .def(py::init<const triangle_2d_t &>(), "root"_a,
+             "Constructs a 2D Delaunay split tree from a face and a list "
+             "of vertices.")
+        .def("is_leaf", &delaunay_split_tree_2d_t::is_leaf, "i"_a,
+             "Returns true if the node is a leaf.")
+        .def("get_leaf_triangles",
+             &delaunay_split_tree_2d_t::get_leaf_triangles,
+             "Returns the triangles associated with a leaf.")
+        .def("split_triangle", &delaunay_split_tree_2d_t::split_triangle,
+             "point"_a, "i"_a, "Splits a triangle at a point.");
 
     bvh_2d
         .def(py::init<const trimesh_2d_t &>(), "Boundary volume hierarchy",
