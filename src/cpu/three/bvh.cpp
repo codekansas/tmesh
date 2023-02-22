@@ -23,12 +23,12 @@ void sort_bounding_boxes(const std::vector<bounding_box_3d_t> &boxes,
     }
 
     // Gets the bounding box for the bounding boxes.
-    float min_x = std::numeric_limits<float>::max(),
-          min_y = std::numeric_limits<float>::max(),
-          min_z = std::numeric_limits<float>::max(),
-          max_x = std::numeric_limits<float>::lowest(),
-          max_y = std::numeric_limits<float>::lowest(),
-          max_z = std::numeric_limits<float>::lowest();
+    double min_x = std::numeric_limits<double>::max(),
+           min_y = std::numeric_limits<double>::max(),
+           min_z = std::numeric_limits<double>::max(),
+           max_x = std::numeric_limits<double>::lowest(),
+           max_y = std::numeric_limits<double>::lowest(),
+           max_z = std::numeric_limits<double>::lowest();
     for (size_t i = lo; i < hi; i++) {
         const auto &box = boxes[indices[i]];
         min_x = std::min(min_x, box.min.x);
@@ -40,7 +40,7 @@ void sort_bounding_boxes(const std::vector<bounding_box_3d_t> &boxes,
     }
 
     // Gets the longest axis.
-    float dx = max_x - min_x, dy = max_y - min_y, dz = max_z - min_z;
+    double dx = max_x - min_x, dy = max_y - min_y, dz = max_z - min_z;
     size_t axis = 0;
     if (dy > dx) {
         axis = 1;

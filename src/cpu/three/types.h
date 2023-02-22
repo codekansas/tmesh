@@ -24,32 +24,32 @@ struct trimesh_3d_t;
 struct tetramesh_3d_t;
 
 struct point_3d_t {
-    float x, y, z;
+    double x, y, z;
 
     point_3d_t operator+=(const point_3d_t &p);
     point_3d_t operator-=(const point_3d_t &p);
     point_3d_t operator*=(const point_3d_t &p);
-    point_3d_t operator*=(float s);
+    point_3d_t operator*=(double s);
     point_3d_t operator/=(const point_3d_t &p);
-    point_3d_t operator/=(float s);
+    point_3d_t operator/=(double s);
     bool operator==(const point_3d_t &p) const;
     bool operator!=(const point_3d_t &p) const;
     bool operator<(const point_3d_t &p) const;
     point_3d_t operator<<=(const affine_3d_t &q);
 
     point_3d_t normalize() const;
-    float determinant(const point_3d_t &a, const point_3d_t &b) const;
-    float length() const;
-    float dot(const point_3d_t &other) const;
+    double determinant(const point_3d_t &a, const point_3d_t &b) const;
+    double length() const;
+    double dot(const point_3d_t &other) const;
     point_3d_t cross(const point_3d_t &other) const;
 
     barycentric_coordinates_t barycentric_coordinates(
         const triangle_3d_t &t) const;
     bool is_inside_bounding_box(const bounding_box_3d_t &bb) const;
 
-    float distance_to_point(const point_3d_t &other) const;
-    float distance_to_line(const line_3d_t &l) const;
-    float distance_to_triangle(const triangle_3d_t &t) const;
+    double distance_to_point(const point_3d_t &other) const;
+    double distance_to_line(const line_3d_t &l) const;
+    double distance_to_triangle(const triangle_3d_t &t) const;
     bool is_coplanar(const triangle_3d_t &t) const;
 
     std::optional<point_3d_t> project_to_line(const line_3d_t &l) const;
@@ -62,10 +62,10 @@ struct point_3d_t {
 point_3d_t operator+(const point_3d_t &p1, const point_3d_t &p2);
 point_3d_t operator-(const point_3d_t &p1, const point_3d_t &p2);
 point_3d_t operator*(const point_3d_t &p1, const point_3d_t &p2);
-point_3d_t operator*(float s, const point_3d_t &p);
-point_3d_t operator*(const point_3d_t &p, float s);
+point_3d_t operator*(double s, const point_3d_t &p);
+point_3d_t operator*(const point_3d_t &p, double s);
 point_3d_t operator/(const point_3d_t &p1, const point_3d_t &p2);
-point_3d_t operator/(const point_3d_t &p, float s);
+point_3d_t operator/(const point_3d_t &p, double s);
 point_3d_t operator<<(const point_3d_t &p, const affine_3d_t &q);
 
 struct line_3d_t {
@@ -83,15 +83,15 @@ struct line_3d_t {
         const triangle_3d_t &t) const;
     bool intersects_bounding_box(const bounding_box_3d_t &b) const;
 
-    float distance_to_point(const point_3d_t &p) const;
-    float distance_to_line(const line_3d_t &l) const;
+    double distance_to_point(const point_3d_t &p) const;
+    double distance_to_line(const line_3d_t &l) const;
 
     std::string to_string() const;
 };
 
 struct circumcircle_3d_t {
     point_3d_t center;
-    float radius;
+    double radius;
 
     bool operator==(const circumcircle_3d_t &c) const;
     bool operator!=(const circumcircle_3d_t &c) const;
@@ -108,13 +108,13 @@ struct triangle_3d_t {
     bool operator!=(const triangle_3d_t &t) const;
     triangle_3d_t operator<<=(const affine_3d_t &q);
 
-    float area() const;
+    double area() const;
     point_3d_t center() const;
     point_3d_t normal() const;
     std::vector<point_3d_t> vertices() const;
     std::vector<line_3d_t> edges() const;
 
-    float distance_to_point(const point_3d_t &p) const;
+    double distance_to_point(const point_3d_t &p) const;
     bool contains_point(const point_3d_t &p) const;
     bool is_coplanar(const triangle_3d_t &t) const;
     circumcircle_3d_t circumcircle() const;
@@ -132,7 +132,7 @@ struct tetrahedron_3d_t {
     bool operator!=(const tetrahedron_3d_t &t) const;
     tetrahedron_3d_t operator<<=(const affine_3d_t &a);
 
-    float signed_volume() const;
+    double signed_volume() const;
     tetrahedron_3d_t flip_inside_out() const;
     std::vector<triangle_3d_t> faces() const;
 
@@ -161,7 +161,7 @@ struct bounding_box_3d_t {
     std::vector<tetrahedron_3d_t> tetrahedrons() const;
 
     point_3d_t center() const;
-    float volume() const;
+    double volume() const;
 
     std::string to_string() const;
 };
@@ -175,7 +175,7 @@ struct polygon_3d_t {
     bool operator!=(const polygon_3d_t &p) const;
     polygon_3d_t operator<<=(const affine_3d_t &q);
 
-    float area() const;
+    double area() const;
     point_3d_t normal() const;
     point_3d_t center() const;
     bounding_box_3d_t bounding_box() const;
@@ -190,15 +190,15 @@ struct affine_3d_t {
     // r20 r21 r22 tz
     // 0   0   0   1
 
-    float r00, r01, r02, r10, r11, r12, r20, r21, r22, tx, ty, tz;
+    double r00, r01, r02, r10, r11, r12, r20, r21, r22, tx, ty, tz;
 
-    affine_3d_t(float r00, float r01, float r02, float r10, float r11,
-                float r12, float r20, float r21, float r22, float tx, float ty,
-                float tz);
+    affine_3d_t(double r00, double r01, double r02, double r10, double r11,
+                double r12, double r20, double r21, double r22, double tx,
+                double ty, double tz);
     affine_3d_t(
-        std::optional<std::tuple<float, float, float>> rot = std::nullopt,
-        std::optional<std::tuple<float, float, float>> trans = std::nullopt,
-        std::optional<float> scale = std::nullopt);
+        std::optional<std::tuple<double, double, double>> rot = std::nullopt,
+        std::optional<std::tuple<double, double, double>> trans = std::nullopt,
+        std::optional<double> scale = std::nullopt);
 
     affine_3d_t operator*=(const affine_3d_t &a);
 
@@ -242,7 +242,7 @@ struct trimesh_3d_t {
     const face_list_t &faces() const;
     triangle_3d_t get_triangle(const face_t &face) const;
     std::vector<triangle_3d_t> get_triangles() const;
-    float signed_volume() const;
+    double signed_volume() const;
     trimesh_3d_t flip_inside_out() const;
     trimesh_3d_t subdivide(bool at_edges = true) const;
     tetramesh_3d_t to_tetramesh() const;

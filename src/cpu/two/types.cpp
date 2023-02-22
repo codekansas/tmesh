@@ -40,7 +40,7 @@ point_2d_t point_2d_t::operator*=(const point_2d_t &p) {
     return *this;
 }
 
-point_2d_t point_2d_t::operator*=(float s) {
+point_2d_t point_2d_t::operator*=(double s) {
     x *= s;
     y *= s;
     return *this;
@@ -52,7 +52,7 @@ point_2d_t point_2d_t::operator/=(const point_2d_t &p) {
     return *this;
 }
 
-point_2d_t point_2d_t::operator/=(float s) {
+point_2d_t point_2d_t::operator/=(double s) {
     x /= s;
     y /= s;
     return *this;
@@ -79,33 +79,33 @@ point_2d_t point_2d_t::operator<<=(const affine_2d_t &a) {
 }
 
 point_2d_t point_2d_t::normalize() const {
-    float l = length();
+    double l = length();
     return point_2d_t{x / l, y / l};
 }
 
-point_2d_t point_2d_t::rotate(float angle) const {
-    float c = std::cos(angle);
-    float s = std::sin(angle);
+point_2d_t point_2d_t::rotate(double angle) const {
+    double c = std::cos(angle);
+    double s = std::sin(angle);
     return point_2d_t{x * c - y * s, x * s + y * c};
 }
 
-float point_2d_t::determinant(const point_2d_t &other) const {
+double point_2d_t::determinant(const point_2d_t &other) const {
     return x * other.y - y * other.x;
 }
 
-float point_2d_t::length() const { return std::sqrt(x * x + y * y); }
+double point_2d_t::length() const { return std::sqrt(x * x + y * y); }
 
-float point_2d_t::dot(const point_2d_t &other) const {
+double point_2d_t::dot(const point_2d_t &other) const {
     return x * other.x + y * other.y;
 }
 
-float point_2d_t::cross(const point_2d_t &other) const {
+double point_2d_t::cross(const point_2d_t &other) const {
     return x * other.y - y * other.x;
 }
 
-float point_2d_t::angle(const point_2d_t &other) const {
-    float dot = this->dot(other);
-    float det = this->determinant(other);
+double point_2d_t::angle(const point_2d_t &other) const {
+    double dot = this->dot(other);
+    double det = this->determinant(other);
     return std::atan2(det, dot);
 }
 
@@ -115,16 +115,16 @@ barycentric_coordinates_t point_2d_t::barycentric_coordinates(
     point_2d_t v1 = t.p3 - t.p1;
     point_2d_t v2 = *this - t.p1;
 
-    float d00 = v0.dot(v0);
-    float d01 = v0.dot(v1);
-    float d11 = v1.dot(v1);
-    float d20 = v2.dot(v0);
-    float d21 = v2.dot(v1);
-    float denom = d00 * d11 - d01 * d01;
+    double d00 = v0.dot(v0);
+    double d01 = v0.dot(v1);
+    double d11 = v1.dot(v1);
+    double d20 = v2.dot(v0);
+    double d21 = v2.dot(v1);
+    double denom = d00 * d11 - d01 * d01;
 
-    float v = (d11 * d20 - d01 * d21) / denom;
-    float w = (d00 * d21 - d01 * d20) / denom;
-    float u = 1.0f - v - w;
+    double v = (d11 * d20 - d01 * d21) / denom;
+    double w = (d00 * d21 - d01 * d20) / denom;
+    double u = 1.0f - v - w;
 
     return {u, v, w};
 }
@@ -139,26 +139,26 @@ bool point_2d_t::is_inside_bounding_box(const bounding_box_2d_t &bb) const {
     return x >= bb.min.x && x <= bb.max.x && y >= bb.min.y && y <= bb.max.y;
 }
 
-float point_2d_t::distance_to_point(const point_2d_t &p) const {
+double point_2d_t::distance_to_point(const point_2d_t &p) const {
     return (*this - p).length();
 }
 
-float point_2d_t::distance_to_line(const line_2d_t &l) const {
+double point_2d_t::distance_to_line(const line_2d_t &l) const {
     return l.distance_to_point(*this);
 }
 
-float point_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
+double point_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
     return t.distance_to_point(*this);
 }
 
-float point_2d_t::distance_to_bounding_box(const bounding_box_2d_t &bb) const {
+double point_2d_t::distance_to_bounding_box(const bounding_box_2d_t &bb) const {
     return bb.distance_to_point(*this);
 }
 
 std::optional<point_2d_t> point_2d_t::project_to_line(
     const line_2d_t &l) const {
-    float dx = l.p2.x - l.p1.x, dy = l.p2.y - l.p1.y;
-    float t = ((x - l.p1.x) * dx + (y - l.p1.y) * dy) / (dx * dx + dy * dy);
+    double dx = l.p2.x - l.p1.x, dy = l.p2.y - l.p1.y;
+    double t = ((x - l.p1.x) * dx + (y - l.p1.y) * dy) / (dx * dx + dy * dy);
     if (t < 0.0f || t > 1.0f) return std::nullopt;
     return point_2d_t{l.p1.x + t * dx, l.p1.y + t * dy};
 }
@@ -181,11 +181,11 @@ point_2d_t operator*(const point_2d_t &p1, const point_2d_t &p2) {
     return {p1.x * p2.x, p1.y * p2.y};
 }
 
-point_2d_t operator*(const point_2d_t &p, float s) {
+point_2d_t operator*(const point_2d_t &p, double s) {
     return {p.x * s, p.y * s};
 }
 
-point_2d_t operator*(float s, const point_2d_t &p) {
+point_2d_t operator*(double s, const point_2d_t &p) {
     return {p.x * s, p.y * s};
 }
 
@@ -193,7 +193,7 @@ point_2d_t operator/(const point_2d_t &p1, const point_2d_t &p2) {
     return {p1.x / p2.x, p1.y / p2.y};
 }
 
-point_2d_t operator/(const point_2d_t &p, float s) {
+point_2d_t operator/(const point_2d_t &p, double s) {
     return {p.x / s, p.y / s};
 }
 
@@ -229,13 +229,13 @@ point_2d_t line_2d_t::closest_point(const point_2d_t &p) const {
     point_2d_t v = p2 - p1;
     point_2d_t w = p - p1;
 
-    float c1 = w.dot(v);
+    double c1 = w.dot(v);
     if (c1 <= 0.0f) return p1;
 
-    float c2 = v.dot(v);
+    double c2 = v.dot(v);
     if (c2 <= c1) return p2;
 
-    float b = c1 / c2;
+    double b = c1 / c2;
     return p1 + v * b;
 }
 
@@ -244,12 +244,12 @@ std::optional<point_2d_t> line_2d_t::line_intersection(
     point_2d_t r = p2 - p1;
     point_2d_t s = l.p2 - l.p1;
 
-    float rxs = r.cross(s);
+    double rxs = r.cross(s);
     if (std::abs(rxs) < get_tolerance()) return std::nullopt;
 
     point_2d_t qmp1 = l.p1 - p1;
-    float t = qmp1.cross(s) / rxs;
-    float u = qmp1.cross(r) / rxs;
+    double t = qmp1.cross(s) / rxs;
+    double u = qmp1.cross(r) / rxs;
 
     if (t < -get_tolerance() || t > 1.0f + get_tolerance() ||
         u < -get_tolerance() || u > 1.0f + get_tolerance())
@@ -290,12 +290,12 @@ bool line_2d_t::intersects_bounding_box(const bounding_box_2d_t &b) const {
     return false;
 }
 
-float line_2d_t::distance_to_point(const point_2d_t &p) const {
+double line_2d_t::distance_to_point(const point_2d_t &p) const {
     point_2d_t pb = closest_point(p);
     return p.distance_to_point(pb);
 }
 
-float line_2d_t::distance_to_line(const line_2d_t &l) const {
+double line_2d_t::distance_to_line(const line_2d_t &l) const {
     std::optional<point_2d_t> p = line_intersection(l);
 
     if (p) return 0.0f;
@@ -304,11 +304,11 @@ float line_2d_t::distance_to_line(const line_2d_t &l) const {
                      l.distance_to_point(p1), l.distance_to_point(p2)});
 }
 
-float line_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
+double line_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
     return t.distance_to_line(*this);
 }
 
-float line_2d_t::distance_to_bounding_box(const bounding_box_2d_t &bb) const {
+double line_2d_t::distance_to_bounding_box(const bounding_box_2d_t &bb) const {
     return bb.distance_to_line(*this);
 }
 
@@ -354,7 +354,7 @@ triangle_2d_t triangle_2d_t::operator<<=(const affine_2d_t &a) {
     return *this;
 }
 
-float triangle_2d_t::area() const {
+double triangle_2d_t::area() const {
     return std::abs((p1.x - p3.x) * (p2.y - p1.y) -
                     (p1.x - p2.x) * (p3.y - p1.y)) /
            2.0f;
@@ -378,18 +378,18 @@ bool triangle_2d_t::circumcircle_contains(const point_2d_t &p) const {
     return circumcircle().contains_point(p);
 
     // Faster version.
-    // float a = p1.x - p.x;
-    // float b = p1.y - p.y;
-    // float c = p2.x - p.x;
-    // float d = p2.y - p.y;
-    // float e = p3.x - p.x;
-    // float f = p3.y - p.y;
+    // double a = p1.x - p.x;
+    // double b = p1.y - p.y;
+    // double c = p2.x - p.x;
+    // double d = p2.y - p.y;
+    // double e = p3.x - p.x;
+    // double f = p3.y - p.y;
 
-    // float A = a * (p1.x + p.x) + b * (p1.y + p.y);
-    // float B = c * (p2.x + p.x) + d * (p2.y + p.y);
-    // float C = e * (p3.x + p.x) + f * (p3.y + p.y);
+    // double A = a * (p1.x + p.x) + b * (p1.y + p.y);
+    // double B = c * (p2.x + p.x) + d * (p2.y + p.y);
+    // double C = e * (p3.x + p.x) + f * (p3.y + p.y);
 
-    // float det = a * (d * f - e * B) - b * (c * f - e * C) + A * (c * B - d *
+    // double det = a * (d * f - e * B) - b * (c * f - e * C) + A * (c * B - d *
     // C);
 
     // return det > 0.0f;
@@ -429,14 +429,14 @@ std::vector<point_2d_t> triangle_2d_t::triangle_intersection(
     return points;
 }
 
-float triangle_2d_t::distance_to_point(const point_2d_t &p) const {
+double triangle_2d_t::distance_to_point(const point_2d_t &p) const {
     if (p.is_inside_triangle(*this)) return 0.0f;
     line_2d_t l1 = {p1, p2}, l2 = {p2, p3}, l3 = {p3, p1};
     return std::min({l1.distance_to_point(p), l2.distance_to_point(p),
                      l3.distance_to_point(p)});
 }
 
-float triangle_2d_t::distance_to_line(const line_2d_t &l) const {
+double triangle_2d_t::distance_to_line(const line_2d_t &l) const {
     if (l.p1.is_inside_triangle(*this) || l.p2.is_inside_triangle(*this))
         return 0.0f;
     line_2d_t l1 = {p1, p2}, l2 = {p2, p3}, l3 = {p3, p1};
@@ -444,7 +444,7 @@ float triangle_2d_t::distance_to_line(const line_2d_t &l) const {
                      l3.distance_to_line(l)});
 }
 
-float triangle_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
+double triangle_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
     line_2d_t l1 = {p1, p2}, l2 = {p2, p3}, l3 = {p3, p1};
     line_2d_t l4 = {t.p1, t.p2}, l5 = {t.p2, t.p3}, l6 = {t.p3, t.p1};
     return std::min({l1.distance_to_line(l4), l1.distance_to_line(l5),
@@ -454,7 +454,7 @@ float triangle_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
                      l3.distance_to_line(l6)});
 }
 
-float triangle_2d_t::distance_to_bounding_box(
+double triangle_2d_t::distance_to_bounding_box(
     const bounding_box_2d_t &b) const {
     return b.distance_to_triangle(*this);
 }
@@ -480,20 +480,20 @@ circle_2d_t::circle_2d_t() {
     radius = 0.0f;
 }
 
-circle_2d_t::circle_2d_t(const point_2d_t &c, float r) {
+circle_2d_t::circle_2d_t(const point_2d_t &c, double r) {
     center = c;
     radius = r;
 }
 
 circle_2d_t::circle_2d_t(const triangle_2d_t &t) {
     point_2d_t p1 = t.p1, p2 = t.p2, p3 = t.p3;
-    float a = p2.x - p1.x;
-    float b = p2.y - p1.y;
-    float c = p3.x - p1.x;
-    float d = p3.y - p1.y;
-    float e = a * (p1.x + p2.x) + b * (p1.y + p2.y);
-    float f = c * (p1.x + p3.x) + d * (p1.y + p3.y);
-    float g = 2.0f * (a * (p3.y - p2.y) - b * (p3.x - p2.x));
+    double a = p2.x - p1.x;
+    double b = p2.y - p1.y;
+    double c = p3.x - p1.x;
+    double d = p3.y - p1.y;
+    double e = a * (p1.x + p2.x) + b * (p1.y + p2.y);
+    double f = c * (p1.x + p3.x) + d * (p1.y + p3.y);
+    double g = 2.0f * (a * (p3.y - p2.y) - b * (p3.x - p2.x));
     center = {(d * e - b * f) / g, (a * f - c * e) / g};
     radius = center.distance_to_point(p1);
 }
@@ -506,11 +506,11 @@ bool circle_2d_t::operator!=(const circle_2d_t &c) const {
     return !(*this == c);
 }
 
-float circle_2d_t::area() const { return M_PI * radius * radius; }
+double circle_2d_t::area() const { return M_PI * radius * radius; }
 
-float circle_2d_t::circumference() const { return 2.0f * M_PI * radius; }
+double circle_2d_t::circumference() const { return 2.0f * M_PI * radius; }
 
-bool circle_2d_t::contains_point(const point_2d_t &p, float tolerance) const {
+bool circle_2d_t::contains_point(const point_2d_t &p, double tolerance) const {
     return center.distance_to_point(p) <= radius + tolerance;
 }
 
@@ -525,10 +525,10 @@ std::string circle_2d_t::to_string() const {
  * ----------------- */
 
 bounding_box_2d_t::bounding_box_2d_t() {
-    min = {std::numeric_limits<float>::max(),
-           std::numeric_limits<float>::max()};
-    max = {std::numeric_limits<float>::lowest(),
-           std::numeric_limits<float>::lowest()};
+    min = {std::numeric_limits<double>::max(),
+           std::numeric_limits<double>::max()};
+    max = {std::numeric_limits<double>::lowest(),
+           std::numeric_limits<double>::lowest()};
 }
 
 bounding_box_2d_t::bounding_box_2d_t(const point_2d_t &p1,
@@ -540,8 +540,8 @@ bounding_box_2d_t::bounding_box_2d_t(const point_2d_t &p1,
 bounding_box_2d_t::bounding_box_2d_t(const std::vector<point_2d_t> &points) {
     if (points.empty()) throw std::runtime_error("Empty point list");
 
-    float min_x = points[0].x, min_y = points[0].y;
-    float max_x = points[0].x, max_y = points[0].y;
+    double min_x = points[0].x, min_y = points[0].y;
+    double max_x = points[0].x, max_y = points[0].y;
 
     for (size_t i = 1; i < points.size(); ++i) {
         min_x = std::min(min_x, points[i].x);
@@ -557,8 +557,8 @@ bounding_box_2d_t::bounding_box_2d_t(const std::vector<point_2d_t> &points) {
 bounding_box_2d_t::bounding_box_2d_t(const std::vector<line_2d_t> &lines) {
     if (lines.empty()) throw std::runtime_error("Empty line list");
 
-    float min_x = lines[0].p1.x, min_y = lines[0].p1.y;
-    float max_x = lines[0].p1.x, max_y = lines[0].p1.y;
+    double min_x = lines[0].p1.x, min_y = lines[0].p1.y;
+    double max_x = lines[0].p1.x, max_y = lines[0].p1.y;
 
     for (size_t i = 0; i < lines.size(); ++i) {
         min_x = std::min(min_x, lines[i].p1.x);
@@ -580,8 +580,8 @@ bounding_box_2d_t::bounding_box_2d_t(
     const std::vector<triangle_2d_t> &triangles) {
     if (triangles.empty()) throw std::runtime_error("Empty triangle list");
 
-    float min_x = triangles[0].p1.x, min_y = triangles[0].p1.y;
-    float max_x = triangles[0].p1.x, max_y = triangles[0].p1.y;
+    double min_x = triangles[0].p1.x, min_y = triangles[0].p1.y;
+    double max_x = triangles[0].p1.x, max_y = triangles[0].p1.y;
 
     for (size_t i = 0; i < triangles.size(); ++i) {
         min_x = std::min(min_x, triangles[i].p1.x);
@@ -608,8 +608,8 @@ bounding_box_2d_t::bounding_box_2d_t(
     const std::vector<bounding_box_2d_t> &bboxes) {
     if (bboxes.empty()) throw std::runtime_error("Empty bounding box list");
 
-    float min_x = bboxes[0].min.x, min_y = bboxes[0].min.y;
-    float max_x = bboxes[0].max.x, max_y = bboxes[0].max.y;
+    double min_x = bboxes[0].min.x, min_y = bboxes[0].min.y;
+    double max_x = bboxes[0].max.x, max_y = bboxes[0].max.y;
 
     for (size_t i = 1; i < bboxes.size(); ++i) {
         min_x = std::min(min_x, bboxes[i].min.x);
@@ -636,7 +636,7 @@ bounding_box_2d_t bounding_box_2d_t::operator<<=(const affine_2d_t &a) {
     return *this;
 }
 
-float bounding_box_2d_t::area() const {
+double bounding_box_2d_t::area() const {
     return (max.x - min.x) * (max.y - min.y);
 }
 
@@ -670,7 +670,7 @@ bool bounding_box_2d_t::contains_triangle(const triangle_2d_t &t) const {
     return contains_point(t.p1) && contains_point(t.p2) && contains_point(t.p3);
 }
 
-float bounding_box_2d_t::distance_to_point(const point_2d_t &p) const {
+double bounding_box_2d_t::distance_to_point(const point_2d_t &p) const {
     if (p.is_inside_bounding_box(*this)) return 0.0f;
     return std::min({p.distance_to_line({min, {max.x, min.y}}),
                      p.distance_to_line({{max.x, min.y}, max}),
@@ -678,7 +678,7 @@ float bounding_box_2d_t::distance_to_point(const point_2d_t &p) const {
                      p.distance_to_line({{min.x, max.y}, min})});
 }
 
-float bounding_box_2d_t::distance_to_line(const line_2d_t &l) const {
+double bounding_box_2d_t::distance_to_line(const line_2d_t &l) const {
     if (l.p1.is_inside_bounding_box(*this) ||
         l.p2.is_inside_bounding_box(*this))
         return 0.0f;
@@ -688,7 +688,7 @@ float bounding_box_2d_t::distance_to_line(const line_2d_t &l) const {
                      l.distance_to_line({{min.x, max.y}, min})});
 }
 
-float bounding_box_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
+double bounding_box_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
     if (t.p1.is_inside_bounding_box(*this) ||
         t.p2.is_inside_bounding_box(*this) ||
         t.p3.is_inside_bounding_box(*this))
@@ -699,7 +699,7 @@ float bounding_box_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
                      t.distance_to_line({{min.x, max.y}, min})});
 }
 
-float bounding_box_2d_t::distance_to_bounding_box(
+double bounding_box_2d_t::distance_to_bounding_box(
     const bounding_box_2d_t &b) const {
     point_2d_t p1 = min, p2 = {max.x, min.y}, p3 = max, p4 = {min.x, max.y};
     if (p1.is_inside_bounding_box(b) || p2.is_inside_bounding_box(b) ||
@@ -749,8 +749,8 @@ polygon_2d_t polygon_2d_t::operator+=(const polygon_2d_t &p) {
     return *this;
 }
 
-float polygon_2d_t::signed_area() const {
-    float area = 0.0f;
+double polygon_2d_t::signed_area() const {
+    double area = 0.0f;
     for (size_t i = 0; i < points.size(); ++i) {
         const point_2d_t &p1 = points[i];
         const point_2d_t &p2 = points[(i + 1) % points.size()];
@@ -783,7 +783,7 @@ polygon_2d_t polygon_2d_t::convex_hull() const {
     std::iota(hull_points.begin(), hull_points.end(), 0);
     std::sort(hull_points.begin(), hull_points.end(), [&](int i, int j) {
         if (i == P0) return true;  // First element.
-        float det =
+        double det =
             (points[i] - points[P0]).determinant(points[j] - points[P0]);
         if (det == 0)
             return points[i].distance_to_point(points[P0]) <
@@ -814,8 +814,8 @@ polygon_2d_t polygon_2d_t::convex_hull() const {
 }
 
 bounding_box_2d_t polygon_2d_t::bounding_box() const {
-    float min_x = points[0].x, min_y = points[0].y;
-    float max_x = points[0].x, max_y = points[0].y;
+    double min_x = points[0].x, min_y = points[0].y;
+    double max_x = points[0].x, max_y = points[0].y;
     for (const auto &p : points) {
         min_x = std::min(min_x, p.x);
         min_y = std::min(min_y, p.y);
@@ -916,12 +916,12 @@ std::string polygon_2d_t::to_string() const {
  * affine_2d_t *
  * ----------- */
 
-affine_2d_t::affine_2d_t(std::optional<float> rot,
-                         std::optional<std::tuple<float, float>> trans,
-                         std::optional<float> scale) {
+affine_2d_t::affine_2d_t(std::optional<double> rot,
+                         std::optional<std::tuple<double, double>> trans,
+                         std::optional<double> scale) {
     if (rot) {
-        float c = std::cos(*rot);
-        float s = std::sin(*rot);
+        double c = std::cos(*rot);
+        double s = std::sin(*rot);
         r00 = c;
         r01 = -s;
         r10 = s;
@@ -950,17 +950,17 @@ affine_2d_t::affine_2d_t(std::optional<float> rot,
     }
 }
 
-affine_2d_t::affine_2d_t(float r00, float r01, float r10, float r11, float tx,
-                         float ty)
+affine_2d_t::affine_2d_t(double r00, double r01, double r10, double r11,
+                         double tx, double ty)
     : r00(r00), r01(r01), r10(r10), r11(r11), tx(tx), ty(ty) {}
 
 affine_2d_t affine_2d_t::operator*=(const affine_2d_t &a) {
-    float r00_ = r00 * a.r00 + r01 * a.r10;
-    float r01_ = r00 * a.r01 + r01 * a.r11;
-    float r10_ = r10 * a.r00 + r11 * a.r10;
-    float r11_ = r10 * a.r01 + r11 * a.r11;
-    float tx_ = tx * a.r00 + ty * a.r10 + a.tx;
-    float ty_ = tx * a.r01 + ty * a.r11 + a.ty;
+    double r00_ = r00 * a.r00 + r01 * a.r10;
+    double r01_ = r00 * a.r01 + r01 * a.r11;
+    double r10_ = r10 * a.r00 + r11 * a.r10;
+    double r11_ = r10 * a.r01 + r11 * a.r11;
+    double tx_ = tx * a.r00 + ty * a.r10 + a.tx;
+    double ty_ = tx * a.r01 + ty * a.r11 + a.ty;
     r00 = r00_;
     r01 = r01_;
     r10 = r10_;
@@ -971,13 +971,13 @@ affine_2d_t affine_2d_t::operator*=(const affine_2d_t &a) {
 }
 
 affine_2d_t affine_2d_t::inverse() const {
-    float det = r00 * r11 - r01 * r10;
-    float r00_ = r11 / det;
-    float r01_ = -r01 / det;
-    float r10_ = -r10 / det;
-    float r11_ = r00 / det;
-    float tx_ = (r10 * ty - r11 * tx) / det;
-    float ty_ = (r01 * tx - r00 * ty) / det;
+    double det = r00 * r11 - r01 * r10;
+    double r00_ = r11 / det;
+    double r01_ = -r01 / det;
+    double r10_ = -r10 / det;
+    double r11_ = r00 / det;
+    double tx_ = (r10 * ty - r11 * tx) / det;
+    double ty_ = (r01 * tx - r00 * ty) / det;
     return {r00_, r01_, r10_, r11_, tx_, ty_};
 }
 
@@ -1097,13 +1097,13 @@ void trimesh_2d_t::validate() const {
     const point_2d_t &p1 = _vertices[vi], &p2 = _vertices[vj],
                      &p3 = _vertices[vk];
     const point_2d_t v1 = p2 - p1, v2 = p3 - p1;
-    float normal = v1.cross(v2);
+    double normal = v1.cross(v2);
     for (auto &face : _faces) {
         auto &[vi, vj, vk] = face;
         const point_2d_t &p1 = _vertices[vi], &p2 = _vertices[vj],
                          &p3 = _vertices[vk];
         const point_2d_t v1 = p2 - p1, v2 = p3 - p1;
-        float normal1 = v1.cross(v2);
+        double normal1 = v1.cross(v2);
         if (normal * normal1 < 0) {
             throw std::invalid_argument("Face is not oriented the same way");
         }
@@ -1377,7 +1377,7 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
         if (angle < 0) angle += 2 * M_PI;
         auto rad_angle = std::min(angle, 2 * M_PI - angle);
         auto deg_angle = (rad_angle * 180 / M_PI);
-        return (float)deg_angle;
+        return (double)deg_angle;
     };
 
     // First, gets the sum of the angles at each vertex.
@@ -1630,7 +1630,7 @@ trimesh_2d_t triangulate(const std::vector<point_2d_t> &points, bool shuffle) {
 
     // Super triangle.
     bounding_box_2d_t bb{points};
-    float d = std::max(bb.max.x - bb.min.x, bb.max.y - bb.min.y);
+    double d = std::max(bb.max.x - bb.min.x, bb.max.y - bb.min.y);
     point_2d_t p1 = {bb.min.x - 10 * d, bb.min.y - d};
     point_2d_t p2 = {bb.max.x + 10 * d, bb.min.y - d};
     point_2d_t p3 = {(bb.min.x + bb.max.x) / 2, bb.max.y + 10 * d};
@@ -1689,7 +1689,8 @@ void add_2d_types_modules(py::module &m) {
         py::class_<trimesh_2d_t, std::shared_ptr<trimesh_2d_t>>(m, "Trimesh2D");
 
     // Defines Point2D methods.
-    point_2d.def(py::init<float, float>(), "A point in 2D space", "x"_a, "y"_a)
+    point_2d
+        .def(py::init<double, double>(), "A point in 2D space", "x"_a, "y"_a)
         .def_readwrite("x", &point_2d_t::x, "The point's x coordinate")
         .def_readwrite("y", &point_2d_t::y, "The point's y coordinate")
         .def("__str__", &point_2d_t::to_string, py::is_operator())
@@ -1714,29 +1715,32 @@ void add_2d_types_modules(py::module &m) {
              "Vector dot product with another point", "other"_a,
              py::is_operator())
         .def("__mul__",
-             py::overload_cast<float, const point_2d_t &>(&operator*),
-             "Scalar multiplication with a float", "other"_a, py::is_operator())
+             py::overload_cast<double, const point_2d_t &>(&operator*),
+             "Scalar multiplication with a double", "other"_a,
+             py::is_operator())
         .def("__mul__",
-             py::overload_cast<const point_2d_t &, float>(&operator*),
-             "Scalar multiplication with a float", "other"_a, py::is_operator())
+             py::overload_cast<const point_2d_t &, double>(&operator*),
+             "Scalar multiplication with a double", "other"_a,
+             py::is_operator())
         .def("__imul__",
              py::overload_cast<const point_2d_t &>(&point_2d_t::operator*=),
              "Vector dot product with another point", "other"_a,
              py::is_operator())
-        .def("__imul__", py::overload_cast<float>(&point_2d_t::operator*=),
-             "Scalar multiplication with a float", "other"_a, py::is_operator())
+        .def("__imul__", py::overload_cast<double>(&point_2d_t::operator*=),
+             "Scalar multiplication with a double", "other"_a,
+             py::is_operator())
         .def("__truediv__",
              py::overload_cast<const point_2d_t &, const point_2d_t &>(
                  &operator/),
              "Vector division with another point", "other"_a, py::is_operator())
         .def("__truediv__",
-             py::overload_cast<const point_2d_t &, float>(&operator/),
-             "Scalar division with a float", "other"_a, py::is_operator())
+             py::overload_cast<const point_2d_t &, double>(&operator/),
+             "Scalar division with a double", "other"_a, py::is_operator())
         .def("__itruediv__",
              py::overload_cast<const point_2d_t &>(&point_2d_t::operator/=),
              "Vector division with another point", "other"_a, py::is_operator())
-        .def("__itruediv__", py::overload_cast<float>(&point_2d_t::operator/=),
-             "Scalar division with a float", "other"_a, py::is_operator())
+        .def("__itruediv__", py::overload_cast<double>(&point_2d_t::operator/=),
+             "Scalar division with a double", "other"_a, py::is_operator())
         .def("__eq__", &point_2d_t::operator==, "Equality with another point",
              "other"_a, py::is_operator())
         .def("__ne__", &point_2d_t::operator!=, "Inequality with another point",
@@ -1989,9 +1993,9 @@ void add_2d_types_modules(py::module &m) {
 
     // Defines Affine2D methods.
     affine_2d
-        .def(py::init<std::optional<float>,
-                      std::optional<std::tuple<float, float>>,
-                      std::optional<float>>(),
+        .def(py::init<std::optional<double>,
+                      std::optional<std::tuple<double, double>>,
+                      std::optional<double>>(),
              "Initialize affine transformation from rotation and "
              "translation "
              "vectors",

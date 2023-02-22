@@ -4,16 +4,31 @@ from typing import List, Union
 
 import matplotlib.pyplot as plt
 
-from tmesh import Circle2D, Line2D, Point2D, Triangle2D, Trimesh2D, triangulate_2d
+from tmesh import Circle2D, Line2D, Point2D, Triangle2D, Trimesh2D, triangulate_2d, set_tolerance
 
 Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D, Circle2D]
 
-points = [Point2D(0, 0), Point2D(1, 0), Point2D(1, 1), Point2D(0, 1)]
+# points = [Point2D(0, 0), Point2D(1, 0), Point2D(1, 1), Point2D(0, 1)]
+# points = [Point2D(1, 0)] + [Point2D(0, i) for i in range(10)]
+import random
+random.seed(1337)
+points = [Point2D(random.random() * 10, random.random() * 10) for _ in range(68)]
+
+# points, last_point = points[:-1], points[-1]
+
+set_tolerance(1e-6)
+
 trimesh = triangulate_2d(points, shuffle=False)
 
 # To plot things, add them to this list.
 THINGS_TO_PLOT: List[Thing] = [
-    trimesh,
+    # trimesh,
+    # last_point,
+    Point2D(2.36712, 8.13112),
+    # Triangle2D(Point2D(1.65687, 8.24374), Point2D(6.17753, 5.33266), Point2D(5.11242, 105.946)),
+    Triangle2D(Point2D(1.65687, 8.24374), Point2D(6.17753, 5.33266), Point2D(3.83705, 7.89613)),
+    Triangle2D(Point2D(6.17753, 5.33266), Point2D(5.11242, 105.946), Point2D(3.83705, 7.89613)),
+    Triangle2D(Point2D(5.11242, 105.946), Point2D(1.65687, 8.24374), Point2D(3.83705, 7.89613)),
 ]
 
 ALPHA = 1.0

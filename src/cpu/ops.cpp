@@ -7,27 +7,27 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
-trimesh_3d_t linear_extrude(const polygon_2d_t &polygon, float height) {
-    std::function<float(float, float)> height_func =
-        [height](float x, float y) -> float { return height; };
+trimesh_3d_t linear_extrude(const polygon_2d_t &polygon, double height) {
+    std::function<double(double, double)> height_func =
+        [height](double x, double y) -> double { return height; };
     return linear_extrude(polygon, height_func);
 }
 
 trimesh_3d_t linear_extrude(
     const polygon_2d_t &polygon,
-    const std::function<float(float, float)> &height_func) {
+    const std::function<double(double, double)> &height_func) {
     return linear_extrude(polygon.get_trimesh(), height_func);
 }
 
-trimesh_3d_t linear_extrude(const trimesh_2d_t &polygon, float height) {
-    std::function<float(float, float)> height_func =
-        [height](float x, float y) -> float { return height; };
+trimesh_3d_t linear_extrude(const trimesh_2d_t &polygon, double height) {
+    std::function<double(double, double)> height_func =
+        [height](double x, double y) -> double { return height; };
     return linear_extrude(polygon, height_func);
 }
 
 trimesh_3d_t linear_extrude(
     const trimesh_2d_t &mesh,
-    const std::function<float(float, float)> &height_func) {
+    const std::function<double(double, double)> &height_func) {
     std::vector<point_3d_t> vertices;
     face_set_t faces;
 
@@ -76,23 +76,23 @@ trimesh_3d_t linear_extrude(
 
 void add_ops_modules(py::module &m) {
     m.def("linear_extrude",
-          py::overload_cast<const polygon_2d_t &, float>(&linear_extrude),
+          py::overload_cast<const polygon_2d_t &, double>(&linear_extrude),
           "Linearly extrudes a 2D mesh from a polygon, with a specific height",
           "mesh"_a, "height"_a);
     m.def("linear_extrude",
           py::overload_cast<const polygon_2d_t &,
-                            const std::function<float(float, float)> &>(
+                            const std::function<double(double, double)> &>(
               &linear_extrude),
           "Linearly extrudes a 2D mesh from a polygon, with a function "
           "specifying the height of each XY coordinate",
           "mesh"_a, "height_func"_a);
     m.def("linear_extrude",
-          py::overload_cast<const trimesh_2d_t &, float>(&linear_extrude),
+          py::overload_cast<const trimesh_2d_t &, double>(&linear_extrude),
           "Linearly extrudes a 2D mesh, with a particular height", "mesh"_a,
           "height"_a);
     m.def("linear_extrude",
           py::overload_cast<const trimesh_2d_t &,
-                            const std::function<float(float, float)> &>(
+                            const std::function<double(double, double)> &>(
               &linear_extrude),
           "Linearly extrudes a 2D mesh, with a function specifying the height "
           "of each XY coordinate",

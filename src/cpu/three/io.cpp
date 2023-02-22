@@ -31,14 +31,14 @@ void save_stl(const std::string &filename, const trimesh_3d_t &mesh) {
         triangle_3d_t triangle{mesh.vertices()[face.a], mesh.vertices()[face.b],
                                mesh.vertices()[face.c]};
         point_3d_t normal = triangle.normal();
-        f.write(reinterpret_cast<const char *>(&normal), 3 * sizeof(float));
+        f.write(reinterpret_cast<const char *>(&normal), 3 * sizeof(double));
 
         // Vertices.
         point_3d_t v1 = mesh.vertices()[face.a], v2 = mesh.vertices()[face.b],
                    v3 = mesh.vertices()[face.c];
-        f.write(reinterpret_cast<const char *>(&v1), 3 * sizeof(float));
-        f.write(reinterpret_cast<const char *>(&v2), 3 * sizeof(float));
-        f.write(reinterpret_cast<const char *>(&v3), 3 * sizeof(float));
+        f.write(reinterpret_cast<const char *>(&v1), 3 * sizeof(double));
+        f.write(reinterpret_cast<const char *>(&v2), 3 * sizeof(double));
+        f.write(reinterpret_cast<const char *>(&v3), 3 * sizeof(double));
 
         // Attribute byte count.
         uint16_t attribute_byte_count = 0;
@@ -81,13 +81,13 @@ trimesh_3d_t load_stl(const std::string &filename) {
     for (size_t i = 0; i < num_triangles; i++) {
         // Normal.
         point_3d_t normal;
-        f.read(reinterpret_cast<char *>(&normal), 3 * sizeof(float));
+        f.read(reinterpret_cast<char *>(&normal), 3 * sizeof(double));
 
         // Vertices.
         point_3d_t v1, v2, v3;
-        f.read(reinterpret_cast<char *>(&v1), 3 * sizeof(float));
-        f.read(reinterpret_cast<char *>(&v2), 3 * sizeof(float));
-        f.read(reinterpret_cast<char *>(&v3), 3 * sizeof(float));
+        f.read(reinterpret_cast<char *>(&v1), 3 * sizeof(double));
+        f.read(reinterpret_cast<char *>(&v2), 3 * sizeof(double));
+        f.read(reinterpret_cast<char *>(&v3), 3 * sizeof(double));
 
         // Add the vertices.
         size_t v1_index = get_vertex_index(v1), v2_index = get_vertex_index(v2),
@@ -169,7 +169,7 @@ trimesh_3d_t load_stl_text(const std::string &filename) {
         std::istringstream ss(line);
         std::string token;
         ss >> token;
-        float x, y, z;
+        double x, y, z;
         ss >> x >> y >> z;
         return point_3d_t{x, y, z};
     };
@@ -247,7 +247,7 @@ trimesh_3d_t load_obj(const std::string &filename) {
 
         if (type == "v") {
             // Vertex.
-            float x, y, z;
+            double x, y, z;
             ss >> x >> y >> z;
             vertices.push_back({x, y, z});
         } else if (type == "f") {
@@ -271,9 +271,9 @@ void save_ply(const std::string &filename, const trimesh_3d_t &mesh) {
     f << "ply" << std::endl;
     f << "format ascii 1.0" << std::endl;
     f << "element vertex " << mesh.vertices().size() << std::endl;
-    f << "property float x" << std::endl;
-    f << "property float y" << std::endl;
-    f << "property float z" << std::endl;
+    f << "property double x" << std::endl;
+    f << "property double y" << std::endl;
+    f << "property double z" << std::endl;
     f << "element face " << mesh.vertices().size() << std::endl;
     f << "property list uchar int vertex_index" << std::endl;
     f << "end_header" << std::endl;
@@ -315,7 +315,7 @@ trimesh_3d_t load_ply(const std::string &filename) {
         int num_spaces = std::count(line.begin(), line.end(), ' ');
         if (num_spaces == 2) {
             // Vertex.
-            float x, y, z;
+            double x, y, z;
             ss >> x >> y >> z;
             vertices.push_back({x, y, z});
         } else if (num_spaces == 3 && line.substr(0, 2) == "3 ") {

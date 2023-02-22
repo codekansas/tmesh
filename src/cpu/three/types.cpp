@@ -35,7 +35,7 @@ point_3d_t point_3d_t::operator*=(const point_3d_t &p) {
     return *this;
 }
 
-point_3d_t point_3d_t::operator*=(float s) {
+point_3d_t point_3d_t::operator*=(double s) {
     x *= s;
     y *= s;
     z *= s;
@@ -49,7 +49,7 @@ point_3d_t point_3d_t::operator/=(const point_3d_t &p) {
     return *this;
 }
 
-point_3d_t point_3d_t::operator/=(float s) {
+point_3d_t point_3d_t::operator/=(double s) {
     x /= s;
     y /= s;
     z /= s;
@@ -68,9 +68,9 @@ bool point_3d_t::operator<(const point_3d_t &p) const {
 }
 
 point_3d_t point_3d_t::operator<<=(const affine_3d_t &a) {
-    float x1 = a.r00 * x + a.r01 * y + a.r02 * z + a.tx;
-    float y1 = a.r10 * x + a.r11 * y + a.r12 * z + a.ty;
-    float z1 = a.r20 * x + a.r21 * y + a.r22 * z + a.tz;
+    double x1 = a.r00 * x + a.r01 * y + a.r02 * z + a.tx;
+    double y1 = a.r10 * x + a.r11 * y + a.r12 * z + a.ty;
+    double z1 = a.r20 * x + a.r21 * y + a.r22 * z + a.tz;
     x = x1;
     y = y1;
     z = z1;
@@ -78,18 +78,18 @@ point_3d_t point_3d_t::operator<<=(const affine_3d_t &a) {
 }
 
 point_3d_t point_3d_t::normalize() const {
-    float inv_length = 1.0f / length();
+    double inv_length = 1.0f / length();
     return {x * inv_length, y * inv_length, z * inv_length};
 }
 
-float point_3d_t::determinant(const point_3d_t &a, const point_3d_t &b) const {
+double point_3d_t::determinant(const point_3d_t &a, const point_3d_t &b) const {
     return x * a.y * b.z + y * a.z * b.x + z * a.x * b.y - z * a.y * b.x -
            y * a.x * b.z - x * a.z * b.y;
 }
 
-float point_3d_t::length() const { return std::sqrt(x * x + y * y + z * z); }
+double point_3d_t::length() const { return std::sqrt(x * x + y * y + z * z); }
 
-float point_3d_t::dot(const point_3d_t &other) const {
+double point_3d_t::dot(const point_3d_t &other) const {
     return x * other.x + y * other.y + z * other.z;
 }
 
@@ -103,15 +103,15 @@ barycentric_coordinates_t point_3d_t::barycentric_coordinates(
     point_3d_t v0 = t.p2 - t.p1;
     point_3d_t v1 = t.p3 - t.p1;
     point_3d_t v2 = *this - t.p1;
-    float d00 = v0.dot(v0);
-    float d01 = v0.dot(v1);
-    float d11 = v1.dot(v1);
-    float d20 = v2.dot(v0);
-    float d21 = v2.dot(v1);
-    float denom = d00 * d11 - d01 * d01;
-    float v = (d11 * d20 - d01 * d21) / denom;
-    float w = (d00 * d21 - d01 * d20) / denom;
-    float u = 1.0f - v - w;
+    double d00 = v0.dot(v0);
+    double d01 = v0.dot(v1);
+    double d11 = v1.dot(v1);
+    double d20 = v2.dot(v0);
+    double d21 = v2.dot(v1);
+    double denom = d00 * d11 - d01 * d01;
+    double v = (d11 * d20 - d01 * d21) / denom;
+    double w = (d00 * d21 - d01 * d20) / denom;
+    double u = 1.0f - v - w;
     return {u, v, w};
 }
 
@@ -121,17 +121,17 @@ bool point_3d_t::is_inside_bounding_box(const bounding_box_3d_t &bb) const {
            z >= bb.min.z - get_tolerance() && z <= bb.max.z + get_tolerance();
 }
 
-float point_3d_t::distance_to_point(const point_3d_t &other) const {
+double point_3d_t::distance_to_point(const point_3d_t &other) const {
     return std::sqrt((x - other.x) * (x - other.x) +
                      (y - other.y) * (y - other.y) +
                      (z - other.z) * (z - other.z));
 }
 
-float point_3d_t::distance_to_line(const line_3d_t &l) const {
+double point_3d_t::distance_to_line(const line_3d_t &l) const {
     return l.distance_to_point(*this);
 }
 
-float point_3d_t::distance_to_triangle(const triangle_3d_t &t) const {
+double point_3d_t::distance_to_triangle(const triangle_3d_t &t) const {
     return t.distance_to_point(*this);
 }
 
@@ -142,9 +142,9 @@ bool point_3d_t::is_coplanar(const triangle_3d_t &t) const {
 
 std::optional<point_3d_t> point_3d_t::project_to_line(
     const line_3d_t &l) const {
-    float dx = l.p2.x - l.p1.x, dy = l.p2.y - l.p1.y, dz = l.p2.z - l.p1.z;
-    float t = ((x - l.p1.x) * dx + (y - l.p1.y) * dy + (z - l.p1.z) * dz) /
-              (dx * dx + dy * dy + dz * dz);
+    double dx = l.p2.x - l.p1.x, dy = l.p2.y - l.p1.y, dz = l.p2.z - l.p1.z;
+    double t = ((x - l.p1.x) * dx + (y - l.p1.y) * dy + (z - l.p1.z) * dz) /
+               (dx * dx + dy * dy + dz * dz);
     if (t < 0 || t > 1) return std::nullopt;
     return point_3d_t{l.p1.x + t * dx, l.p1.y + t * dy, l.p1.z + t * dz};
 }
@@ -178,11 +178,11 @@ point_3d_t operator*(const point_3d_t &p1, const point_3d_t &p2) {
     return {p1.x * p2.x, p1.y * p2.y, p1.z * p2.z};
 }
 
-point_3d_t operator*(float s, const point_3d_t &p) {
+point_3d_t operator*(double s, const point_3d_t &p) {
     return {s * p.x, s * p.y, s * p.z};
 }
 
-point_3d_t operator*(const point_3d_t &p, float s) {
+point_3d_t operator*(const point_3d_t &p, double s) {
     return {s * p.x, s * p.y, s * p.z};
 }
 
@@ -190,7 +190,7 @@ point_3d_t operator/(const point_3d_t &p1, const point_3d_t &p2) {
     return {p1.x / p2.x, p1.y / p2.y, p1.z / p2.z};
 }
 
-point_3d_t operator/(const point_3d_t &p, float s) {
+point_3d_t operator/(const point_3d_t &p, double s) {
     return {p.x / s, p.y / s, p.z / s};
 }
 
@@ -217,7 +217,7 @@ std::optional<std::tuple<point_3d_t, point_3d_t>> line_3d_t::closest_points(
     point_3d_t d1 = p2 - p1, d2 = l.p2 - l.p1;
     point_3d_t n = d1.cross(d2);
     point_3d_t n1 = d1.cross(n), n2 = d2.cross(n);
-    float d2n1 = d2.dot(n1), d1n2 = d1.dot(n2);
+    double d2n1 = d2.dot(n1), d1n2 = d1.dot(n2);
     if (std::abs(d2n1) < get_tolerance() && std::abs(d1n2) < get_tolerance()) {
         return std::nullopt;
     }
@@ -254,7 +254,7 @@ std::optional<point_3d_t> line_3d_t::triangle_intersection(
     const triangle_3d_t &t) const {
     point_3d_t e1 = t.p2 - t.p1, e2 = t.p3 - t.p1, d21 = p2 - p1;
     point_3d_t n = e1.cross(e2);
-    float det = -n.dot(d21);
+    double det = -n.dot(d21);
 
     // Lines are parallel.
     if (std::abs(det) < get_tolerance()) {
@@ -264,9 +264,9 @@ std::optional<point_3d_t> line_3d_t::triangle_intersection(
     point_3d_t ao = p1 - t.p1;
     point_3d_t dao = ao.cross(d21);
 
-    float u = e2.dot(dao) / det;
-    float v = -e1.dot(dao) / det;
-    float w = ao.dot(n) / det;
+    double u = e2.dot(dao) / det;
+    double v = -e1.dot(dao) / det;
+    double w = ao.dot(n) / det;
 
     if (w < -get_tolerance() || u < -get_tolerance() || v < -get_tolerance() ||
         (u + v) > 1.0 + get_tolerance() || w > 1.0 + get_tolerance()) {
@@ -288,9 +288,9 @@ bool line_3d_t::intersects_bounding_box(const bounding_box_3d_t &b) const {
     return false;
 }
 
-float line_3d_t::distance_to_point(const point_3d_t &p) const {
+double line_3d_t::distance_to_point(const point_3d_t &p) const {
     point_3d_t d = p2 - p1;
-    float t = d.dot(p - p1) / d.dot(d);
+    double t = d.dot(p - p1) / d.dot(d);
     if (t < 0.0f) {
         return p.distance_to_point(p1);
     } else if (t > 1.0f) {
@@ -299,7 +299,7 @@ float line_3d_t::distance_to_point(const point_3d_t &p) const {
     return p.distance_to_point(p1 + t * d);
 }
 
-float line_3d_t::distance_to_line(const line_3d_t &l) const {
+double line_3d_t::distance_to_line(const line_3d_t &l) const {
     auto p = closest_points(l);
     if (p) {
         auto a = std::get<0>(*p), b = std::get<1>(*p);
@@ -358,7 +358,7 @@ triangle_3d_t triangle_3d_t::operator<<=(const affine_3d_t &a) {
     return *this;
 }
 
-float triangle_3d_t::area() const {
+double triangle_3d_t::area() const {
     point_3d_t v1 = p2 - p1;
     point_3d_t v2 = p3 - p1;
     return 0.5f * v1.cross(v2).length();
@@ -378,7 +378,7 @@ std::vector<line_3d_t> triangle_3d_t::edges() const {
     return {{p1, p2}, {p2, p3}, {p3, p1}};
 }
 
-float triangle_3d_t::distance_to_point(const point_3d_t &p) const {
+double triangle_3d_t::distance_to_point(const point_3d_t &p) const {
     std::optional<point_3d_t> tp = p.project_to_triangle(*this);
     if (tp) {
         return p.distance_to_point(*tp);
@@ -404,12 +404,12 @@ circumcircle_3d_t triangle_3d_t::circumcircle() const {
     point_3d_t v1 = p2 - p1;
     point_3d_t v2 = p3 - p1;
     point_3d_t v3 = p3 - p2;
-    float a = v1.length();
-    float b = v2.length();
-    float c = v3.length();
-    float s = 0.5f * (a + b + c);
-    float area = std::sqrt(s * (s - a) * (s - b) * (s - c));
-    float r = a * b * c / (4.0f * area);
+    double a = v1.length();
+    double b = v2.length();
+    double c = v3.length();
+    double s = 0.5f * (a + b + c);
+    double area = std::sqrt(s * (s - a) * (s - b) * (s - c));
+    double r = a * b * c / (4.0f * area);
     point_3d_t center = (p1 * a + p2 * b + p3 * c) / (a + b + c);
     return {center, r};
 }
@@ -473,7 +473,7 @@ tetrahedron_3d_t tetrahedron_3d_t::operator<<=(const affine_3d_t &a) {
     return *this;
 }
 
-float tetrahedron_3d_t::signed_volume() const {
+double tetrahedron_3d_t::signed_volume() const {
     return (1.0 / 6.0) * (p2 - p1).cross(p3 - p1).dot(p4 - p1);
 }
 
@@ -495,11 +495,12 @@ std::string tetrahedron_3d_t::to_string() const {
  * ----------------- */
 
 bounding_box_3d_t::bounding_box_3d_t() {
-    min = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max(),
-           std::numeric_limits<float>::max()};
-    max = {std::numeric_limits<float>::lowest(),
-           std::numeric_limits<float>::lowest(),
-           std::numeric_limits<float>::lowest()};
+    min = {std::numeric_limits<double>::max(),
+           std::numeric_limits<double>::max(),
+           std::numeric_limits<double>::max()};
+    max = {std::numeric_limits<double>::lowest(),
+           std::numeric_limits<double>::lowest(),
+           std::numeric_limits<double>::lowest()};
 }
 
 bounding_box_3d_t::bounding_box_3d_t(const point_3d_t &min,
@@ -509,8 +510,8 @@ bounding_box_3d_t::bounding_box_3d_t(const point_3d_t &min,
 bounding_box_3d_t::bounding_box_3d_t(const std::vector<point_3d_t> &points) {
     if (points.empty()) throw std::runtime_error("Empty point list");
 
-    float min_x = points[0].x, min_y = points[0].y, min_z = points[0].z;
-    float max_x = points[0].x, max_y = points[0].y, max_z = points[0].z;
+    double min_x = points[0].x, min_y = points[0].y, min_z = points[0].z;
+    double max_x = points[0].x, max_y = points[0].y, max_z = points[0].z;
 
     for (size_t i = 1; i < points.size(); ++i) {
         min_x = std::min(min_x, points[i].x);
@@ -528,8 +529,8 @@ bounding_box_3d_t::bounding_box_3d_t(const std::vector<point_3d_t> &points) {
 bounding_box_3d_t::bounding_box_3d_t(const std::vector<line_3d_t> &lines) {
     if (lines.empty()) throw std::runtime_error("Empty line list");
 
-    float min_x = lines[0].p1.x, min_y = lines[0].p1.y, min_z = lines[0].p1.z;
-    float max_x = lines[0].p1.x, max_y = lines[0].p1.y, max_z = lines[0].p1.z;
+    double min_x = lines[0].p1.x, min_y = lines[0].p1.y, min_z = lines[0].p1.z;
+    double max_x = lines[0].p1.x, max_y = lines[0].p1.y, max_z = lines[0].p1.z;
 
     for (size_t i = 0; i < lines.size(); ++i) {
         min_x = std::min(min_x, lines[i].p1.x);
@@ -554,10 +555,10 @@ bounding_box_3d_t::bounding_box_3d_t(
     const std::vector<triangle_3d_t> &triangles) {
     if (triangles.empty()) throw std::runtime_error("Empty triangle list");
 
-    float min_x = triangles[0].p1.x, min_y = triangles[0].p1.y,
-          min_z = triangles[0].p1.z;
-    float max_x = triangles[0].p1.x, max_y = triangles[0].p1.y,
-          max_z = triangles[0].p1.z;
+    double min_x = triangles[0].p1.x, min_y = triangles[0].p1.y,
+           min_z = triangles[0].p1.z;
+    double max_x = triangles[0].p1.x, max_y = triangles[0].p1.y,
+           max_z = triangles[0].p1.z;
 
     for (size_t i = 0; i < triangles.size(); ++i) {
         min_x = std::min(min_x, triangles[i].p1.x);
@@ -588,10 +589,10 @@ bounding_box_3d_t::bounding_box_3d_t(
     const std::vector<bounding_box_3d_t> &bboxes) {
     if (bboxes.empty()) throw std::runtime_error("Empty bounding box list");
 
-    float min_x = bboxes[0].min.x, min_y = bboxes[0].min.y,
-          min_z = bboxes[0].min.z;
-    float max_x = bboxes[0].max.x, max_y = bboxes[0].max.y,
-          max_z = bboxes[0].max.z;
+    double min_x = bboxes[0].min.x, min_y = bboxes[0].min.y,
+           min_z = bboxes[0].min.z;
+    double max_x = bboxes[0].max.x, max_y = bboxes[0].max.y,
+           max_z = bboxes[0].max.z;
 
     for (size_t i = 0; i < bboxes.size(); ++i) {
         min_x = std::min(min_x, bboxes[i].min.x);
@@ -678,7 +679,7 @@ std::vector<tetrahedron_3d_t> bounding_box_3d_t::tetrahedrons() const {
 
 point_3d_t bounding_box_3d_t::center() const { return (min + max) / 2.0f; }
 
-float bounding_box_3d_t::volume() const {
+double bounding_box_3d_t::volume() const {
     return (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
 }
 
@@ -706,9 +707,9 @@ polygon_3d_t polygon_3d_t::operator<<=(const affine_3d_t &a) {
     return *this;
 }
 
-float polygon_3d_t::area() const {
+double polygon_3d_t::area() const {
     if (points.size() < 3) return 0.0f;
-    float area = 0.0f;
+    double area = 0.0f;
     point_3d_t p1 = points[0];
     for (size_t i = 1; i < points.size(); ++i) {
         size_t j = (i + 1) % points.size();
@@ -736,8 +737,8 @@ point_3d_t polygon_3d_t::normal() const {
 bounding_box_3d_t polygon_3d_t::bounding_box() const {
     if (points.empty()) throw std::runtime_error("Empty polygon");
 
-    float min_x = points[0].x, min_y = points[0].y, min_z = points[0].z;
-    float max_x = points[0].x, max_y = points[0].y, max_z = points[0].z;
+    double min_x = points[0].x, min_y = points[0].y, min_z = points[0].z;
+    double max_x = points[0].x, max_y = points[0].y, max_z = points[0].z;
 
     for (size_t i = 0; i < points.size(); ++i) {
         min_x = std::min(min_x, points[i].x);
@@ -761,9 +762,9 @@ std::string polygon_3d_t::to_string() const {
  * affine_3d_t *
  * ----------- */
 
-affine_3d_t::affine_3d_t(float r00, float r01, float r02, float r10, float r11,
-                         float r12, float r20, float r21, float r22, float tx,
-                         float ty, float tz)
+affine_3d_t::affine_3d_t(double r00, double r01, double r02, double r10,
+                         double r11, double r12, double r20, double r21,
+                         double r22, double tx, double ty, double tz)
     : r00(r00),
       r01(r01),
       r02(r02),
@@ -777,19 +778,20 @@ affine_3d_t::affine_3d_t(float r00, float r01, float r02, float r10, float r11,
       ty(ty),
       tz(tz) {}
 
-affine_3d_t::affine_3d_t(std::optional<std::tuple<float, float, float>> rot,
-                         std::optional<std::tuple<float, float, float>> trans,
-                         std::optional<float> scale) {
+affine_3d_t::affine_3d_t(
+    std::optional<std::tuple<double, double, double>> rot,
+    std::optional<std::tuple<double, double, double>> trans,
+    std::optional<double> scale) {
     if (rot) {
-        float x = std::get<0>(*rot);
-        float y = std::get<1>(*rot);
-        float z = std::get<2>(*rot);
-        float cx = std::cos(x);
-        float sx = std::sin(x);
-        float cy = std::cos(y);
-        float sy = std::sin(y);
-        float cz = std::cos(z);
-        float sz = std::sin(z);
+        double x = std::get<0>(*rot);
+        double y = std::get<1>(*rot);
+        double z = std::get<2>(*rot);
+        double cx = std::cos(x);
+        double sx = std::sin(x);
+        double cy = std::cos(y);
+        double sy = std::sin(y);
+        double cz = std::cos(z);
+        double sz = std::sin(z);
         r00 = cy * cz;
         r01 = -cy * sz;
         r02 = sy;
@@ -835,18 +837,18 @@ affine_3d_t::affine_3d_t(std::optional<std::tuple<float, float, float>> rot,
 }
 
 affine_3d_t affine_3d_t::operator*=(const affine_3d_t &a) {
-    float r00_ = r00 * a.r00 + r01 * a.r10 + r02 * a.r20;
-    float r01_ = r00 * a.r01 + r01 * a.r11 + r02 * a.r21;
-    float r02_ = r00 * a.r02 + r01 * a.r12 + r02 * a.r22;
-    float r10_ = r10 * a.r00 + r11 * a.r10 + r12 * a.r20;
-    float r11_ = r10 * a.r01 + r11 * a.r11 + r12 * a.r21;
-    float r12_ = r10 * a.r02 + r11 * a.r12 + r12 * a.r22;
-    float r20_ = r20 * a.r00 + r21 * a.r10 + r22 * a.r20;
-    float r21_ = r20 * a.r01 + r21 * a.r11 + r22 * a.r21;
-    float r22_ = r20 * a.r02 + r21 * a.r12 + r22 * a.r22;
-    float tx_ = tx * a.r00 + ty * a.r10 + tz * a.r20 + a.tx;
-    float ty_ = tx * a.r01 + ty * a.r11 + tz * a.r21 + a.ty;
-    float tz_ = tx * a.r02 + ty * a.r12 + tz * a.r22 + a.tz;
+    double r00_ = r00 * a.r00 + r01 * a.r10 + r02 * a.r20;
+    double r01_ = r00 * a.r01 + r01 * a.r11 + r02 * a.r21;
+    double r02_ = r00 * a.r02 + r01 * a.r12 + r02 * a.r22;
+    double r10_ = r10 * a.r00 + r11 * a.r10 + r12 * a.r20;
+    double r11_ = r10 * a.r01 + r11 * a.r11 + r12 * a.r21;
+    double r12_ = r10 * a.r02 + r11 * a.r12 + r12 * a.r22;
+    double r20_ = r20 * a.r00 + r21 * a.r10 + r22 * a.r20;
+    double r21_ = r20 * a.r01 + r21 * a.r11 + r22 * a.r21;
+    double r22_ = r20 * a.r02 + r21 * a.r12 + r22 * a.r22;
+    double tx_ = tx * a.r00 + ty * a.r10 + tz * a.r20 + a.tx;
+    double ty_ = tx * a.r01 + ty * a.r11 + tz * a.r21 + a.ty;
+    double tz_ = tx * a.r02 + ty * a.r12 + tz * a.r22 + a.tz;
     r00 = r00_;
     r01 = r01_;
     r02 = r02_;
@@ -863,20 +865,20 @@ affine_3d_t affine_3d_t::operator*=(const affine_3d_t &a) {
 }
 
 affine_3d_t affine_3d_t::inverse() const {
-    float det = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) +
-                r02 * (r10 * r21 - r11 * r20);
-    float r00_ = (r11 * r22 - r12 * r21) / det;
-    float r01_ = (r02 * r21 - r01 * r22) / det;
-    float r02_ = (r01 * r12 - r02 * r11) / det;
-    float r10_ = (r12 * r20 - r10 * r22) / det;
-    float r11_ = (r00 * r22 - r02 * r20) / det;
-    float r12_ = (r02 * r10 - r00 * r12) / det;
-    float r20_ = (r10 * r21 - r11 * r20) / det;
-    float r21_ = (r01 * r20 - r00 * r21) / det;
-    float r22_ = (r00 * r11 - r01 * r10) / det;
-    float tx_ = -(r00 * tx + r01 * ty + r02 * tz);
-    float ty_ = -(r10 * tx + r11 * ty + r12 * tz);
-    float tz_ = -(r20 * tx + r21 * ty + r22 * tz);
+    double det = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) +
+                 r02 * (r10 * r21 - r11 * r20);
+    double r00_ = (r11 * r22 - r12 * r21) / det;
+    double r01_ = (r02 * r21 - r01 * r22) / det;
+    double r02_ = (r01 * r12 - r02 * r11) / det;
+    double r10_ = (r12 * r20 - r10 * r22) / det;
+    double r11_ = (r00 * r22 - r02 * r20) / det;
+    double r12_ = (r02 * r10 - r00 * r12) / det;
+    double r20_ = (r10 * r21 - r11 * r20) / det;
+    double r21_ = (r01 * r20 - r00 * r21) / det;
+    double r22_ = (r00 * r11 - r01 * r10) / det;
+    double tx_ = -(r00 * tx + r01 * ty + r02 * tz);
+    double ty_ = -(r10 * tx + r11 * ty + r12 * tz);
+    double tz_ = -(r20 * tx + r21 * ty + r22 * tz);
     return {r00_, r01_, r02_, r10_, r11_, r12_,
             r20_, r21_, r22_, tx_,  ty_,  tz_};
 }
@@ -896,9 +898,9 @@ affine_3d_t operator*(const affine_3d_t &a1, const affine_3d_t &a2) {
 }
 
 point_3d_t operator>>(const affine_3d_t &a, const point_3d_t &p) {
-    float x = a.r00 * p.x + a.r01 * p.y + a.r02 * p.z + a.tx;
-    float y = a.r10 * p.x + a.r11 * p.y + a.r12 * p.z + a.ty;
-    float z = a.r20 * p.x + a.r21 * p.y + a.r22 * p.z + a.tz;
+    double x = a.r00 * p.x + a.r01 * p.y + a.r02 * p.z + a.tx;
+    double y = a.r10 * p.x + a.r11 * p.y + a.r12 * p.z + a.ty;
+    double z = a.r20 * p.x + a.r21 * p.y + a.r22 * p.z + a.tz;
     return {x, y, z};
 }
 
@@ -1055,9 +1057,9 @@ std::vector<triangle_3d_t> trimesh_3d_t::get_triangles() const {
     return result;
 }
 
-float trimesh_3d_t::signed_volume() const {
+double trimesh_3d_t::signed_volume() const {
     point_3d_t center = {0, 0, 0};
-    float volume = 0;
+    double volume = 0;
     for (auto &triangle : get_triangles()) {
         tetrahedron_3d_t tetr{center, triangle.p1, triangle.p2, triangle.p3};
         volume += tetr.signed_volume();
@@ -1337,7 +1339,7 @@ void add_3d_types_modules(py::module &m) {
 
     // Defines Point3D methods.
     point_3d
-        .def(py::init<float, float, float>(), "A point in 3D space", "x"_a,
+        .def(py::init<double, double, double>(), "A point in 3D space", "x"_a,
              "y"_a, "z"_a)
         .def_readwrite("x", &point_3d_t::x, "The point's x coordinate")
         .def_readwrite("y", &point_3d_t::y, "The point's y coordinate")
@@ -1361,27 +1363,27 @@ void add_3d_types_modules(py::module &m) {
                  &operator*),
              "Vector multiplication", "other"_a, py::is_operator())
         .def("__mul__",
-             py::overload_cast<const point_3d_t &, float>(&operator*),
+             py::overload_cast<const point_3d_t &, double>(&operator*),
              "Multiplies a point by a scalar", "other"_a, py::is_operator())
         .def("__mul__",
-             py::overload_cast<float, const point_3d_t &>(&operator*),
+             py::overload_cast<double, const point_3d_t &>(&operator*),
              "Multiplies a point by a scalar", "other"_a, py::is_operator())
         .def("__imul__",
              py::overload_cast<const point_3d_t &>(&point_3d_t::operator*=),
              "Vector multiplication", "other"_a, py::is_operator())
-        .def("__imul__", py::overload_cast<float>(&point_3d_t::operator*=),
+        .def("__imul__", py::overload_cast<double>(&point_3d_t::operator*=),
              "Multiplies this point by a scalar", "other"_a, py::is_operator())
         .def("__truediv__",
              py::overload_cast<const point_3d_t &, const point_3d_t &>(
                  &operator/),
              "Vector division", "other"_a, py::is_operator())
         .def("__truediv__",
-             py::overload_cast<const point_3d_t &, float>(&operator/),
+             py::overload_cast<const point_3d_t &, double>(&operator/),
              "Divides a point by a scalar", "other"_a, py::is_operator())
         .def("__itruediv__",
              py::overload_cast<const point_3d_t &>(&point_3d_t::operator/=),
              "Vector division", "other"_a, py::is_operator())
-        .def("__itruediv__", py::overload_cast<float>(&point_3d_t::operator/=),
+        .def("__itruediv__", py::overload_cast<double>(&point_3d_t::operator/=),
              "Divides this point by a scalar", "other"_a, py::is_operator())
         .def("__eq__", &point_3d_t::operator==,
              "Checks if two points are equal", "other"_a, py::is_operator())
@@ -1468,7 +1470,7 @@ void add_3d_types_modules(py::module &m) {
 
     // Defines Circumcircle3D methods.
     circumcircle_3d
-        .def(py::init<const point_3d_t &, float>(),
+        .def(py::init<const point_3d_t &, double>(),
              "A circumcircle with a given center and radius", "center"_a,
              "radius"_a)
         .def_readwrite("center", &circumcircle_3d_t::center,
@@ -1622,9 +1624,9 @@ void add_3d_types_modules(py::module &m) {
 
     // Defines Affine3D methods.
     affine_3d
-        .def(py::init<std::optional<std::tuple<float, float, float>>,
-                      std::optional<std::tuple<float, float, float>>,
-                      std::optional<float>>(),
+        .def(py::init<std::optional<std::tuple<double, double, double>>,
+                      std::optional<std::tuple<double, double, double>>,
+                      std::optional<double>>(),
              "Initialize affine transformation from rotation and translation "
              "vectors",
              "rot"_a = std::nullopt, "trans"_a = std::nullopt,

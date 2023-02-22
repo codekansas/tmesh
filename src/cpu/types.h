@@ -85,9 +85,9 @@ typedef std::unordered_set<volume_t, __volume_hash_fn> volume_set_t;
 typedef std::unordered_map<volume_t, size_t, __volume_hash_fn> volume_map_t;
 
 struct barycentric_coordinates_t {
-    float u, v, w;
+    double u, v, w;
 
-    barycentric_coordinates_t(float u, float v, float w);
+    barycentric_coordinates_t(double u, double v, double w);
 
     bool operator==(const barycentric_coordinates_t &bc) const;
     bool operator!=(const barycentric_coordinates_t &bc) const;

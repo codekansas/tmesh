@@ -148,7 +148,8 @@ size_t __volume_hash_fn::operator()(const volume_t &e) const {
  * barycentric_coordinates_t *
  * ------------------------- */
 
-barycentric_coordinates_t::barycentric_coordinates_t(float u, float v, float w)
+barycentric_coordinates_t::barycentric_coordinates_t(double u, double v,
+                                                     double w)
     : u(u), v(v), w(w) {}
 
 bool barycentric_coordinates_t::operator==(
@@ -229,8 +230,8 @@ void add_types_modules(py::module &m) {
 
     // Defines BarycentricCoordinates methods.
     barycentric_coordinates
-        .def(py::init<float, float, float>(), "Barycentric coordinates", "u"_a,
-             "v"_a, "w"_a)
+        .def(py::init<double, double, double>(), "Barycentric coordinates",
+             "u"_a, "v"_a, "w"_a)
         .def_readwrite("u", &barycentric_coordinates_t::u,
                        "The first barycentric coordinate")
         .def_readwrite("v", &barycentric_coordinates_t::v,

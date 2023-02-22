@@ -440,14 +440,14 @@ size_t delaunay_split_tree_2d_t::find_leaf_index(const point_2d_t &p) const {
     size_t i = 0;
     while (!is_leaf(i)) {
         // Gets the closest triangle to the point.
-        float min_dist = std::numeric_limits<float>::max();
+        double min_dist = std::numeric_limits<double>::max();
         size_t min_index = 0;
         for (const auto &child_id : this->children[i]) {
             const auto &child = this->faces[child_id];
             const triangle_2d_t t{this->vertices[child.a],
                                   this->vertices[child.b],
                                   this->vertices[child.c]};
-            float t_dist = p.distance_to_triangle(t);
+            double t_dist = p.distance_to_triangle(t);
             if (t_dist < min_dist) {
                 min_dist = t_dist;
                 min_index = child_id;
@@ -562,10 +562,10 @@ void sort_bounding_boxes_for_bvh(const std::vector<bounding_box_2d_t> &boxes,
         return;
     }
 
-    float min_x = std::numeric_limits<float>::max(),
-          min_y = std::numeric_limits<float>::max(),
-          max_x = std::numeric_limits<float>::lowest(),
-          max_y = std::numeric_limits<float>::lowest();
+    double min_x = std::numeric_limits<double>::max(),
+           min_y = std::numeric_limits<double>::max(),
+           max_x = std::numeric_limits<double>::lowest(),
+           max_y = std::numeric_limits<double>::lowest();
     for (size_t i = lo; i < hi; i++) {
         const auto &box = boxes[indices[i]];
         min_x = std::min(min_x, box.min.x);
@@ -574,7 +574,7 @@ void sort_bounding_boxes_for_bvh(const std::vector<bounding_box_2d_t> &boxes,
         max_y = std::max(max_y, box.max.y);
     }
 
-    float dx = max_x - min_x, dy = max_y - min_y;
+    double dx = max_x - min_x, dy = max_y - min_y;
     size_t axis = 0;
     if (dx < dy) axis = 1;
 
