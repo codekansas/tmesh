@@ -21,6 +21,8 @@ struct edge_t {
     bool operator!=(const edge_t &f) const;
     bool operator<(const edge_t &f) const;
 
+    edge_t flip() const;
+
     std::string to_string() const;
 };
 

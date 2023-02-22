@@ -1,6 +1,7 @@
 #include "main.h"
 
 #include "ops.h"
+#include "options.h"
 #include "shapes.h"
 #include "three/main.h"
 #include "two/main.h"
@@ -9,6 +10,7 @@
 namespace trimesh {
 
 void add_cpu_modules(py::module &m) {
+    add_options_modules(m);
     add_types_modules(m);
     add_2d_modules(m);
     add_3d_modules(m);

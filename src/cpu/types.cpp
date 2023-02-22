@@ -35,6 +35,11 @@ bool edge_t::operator<(const edge_t &f) const {
     return std::tie(a1, b1) < std::tie(a2, b2);
 }
 
+edge_t edge_t::flip() const {
+    if (!directed) throw std::runtime_error("Cannot flip undirected edge");
+    return edge_t(b, a, true);
+}
+
 std::string edge_t::to_string() const {
     if (directed)
         return "(" + std::to_string(a) + ", " + std::to_string(b) +

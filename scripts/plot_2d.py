@@ -4,12 +4,12 @@ from typing import List, Union
 
 import matplotlib.pyplot as plt
 
-from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
+from tmesh import Circle2D, Line2D, Point2D, Triangle2D, Trimesh2D, triangulate_2d
 
-Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
+Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D, Circle2D]
 
 points = [Point2D(0, 0), Point2D(1, 0), Point2D(1, 1), Point2D(0, 1)]
-trimesh = Trimesh2D.triangulate(points)
+trimesh = triangulate_2d(points, shuffle=False)
 
 # To plot things, add them to this list.
 THINGS_TO_PLOT: List[Thing] = [
@@ -91,6 +91,26 @@ def plot_trimesh(trimesh: Trimesh2D, i: int) -> None:
         plot_triangle(triangle, i, labels=(str(face.a), str(face.b), str(face.c)))
 
 
+def plot_circle(circle: Circle2D, i: int) -> None:
+    """Plots a circle.
+
+    Args:
+        circle: Circle to plot.
+        i: Index of circle.
+    """
+
+    plt_circle = plt.Circle((circle.center.x, circle.center.y), circle.radius, color=get_color(i), fill=False)
+    plt.gca().add_patch(plt_circle)
+
+    # Adjusts the plot to fit the circle.
+    cur_min_x, cur_max_x = plt.xlim()
+    cur_min_y, cur_max_y = plt.ylim()
+    new_min_x, new_max_x = circle.center.x - circle.radius, circle.center.x + circle.radius
+    new_min_y, new_max_y = circle.center.y - circle.radius, circle.center.y + circle.radius
+    plt.xlim(min(cur_min_x, new_min_x), max(cur_max_x, new_max_x))
+    plt.ylim(min(cur_min_y, new_min_y), max(cur_max_y, new_max_y))
+
+
 def main() -> None:
     """Plots the things in THINGS_TO_PLOT.
 
@@ -109,6 +129,8 @@ def main() -> None:
             plot_triangle(thing, i)
         elif isinstance(thing, Trimesh2D):
             plot_trimesh(thing, i)
+        elif isinstance(thing, Circle2D):
+            plot_circle(thing, i)
         else:
             raise ValueError(f"Unsupported type: {type(thing)}")
 

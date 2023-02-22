@@ -104,7 +104,8 @@ struct triangle_2d_t {
     std::vector<line_2d_t> edges() const;
     bool is_clockwise() const;
 
-    bool is_inside_circumcircle(const point_2d_t &p) const;
+    circle_2d_t circumcircle() const;
+    bool circumcircle_contains(const point_2d_t &p) const;
     bool contains_point(const point_2d_t &p) const;
     bool contains_triangle(const triangle_2d_t &t) const;
     bool intersects_bounding_box(const bounding_box_2d_t &bb) const;
@@ -133,7 +134,7 @@ struct circle_2d_t {
 
     float area() const;
     float circumference() const;
-    bool contains_point(const point_2d_t &p) const;
+    bool contains_point(const point_2d_t &p, float tolerance = 0.0f) const;
 
     std::string to_string() const;
 };
@@ -236,8 +237,6 @@ struct trimesh_2d_t {
     trimesh_2d_t(const std::vector<point_2d_t> &vertices,
                  const face_list_t &faces, bool validate = true);
 
-    static trimesh_2d_t triangulate(const std::vector<point_2d_t> &points);
-
     void validate() const;
     const std::vector<point_2d_t> &vertices() const;
     const face_list_t &faces() const;
@@ -261,6 +260,9 @@ struct trimesh_2d_t {
     trimesh_2d_t operator&(const trimesh_2d_t &other) const;
     trimesh_2d_t operator-(const trimesh_2d_t &other) const;
 };
+
+trimesh_2d_t triangulate(const std::vector<point_2d_t> &points,
+                         bool triangulate = true);
 
 void add_2d_types_modules(py::module &m);
 

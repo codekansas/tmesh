@@ -24,6 +24,7 @@ struct point_2d_set_t {
 
     size_t add_point(const point_2d_t &p);
     size_t size() const;
+    size_t get_point(const point_2d_t &p) const;
     point_2d_t get_point(size_t i) const;
     std::optional<size_t> point_id(const point_2d_t &p) const;
     const std::vector<point_2d_t> &get_points() const;
@@ -67,15 +68,11 @@ struct delaunay_split_tree_2d_t {
     const triangle_2d_t root;
     std::vector<face_t> faces;
     std::vector<std::vector<size_t>> children;
-    std::vector<std::vector<size_t>> parents;
+    edge_map_t edge_to_face;
     point_2d_set_t vertices;
 
-    std::optional<size_t> neighbor(size_t i, const edge_t &edge) const;
-    void make_delaunay(size_t i);
-    void add_triangle(const face_t &f,
-                      const std::initializer_list<size_t> &parents);
-    void add_triangles(const std::vector<face_t> &fs,
-                       const std::initializer_list<size_t> &parents);
+    void make_delaunay(const size_t &pi, const edge_t &e, const size_t &ti);
+    size_t add_triangle(const face_t &f, const std::vector<size_t> &parents);
 
    public:
     delaunay_split_tree_2d_t(const triangle_2d_t &root);
@@ -84,9 +81,11 @@ struct delaunay_split_tree_2d_t {
     bool is_leaf(size_t i) const;
     size_t find_leaf_index(const point_2d_t &p) const;
     const face_t &get_face(size_t i) const;
+    triangle_2d_t get_triangle(const face_t &f) const;
     triangle_2d_t get_triangle(size_t i) const;
     std::vector<size_t> get_leaf_triangles() const;
     void split_triangle(const point_2d_t &p, size_t i);
+    const point_2d_set_t &get_vertices() const;
 };
 
 // Defines the hierarchical box tree structure to support 2D queries.

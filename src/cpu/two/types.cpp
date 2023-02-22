@@ -1,8 +1,10 @@
 #include "types.h"
 
+#include <algorithm>
 #include <iostream>
 #include <numeric>
 #include <queue>
+#include <random>
 #include <sstream>
 #include <stack>
 #include <unordered_map>
@@ -370,19 +372,27 @@ bool triangle_2d_t::is_clockwise() const {
     return (p3 - p1).cross(p2 - p1) < 0.0f;
 }
 
-bool triangle_2d_t::is_inside_circumcircle(const point_2d_t &p) const {
-    float a = p1.x - p.x;
-    float b = p1.y - p.y;
-    float c = p2.x - p.x;
-    float d = p2.y - p.y;
-    float e = p3.x - p.x;
-    float f = p3.y - p.y;
+circle_2d_t triangle_2d_t::circumcircle() const { return {*this}; }
 
-    float det = a * d - b * c;
-    float s = a * f - e * b;
-    float t = e * d - c * f;
+bool triangle_2d_t::circumcircle_contains(const point_2d_t &p) const {
+    return circumcircle().contains_point(p);
 
-    return s * t <= det * det;
+    // Faster version.
+    // float a = p1.x - p.x;
+    // float b = p1.y - p.y;
+    // float c = p2.x - p.x;
+    // float d = p2.y - p.y;
+    // float e = p3.x - p.x;
+    // float f = p3.y - p.y;
+
+    // float A = a * (p1.x + p.x) + b * (p1.y + p.y);
+    // float B = c * (p2.x + p.x) + d * (p2.y + p.y);
+    // float C = e * (p3.x + p.x) + f * (p3.y + p.y);
+
+    // float det = a * (d * f - e * B) - b * (c * f - e * C) + A * (c * B - d *
+    // C);
+
+    // return det > 0.0f;
 }
 
 bool triangle_2d_t::contains_point(const point_2d_t &p) const {
@@ -476,16 +486,16 @@ circle_2d_t::circle_2d_t(const point_2d_t &c, float r) {
 }
 
 circle_2d_t::circle_2d_t(const triangle_2d_t &t) {
-    float a = t.p1.distance_to_point(t.p2);
-    float b = t.p2.distance_to_point(t.p3);
-    float c = t.p3.distance_to_point(t.p1);
-    float s = (a + b + c) / 2.0f;
-    float area = std::sqrt(s * (s - a) * (s - b) * (s - c));
-    float r = a * b * c / (4.0f * area);
-    float x = (a * t.p1.x + b * t.p2.x + c * t.p3.x) / (a + b + c);
-    float y = (a * t.p1.y + b * t.p2.y + c * t.p3.y) / (a + b + c);
-    center = {x, y};
-    radius = r;
+    point_2d_t p1 = t.p1, p2 = t.p2, p3 = t.p3;
+    float a = p2.x - p1.x;
+    float b = p2.y - p1.y;
+    float c = p3.x - p1.x;
+    float d = p3.y - p1.y;
+    float e = a * (p1.x + p2.x) + b * (p1.y + p2.y);
+    float f = c * (p1.x + p3.x) + d * (p1.y + p3.y);
+    float g = 2.0f * (a * (p3.y - p2.y) - b * (p3.x - p2.x));
+    center = {(d * e - b * f) / g, (a * f - c * e) / g};
+    radius = center.distance_to_point(p1);
 }
 
 bool circle_2d_t::operator==(const circle_2d_t &c) const {
@@ -500,8 +510,8 @@ float circle_2d_t::area() const { return M_PI * radius * radius; }
 
 float circle_2d_t::circumference() const { return 2.0f * M_PI * radius; }
 
-bool circle_2d_t::contains_point(const point_2d_t &p) const {
-    return center.distance_to_point(p) <= radius + get_tolerance();
+bool circle_2d_t::contains_point(const point_2d_t &p, float tolerance) const {
+    return center.distance_to_point(p) <= radius + tolerance;
 }
 
 std::string circle_2d_t::to_string() const {
@@ -1042,56 +1052,6 @@ trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices,
                            const face_list_t &faces, bool validate)
     : _vertices(vertices), _faces(faces) {
     if (validate) this->validate();
-}
-
-trimesh_2d_t trimesh_2d_t::triangulate(const std::vector<point_2d_t> &points) {
-    // Reference: https://www.youtube.com/watch?v=1TUUevxkvp4
-
-    if (points.size() < 3) {
-        throw std::invalid_argument("Not enough points");
-    }
-
-    std::cout << "A" << std::endl;
-
-    // Super triangle.
-    bounding_box_2d_t bb{points};
-    float d = std::max(bb.max.x - bb.min.x, bb.max.y - bb.min.y);
-    point_2d_t p1 = {bb.min.x - 2 * d, bb.min.y - d};
-    point_2d_t p2 = {bb.max.x + 2 * d, bb.min.y - d};
-    point_2d_t p3 = {(bb.min.x + bb.max.x) / 2, bb.max.y + 2 * d};
-    triangle_2d_t super_triangle{p1, p2, p3};
-
-    std::cout << "B" << std::endl;
-
-    // Triangulation.
-    delaunay_split_tree_2d_t tree{super_triangle};
-    for (const auto &p : points) {
-        std::cout << "p = " << p.to_string() << std::endl;
-        const size_t i = tree.find_leaf_index(p);
-        std::cout << "i = " << i << std::endl;
-        tree.split_triangle(p, i);
-    }
-
-    std::cout << "C" << std::endl;
-
-    // Remove super triangle.
-    point_2d_set_t vertices;
-    std::vector<face_t> faces;
-    for (const auto i : tree.get_leaf_triangles()) {
-        const auto &t = tree.get_triangle(i);
-        if (t.p1 == p1 || t.p1 == p2 || t.p1 == p3) continue;
-        if (t.p2 == p1 || t.p2 == p2 || t.p2 == p3) continue;
-        if (t.p3 == p1 || t.p3 == p2 || t.p3 == p3) continue;
-        size_t vi = vertices.size();
-        const auto p1i = vertices.add_point(t.p1),
-                   p2i = vertices.add_point(t.p2),
-                   p3i = vertices.add_point(t.p3);
-        faces.push_back({p1i, p2i, p3i});
-    }
-
-    std::cout << "D" << std::endl;
-
-    return {vertices.get_points(), faces, false};
 }
 
 void trimesh_2d_t::validate() const {
@@ -1657,6 +1617,64 @@ trimesh_2d_t trimesh_2d_t::operator-(const trimesh_2d_t &other) const {
     return mesh_difference(*this, other);
 }
 
+/* ----------------------- *
+ * Additional constructors *
+ * ----------------------- */
+
+trimesh_2d_t triangulate(const std::vector<point_2d_t> &points, bool shuffle) {
+    // Reference: https://www.youtube.com/watch?v=1TUUevxkvp4
+
+    if (points.size() < 3) {
+        throw std::invalid_argument("Not enough points");
+    }
+
+    // Super triangle.
+    bounding_box_2d_t bb{points};
+    float d = std::max(bb.max.x - bb.min.x, bb.max.y - bb.min.y);
+    point_2d_t p1 = {bb.min.x - 10 * d, bb.min.y - d};
+    point_2d_t p2 = {bb.max.x + 10 * d, bb.min.y - d};
+    point_2d_t p3 = {(bb.min.x + bb.max.x) / 2, bb.max.y + 10 * d};
+    triangle_2d_t super_triangle{p1, p2, p3};
+
+    // Generates a random permutation of the point indices.
+    std::vector<size_t> indices(points.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    if (shuffle) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::shuffle(indices.begin(), indices.end(), gen);
+    }
+
+    // Triangulation.
+    delaunay_split_tree_2d_t tree{super_triangle};
+    for (size_t pi : indices) {
+        const auto &p = points[pi];
+        const size_t i = tree.find_leaf_index(p);
+        tree.split_triangle(p, i);
+    }
+
+    // Don't remove super triangle (for debugging).
+    // std::vector<face_t> faces;
+    // for (const auto i : tree.get_leaf_triangles()) {
+    //     const auto face = tree.get_face(i);
+    //     faces.push_back(face);
+    // }
+    // const auto &old_points = tree.get_vertices().get_points();
+    // return {old_points, faces, false};
+
+    // Remove super triangle.
+    std::vector<face_t> faces;
+    for (const auto i : tree.get_leaf_triangles()) {
+        const auto face = tree.get_face(i);
+        if (face.a < 3 || face.b < 3 || face.c < 3) continue;
+        faces.push_back({face.a - 3, face.b - 3, face.c - 3});
+    }
+    const auto &old_points = tree.get_vertices().get_points();
+    std::vector<point_2d_t> new_points(old_points.begin() + 3,
+                                       old_points.end());
+    return {new_points, faces, false};
+}
+
 void add_2d_types_modules(py::module &m) {
     // Defines the classes first, so that methods can resolve types
     // correctly.
@@ -1831,7 +1849,9 @@ void add_2d_types_modules(py::module &m) {
         .def("edges", &triangle_2d_t::edges, "The triangle's edges")
         .def("is_clockwise", &triangle_2d_t::is_clockwise,
              "Is the triangle clockwise")
-        .def("is_inside_circumcircle", &triangle_2d_t::is_inside_circumcircle,
+        .def("circumcircle", &triangle_2d_t::circumcircle,
+             "The triangle's circumscribed circle")
+        .def("circumcircle_contains", &triangle_2d_t::circumcircle_contains,
              "Is the point inside the circumcircle of the triangle", "p"_a)
         .def("contains_point", &triangle_2d_t::contains_point,
              "Does the triangle contain a point", "p"_a)
@@ -1858,6 +1878,8 @@ void add_2d_types_modules(py::module &m) {
     circle_2d
         .def(py::init<const point_2d_t &, double>(), "A circle in 2D space",
              "center"_a, "radius"_a)
+        .def(py::init<const triangle_2d_t>(), "The circumcircle of a triangle",
+             "triangle"_a)
         .def_readwrite("center", &circle_2d_t::center, "The circle's center")
         .def_readwrite("radius", &circle_2d_t::radius, "The circle's radius")
         .def_property_readonly("area", &circle_2d_t::area, "The circle's area")
@@ -1870,7 +1892,7 @@ void add_2d_types_modules(py::module &m) {
         .def("__ne__", &circle_2d_t::operator!=,
              "Inequality with another circle", "other"_a, py::is_operator())
         .def("contains_point", &circle_2d_t::contains_point,
-             "Does the circle contain a point", "p"_a);
+             "Does the circle contain a point", "p"_a, "tolerance"_a = 0.0f);
 
     // Defines BoundingBox2D methods.
     bbox_2d
@@ -2022,7 +2044,6 @@ void add_2d_types_modules(py::module &m) {
         //               bool>(),
         //      "Creates a trimesh from vertices and faces", "vertices"_a,
         //      "faces"_a, "validate"_a = false)
-        .def_static("triangulate", &trimesh_2d_t::triangulate)
         .def_property_readonly("vertices", &trimesh_2d_t::vertices,
                                "The mesh vertices")
         .def_property_readonly("faces", &trimesh_2d_t::faces, "The mesh faces")
@@ -2055,6 +2076,10 @@ void add_2d_types_modules(py::module &m) {
         .def("__lshift__", &trimesh_2d_t::operator<<,
              "Applies affine transformation to the mesh", "affine"_a,
              py::is_operator());
+
+    // Defines additional constructors.
+    m.def("triangulate_2d", &triangulate, "Triangulates a set of points",
+          "polygon"_a, "shuffle"_a = true);
 }
 
 }  // namespace trimesh

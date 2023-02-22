@@ -33,6 +33,10 @@ size_t point_2d_set_t::add_point(const point_2d_t &p) {
 
 size_t point_2d_set_t::size() const { return points.size(); }
 
+size_t point_2d_set_t::get_point(const point_2d_t &p) const {
+    return indices.at(p);
+}
+
 point_2d_t point_2d_set_t::get_point(size_t i) const { return points[i]; }
 
 std::optional<size_t> point_2d_set_t::point_id(const point_2d_t &p) const {
@@ -384,80 +388,47 @@ const size_t triangle_split_tree_2d_t::count_leaf_triangles() const {
  * delaunay_split_tree_2d_t *
  * ------------------------ */
 
-std::optional<size_t> delaunay_split_tree_2d_t::neighbor(
-    size_t i, const edge_t &edge) const {
-    for (const auto &parent : this->parents[i]) {
-        for (const auto &sibling : this->children[parent]) {
-            if (sibling == i) continue;
-            const auto &face = this->faces[sibling];
-            if (face.has_edge(edge)) return sibling;
-        }
+void delaunay_split_tree_2d_t::make_delaunay(const size_t &pi, const edge_t &e,
+                                             const size_t &ti) {
+    const auto e_rev = e.flip();
+
+    if (this->edge_to_face.find(e_rev) == this->edge_to_face.end()) {
+        return;
     }
-    return {};
-}
 
-void delaunay_split_tree_2d_t::make_delaunay(size_t i) {
-    if (!this->children[i].empty()) return;
-    const auto &face = this->faces[i];
-    const triangle_2d_t t{this->vertices[face.a], this->vertices[face.b],
-                          this->vertices[face.c]};
-    for (const auto &edge : this->faces[i].get_edges(/* directed */ false)) {
-        const auto neighbor = this->neighbor(i, edge);
-        if (!neighbor.has_value()) continue;
-        const auto &neighbor_face = this->faces[neighbor.value()];
+    size_t tj = this->edge_to_face[e_rev];
+    const auto &tj_face = this->faces[tj];
+    const auto &tj_tri = this->get_triangle(tj_face);
 
-        // Gets the vertex IDs which are not part of the current edge.
-        const auto &vc = face.get_other_vertex(edge),
-                   &vn = neighbor_face.get_other_vertex(edge);
+    if (tj_tri.circumcircle_contains(this->vertices[pi])) {
+        const auto &pj = tj_face.get_other_vertex(e_rev);
+        const auto tk = this->add_triangle({pi, pj, e.b}, {ti, tj}),
+                   tl = this->add_triangle({pj, pi, e.a}, {ti, tj});
 
-        // Gets the actual points which are not part of the current edge.
-        const auto &pc = this->vertices[vc], &pn = this->vertices[vn];
-
-        // Gets the other triangle.
-        const triangle_2d_t t2{this->vertices[edge.b], this->vertices[edge.a],
-                               pn};
-
-        // If the other point is inside the circumcircle of this triangle,
-        // then we need to flip the edge. We add the two new triangles as
-        // children of both the current triangle and the neighbor.
-        if (t.is_inside_circumcircle(pn) || t2.is_inside_circumcircle(pc)) {
-            this->add_triangles({{face.a, edge.b, vc}, {face.b, edge.a, vn}},
-                                {i, neighbor.value()});
-            return;
-        }
+        this->make_delaunay(pi, {e.a, pj, true}, tl);
+        this->make_delaunay(pi, {pj, e.b, true}, tk);
     }
 }
 
-void delaunay_split_tree_2d_t::add_triangle(
-    const face_t &f, const std::initializer_list<size_t> &parents) {
+size_t delaunay_split_tree_2d_t::add_triangle(
+    const face_t &f, const std::vector<size_t> &parents) {
+    const size_t i = this->faces.size();
     for (const auto &parent : parents) {
-        this->children[parent].push_back(this->faces.size());
+        this->children[parent].push_back(i);
     }
     this->faces.push_back(f);
-    this->parents.push_back(parents);
+    for (const auto &edge : f.get_edges(true)) {
+        this->edge_to_face[edge] = i;
+    }
     this->children.push_back({});
-}
-
-void delaunay_split_tree_2d_t::add_triangles(
-    const std::vector<face_t> &fs,
-    const std::initializer_list<size_t> &parents) {
-    std::cout << "aaa" << std::endl;
-    for (const auto &f : fs) {
-        this->add_triangle(f, parents);
-    }
-    std::cout << "bbb" << std::endl;
-    for (size_t i = this->faces.size() - fs.size(); i < this->faces.size();
-         i++) {
-        this->make_delaunay(i);
-    }
-    std::cout << "ccc" << std::endl;
+    return i;
 }
 
 delaunay_split_tree_2d_t::delaunay_split_tree_2d_t(const triangle_2d_t &root)
     : root(root) {
     this->faces = {{0, 1, 2}};
+    this->edge_to_face = {{{0, 1}, 0}, {{1, 2}, 0}, {{2, 0}, 0}};
     this->children = {{}};
-    this->parents = {{}};
     this->vertices = {root.p1, root.p2, root.p3};
 }
 
@@ -468,21 +439,37 @@ bool delaunay_split_tree_2d_t::is_leaf(size_t i) const {
 size_t delaunay_split_tree_2d_t::find_leaf_index(const point_2d_t &p) const {
     size_t i = 0;
     while (!is_leaf(i)) {
-        bool found = false;
+        // Gets the closest triangle to the point.
+        float min_dist = std::numeric_limits<float>::max();
+        size_t min_index = 0;
         for (const auto &child_id : this->children[i]) {
             const auto &child = this->faces[child_id];
             const triangle_2d_t t{this->vertices[child.a],
                                   this->vertices[child.b],
                                   this->vertices[child.c]};
-            if (t.contains_point(p)) {
-                i = child_id;
-                found = true;
-                break;
+            float t_dist = p.distance_to_triangle(t);
+            if (t_dist < min_dist) {
+                min_dist = t_dist;
+                min_index = child_id;
             }
         }
-        if (!found) {
-            throw std::runtime_error("Could not find leaf triangle.");
+
+        if (min_dist > get_tolerance()) {
+            std::ostringstream ss;
+            ss << "Could not find leaf triangle for point " << p.to_string()
+               << " in triangle " << this->get_triangle(i).to_string()
+               << " with " << this->children[i].size()
+               << " children:" << std::endl;
+            for (const auto &child_id : this->children[i]) {
+                ss << " - " << this->get_triangle(child_id).to_string()
+                   << " (dist: "
+                   << p.distance_to_triangle(this->get_triangle(child_id))
+                   << ")" << std::endl;
+            }
+            throw std::runtime_error(ss.str());
         }
+
+        i = min_index;
     }
     return i;
 }
@@ -491,10 +478,14 @@ const face_t &delaunay_split_tree_2d_t::get_face(size_t i) const {
     return this->faces[i];
 }
 
-triangle_2d_t delaunay_split_tree_2d_t::get_triangle(size_t i) const {
-    const auto &f = this->get_face(i);
+triangle_2d_t delaunay_split_tree_2d_t::get_triangle(const face_t &f) const {
     return triangle_2d_t{this->vertices[f.a], this->vertices[f.b],
                          this->vertices[f.c]};
+}
+
+triangle_2d_t delaunay_split_tree_2d_t::get_triangle(size_t i) const {
+    const auto &f = this->get_face(i);
+    return this->get_triangle(f);
 }
 
 std::vector<size_t> delaunay_split_tree_2d_t::get_leaf_triangles() const {
@@ -508,17 +499,55 @@ std::vector<size_t> delaunay_split_tree_2d_t::get_leaf_triangles() const {
 }
 
 void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
-    std::cout << "aa" << std::endl;
     const auto pi = this->vertices.add_point(p);
-    std::cout << "bb" << std::endl;
-    const auto &f = this->faces[i];
-    std::cout << "cc" << std::endl;
-    const auto &a = this->vertices[f.a], &b = this->vertices[f.b],
-               &c = this->vertices[f.c];
-    std::cout << "dd" << std::endl;
+    const auto [fa, fb, fc] = this->faces[i];
+    const auto &va = this->vertices[fa], &vb = this->vertices[fb],
+               &vc = this->vertices[fc];
 
-    // Add the new triangles.
-    this->add_triangles({{f.a, f.b, pi}, {f.b, f.c, pi}, {f.c, f.a, pi}}, {i});
+    // Checks if the point is at the same location as one of the vertices.
+    if (p == va || p == vb || p == vc) {
+        return;
+    }
+
+    // Checks if the point intersects an edge.
+    for (const auto [ea, eb, directed] : this->faces[i].get_edges(true)) {
+        const auto &v1 = this->vertices[ea], &v2 = this->vertices[eb];
+        const line_2d_t l{v1, v2};
+        if (l.closest_point(p) == p) {
+            const edge_t e{ea, eb, directed}, e_rev{eb, ea, directed};
+            const size_t j = this->edge_to_face[e_rev];
+            const size_t pc = this->faces[i].get_other_vertex(e),
+                         pn = this->faces[j].get_other_vertex(e_rev);
+
+            // Splits each triangle.
+            const auto t1 = this->add_triangle({pi, pc, ea}, {i}),
+                       t2 = this->add_triangle({pi, eb, pc}, {i}),
+                       t3 = this->add_triangle({pi, ea, pn}, {j}),
+                       t4 = this->add_triangle({pi, pn, eb}, {j});
+
+            // Makes the new triangles Delaunay.
+            this->make_delaunay(pi, {pc, ea, true}, t1);
+            this->make_delaunay(pi, {eb, pc, true}, t2);
+            this->make_delaunay(pi, {ea, pn, true}, t3);
+            this->make_delaunay(pi, {pn, eb, true}, t4);
+
+            return;
+        }
+    }
+
+    // Splits the current triangle.
+    const auto t1 = this->add_triangle({fa, fb, pi}, {i});
+    const auto t2 = this->add_triangle({fb, fc, pi}, {i});
+    const auto t3 = this->add_triangle({fc, fa, pi}, {i});
+
+    // Makes the new triangles Delaunay.
+    this->make_delaunay(pi, {fa, fb, true}, t1);
+    this->make_delaunay(pi, {fb, fc, true}, t2);
+    this->make_delaunay(pi, {fc, fa, true}, t3);
+}
+
+const point_2d_set_t &delaunay_split_tree_2d_t::get_vertices() const {
+    return this->vertices;
 }
 
 /* -------- *
