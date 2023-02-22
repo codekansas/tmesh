@@ -1045,10 +1045,53 @@ trimesh_2d_t::trimesh_2d_t(const std::vector<point_2d_t> &vertices,
 }
 
 trimesh_2d_t trimesh_2d_t::triangulate(const std::vector<point_2d_t> &points) {
-    // Need to implement the algorithm described in
-    // https://www.youtube.com/watch?v=1TUUevxkvp4
+    // Reference: https://www.youtube.com/watch?v=1TUUevxkvp4
 
-    throw std::runtime_error("Not implemented");
+    if (points.size() < 3) {
+        throw std::invalid_argument("Not enough points");
+    }
+
+    std::cout << "A" << std::endl;
+
+    // Super triangle.
+    bounding_box_2d_t bb{points};
+    float d = std::max(bb.max.x - bb.min.x, bb.max.y - bb.min.y);
+    point_2d_t p1 = {bb.min.x - 2 * d, bb.min.y - d};
+    point_2d_t p2 = {bb.max.x + 2 * d, bb.min.y - d};
+    point_2d_t p3 = {(bb.min.x + bb.max.x) / 2, bb.max.y + 2 * d};
+    triangle_2d_t super_triangle{p1, p2, p3};
+
+    std::cout << "B" << std::endl;
+
+    // Triangulation.
+    delaunay_split_tree_2d_t tree{super_triangle};
+    for (const auto &p : points) {
+        std::cout << "p = " << p.to_string() << std::endl;
+        const size_t i = tree.find_leaf_index(p);
+        std::cout << "i = " << i << std::endl;
+        tree.split_triangle(p, i);
+    }
+
+    std::cout << "C" << std::endl;
+
+    // Remove super triangle.
+    point_2d_set_t vertices;
+    std::vector<face_t> faces;
+    for (const auto i : tree.get_leaf_triangles()) {
+        const auto &t = tree.get_triangle(i);
+        if (t.p1 == p1 || t.p1 == p2 || t.p1 == p3) continue;
+        if (t.p2 == p1 || t.p2 == p2 || t.p2 == p3) continue;
+        if (t.p3 == p1 || t.p3 == p2 || t.p3 == p3) continue;
+        size_t vi = vertices.size();
+        const auto p1i = vertices.add_point(t.p1),
+                   p2i = vertices.add_point(t.p2),
+                   p3i = vertices.add_point(t.p3);
+        faces.push_back({p1i, p2i, p3i});
+    }
+
+    std::cout << "D" << std::endl;
+
+    return {vertices.get_points(), faces, false};
 }
 
 void trimesh_2d_t::validate() const {

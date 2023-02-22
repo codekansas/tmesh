@@ -441,13 +441,16 @@ void delaunay_split_tree_2d_t::add_triangle(
 void delaunay_split_tree_2d_t::add_triangles(
     const std::vector<face_t> &fs,
     const std::initializer_list<size_t> &parents) {
+    std::cout << "aaa" << std::endl;
     for (const auto &f : fs) {
         this->add_triangle(f, parents);
     }
+    std::cout << "bbb" << std::endl;
     for (size_t i = this->faces.size() - fs.size(); i < this->faces.size();
          i++) {
         this->make_delaunay(i);
     }
+    std::cout << "ccc" << std::endl;
 }
 
 delaunay_split_tree_2d_t::delaunay_split_tree_2d_t(const triangle_2d_t &root)
@@ -462,6 +465,38 @@ bool delaunay_split_tree_2d_t::is_leaf(size_t i) const {
     return this->children[i].empty();
 }
 
+size_t delaunay_split_tree_2d_t::find_leaf_index(const point_2d_t &p) const {
+    size_t i = 0;
+    while (!is_leaf(i)) {
+        bool found = false;
+        for (const auto &child_id : this->children[i]) {
+            const auto &child = this->faces[child_id];
+            const triangle_2d_t t{this->vertices[child.a],
+                                  this->vertices[child.b],
+                                  this->vertices[child.c]};
+            if (t.contains_point(p)) {
+                i = child_id;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw std::runtime_error("Could not find leaf triangle.");
+        }
+    }
+    return i;
+}
+
+const face_t &delaunay_split_tree_2d_t::get_face(size_t i) const {
+    return this->faces[i];
+}
+
+triangle_2d_t delaunay_split_tree_2d_t::get_triangle(size_t i) const {
+    const auto &f = this->get_face(i);
+    return triangle_2d_t{this->vertices[f.a], this->vertices[f.b],
+                         this->vertices[f.c]};
+}
+
 std::vector<size_t> delaunay_split_tree_2d_t::get_leaf_triangles() const {
     std::vector<size_t> leaf_triangles;
     for (size_t i = 0; i < this->faces.size(); i++) {
@@ -473,10 +508,14 @@ std::vector<size_t> delaunay_split_tree_2d_t::get_leaf_triangles() const {
 }
 
 void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
+    std::cout << "aa" << std::endl;
     const auto pi = this->vertices.add_point(p);
+    std::cout << "bb" << std::endl;
     const auto &f = this->faces[i];
+    std::cout << "cc" << std::endl;
     const auto &a = this->vertices[f.a], &b = this->vertices[f.b],
                &c = this->vertices[f.c];
+    std::cout << "dd" << std::endl;
 
     // Add the new triangles.
     this->add_triangles({{f.a, f.b, pi}, {f.b, f.c, pi}, {f.c, f.a, pi}}, {i});

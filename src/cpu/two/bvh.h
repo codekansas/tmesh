@@ -82,6 +82,9 @@ struct delaunay_split_tree_2d_t {
     ~delaunay_split_tree_2d_t() = default;
 
     bool is_leaf(size_t i) const;
+    size_t find_leaf_index(const point_2d_t &p) const;
+    const face_t &get_face(size_t i) const;
+    triangle_2d_t get_triangle(size_t i) const;
     std::vector<size_t> get_leaf_triangles() const;
     void split_triangle(const point_2d_t &p, size_t i);
 };
