@@ -33,6 +33,10 @@ size_t point_2d_set_t::add_point(const point_2d_t &p) {
 
 size_t point_2d_set_t::size() const { return points.size(); }
 
+size_t point_2d_set_t::get_point(const point_2d_t &p) const {
+    return indices.at(p);
+}
+
 point_2d_t point_2d_set_t::get_point(size_t i) const { return points[i]; }
 
 std::optional<size_t> point_2d_set_t::point_id(const point_2d_t &p) const {
@@ -144,6 +148,28 @@ std::vector<size_t> triangle_split_tree_2d_t::get_leaf_triangles() const {
     return leaf_triangles;
 }
 
+std::optional<size_t>
+triangle_split_tree_2d_t::get_leaf_triangle_which_contains(
+    const point_2d_t &p) const {
+    std::queue<size_t> q;
+    q.push(0);
+    while (!q.empty()) {
+        size_t i = q.front();
+        q.pop();
+        auto t = get_triangle(i);
+        if (p.is_inside_triangle(t)) {
+            if (is_leaf(i)) {
+                return i;
+            } else {
+                for (auto &child : this->children[i]) {
+                    q.push(child);
+                }
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 std::vector<size_t>
 triangle_split_tree_2d_t::get_leaf_triangles_which_intersect(
     const line_2d_t &l) const {
@@ -167,13 +193,47 @@ triangle_split_tree_2d_t::get_leaf_triangles_which_intersect(
     return std::vector<size_t>(leaf_triangles.begin(), leaf_triangles.end());
 }
 
+void triangle_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
+    const auto f = faces[i];
+    const auto t = get_triangle(i);
+
+    auto intersects_edge = [&](const line_2d_t &l) {
+        return l.distance_to_point(p) < get_tolerance();
+    };
+
+    std::vector<std::tuple<point_2d_t, point_2d_t, size_t, size_t, size_t>>
+        invariants{{t.p1, t.p2, f.a, f.b, f.c},
+                   {t.p2, t.p3, f.b, f.c, f.a},
+                   {t.p3, t.p1, f.c, f.a, f.b}};
+
+    // Checks if the point is on an edge of the triangle.
+    for (auto &[p1, p2, fa, fb, fc] : invariants) {
+        if (intersects_edge({p1, p2})) {
+            auto new_point = add_point(p);
+            add_triangles({{fa, new_point, fc}, {fb, fc, new_point}}, i);
+            return;
+        }
+    }
+
+    // Checks if the point is inside the triangle.
+    if (p.is_inside_triangle(t)) {
+        auto new_point = add_point(p);
+        add_triangles({{f.a, f.b, new_point},
+                       {f.b, f.c, new_point},
+                       {f.c, f.a, new_point}},
+                      i);
+        return;
+    }
+
+    throw std::runtime_error("Point is outside the triangle.");
+}
+
 void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
     const auto f = faces[i];
     const auto t = get_triangle(i);
 
     // Gets the intersection points the line and each edge of the triangle.
     line_2d_t l1{t.p1, t.p2}, l2{t.p2, t.p3}, l3{t.p3, t.p1};
-
     auto i1 = l1.line_intersection(l), i2 = l2.line_intersection(l),
          i3 = l3.line_intersection(l);
 
@@ -262,6 +322,10 @@ void triangle_split_tree_2d_t::split_triangle(const line_2d_t &l, size_t i) {
     throw std::runtime_error("Triangle split failed.");
 }
 
+const face_t &triangle_split_tree_2d_t::get_face(size_t i) const {
+    return this->faces[i];
+}
+
 triangle_2d_t triangle_split_tree_2d_t::get_triangle(size_t i) const {
     return get_triangle_from_face(this->faces[i]);
 }
@@ -320,22 +384,188 @@ const size_t triangle_split_tree_2d_t::count_leaf_triangles() const {
     return count;
 }
 
+/* ------------------------ *
+ * delaunay_split_tree_2d_t *
+ * ------------------------ */
+
+void delaunay_split_tree_2d_t::make_delaunay(const size_t &pi, const edge_t &e,
+                                             const size_t &ti) {
+    const auto e_rev = e.flip();
+
+    if (this->edge_to_face.find(e_rev) == this->edge_to_face.end()) {
+        return;
+    }
+
+    size_t tj = this->edge_to_face[e_rev];
+    const auto &tj_face = this->faces[tj];
+    const auto &tj_tri = this->get_triangle(tj_face);
+
+    if (tj_tri.circumcircle_contains(this->vertices[pi])) {
+        const auto &pj = tj_face.get_other_vertex(e_rev);
+        const auto tk = this->add_triangle({pi, pj, e.b}, {ti, tj}),
+                   tl = this->add_triangle({pj, pi, e.a}, {ti, tj});
+
+        this->make_delaunay(pi, {e.a, pj, true}, tl);
+        this->make_delaunay(pi, {pj, e.b, true}, tk);
+    }
+}
+
+size_t delaunay_split_tree_2d_t::add_triangle(
+    const face_t &f, const std::vector<size_t> &parents) {
+    const size_t i = this->faces.size();
+    for (const auto &parent : parents) {
+        this->children[parent].push_back(i);
+    }
+    this->faces.push_back(f);
+    for (const auto &edge : f.get_edges(true)) {
+        this->edge_to_face[edge] = i;
+    }
+    this->children.push_back({});
+    return i;
+}
+
+delaunay_split_tree_2d_t::delaunay_split_tree_2d_t(const triangle_2d_t &root)
+    : root(root) {
+    this->faces = {{0, 1, 2}};
+    this->edge_to_face = {{{0, 1}, 0}, {{1, 2}, 0}, {{2, 0}, 0}};
+    this->children = {{}};
+    this->vertices = {root.p1, root.p2, root.p3};
+}
+
+bool delaunay_split_tree_2d_t::is_leaf(size_t i) const {
+    return this->children[i].empty();
+}
+
+size_t delaunay_split_tree_2d_t::find_leaf_index(const point_2d_t &p) const {
+    size_t i = 0;
+    while (!is_leaf(i)) {
+        // Gets the closest triangle to the point.
+        double min_dist = std::numeric_limits<double>::max();
+        size_t min_index = 0;
+        for (const auto &child_id : this->children[i]) {
+            const auto &child = this->faces[child_id];
+            const triangle_2d_t t{this->vertices[child.a],
+                                  this->vertices[child.b],
+                                  this->vertices[child.c]};
+            double t_dist = p.distance_to_triangle(t);
+            if (t_dist < min_dist) {
+                min_dist = t_dist;
+                min_index = child_id;
+            }
+        }
+
+        if (min_dist > get_tolerance()) {
+            std::ostringstream ss;
+            ss << "Could not find leaf triangle for point " << p.to_string()
+               << " in triangle " << this->get_triangle(i).to_string()
+               << " with " << this->children[i].size()
+               << " children:" << std::endl;
+            for (const auto &child_id : this->children[i]) {
+                ss << " - " << this->get_triangle(child_id).to_string()
+                   << " (dist: "
+                   << p.distance_to_triangle(this->get_triangle(child_id))
+                   << ")" << std::endl;
+            }
+            throw std::runtime_error(ss.str());
+        }
+
+        i = min_index;
+    }
+    return i;
+}
+
+const face_t &delaunay_split_tree_2d_t::get_face(size_t i) const {
+    return this->faces[i];
+}
+
+triangle_2d_t delaunay_split_tree_2d_t::get_triangle(const face_t &f) const {
+    return triangle_2d_t{this->vertices[f.a], this->vertices[f.b],
+                         this->vertices[f.c]};
+}
+
+triangle_2d_t delaunay_split_tree_2d_t::get_triangle(size_t i) const {
+    const auto &f = this->get_face(i);
+    return this->get_triangle(f);
+}
+
+std::vector<size_t> delaunay_split_tree_2d_t::get_leaf_triangles() const {
+    std::vector<size_t> leaf_triangles;
+    for (size_t i = 0; i < this->faces.size(); i++) {
+        if (is_leaf(i)) {
+            leaf_triangles.push_back(i);
+        }
+    }
+    return leaf_triangles;
+}
+
+void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
+    const auto pi = this->vertices.add_point(p);
+    const auto [fa, fb, fc] = this->faces[i];
+    const auto &va = this->vertices[fa], &vb = this->vertices[fb],
+               &vc = this->vertices[fc];
+
+    // Checks if the point is at the same location as one of the vertices.
+    if (p == va || p == vb || p == vc) {
+        return;
+    }
+
+    // Checks if the point intersects an edge.
+    for (const auto [ea, eb, directed] : this->faces[i].get_edges(true)) {
+        const auto &v1 = this->vertices[ea], &v2 = this->vertices[eb];
+        const line_2d_t l{v1, v2};
+        if (l.closest_point(p) == p) {
+            const edge_t e{ea, eb, directed}, e_rev{eb, ea, directed};
+            const size_t j = this->edge_to_face[e_rev];
+            const size_t pc = this->faces[i].get_other_vertex(e),
+                         pn = this->faces[j].get_other_vertex(e_rev);
+
+            // Splits each triangle.
+            const auto t1 = this->add_triangle({pi, pc, ea}, {i}),
+                       t2 = this->add_triangle({pi, eb, pc}, {i}),
+                       t3 = this->add_triangle({pi, ea, pn}, {j}),
+                       t4 = this->add_triangle({pi, pn, eb}, {j});
+
+            // Makes the new triangles Delaunay.
+            this->make_delaunay(pi, {pc, ea, true}, t1);
+            this->make_delaunay(pi, {eb, pc, true}, t2);
+            this->make_delaunay(pi, {ea, pn, true}, t3);
+            this->make_delaunay(pi, {pn, eb, true}, t4);
+
+            return;
+        }
+    }
+
+    // Splits the current triangle.
+    const auto t1 = this->add_triangle({fa, fb, pi}, {i});
+    const auto t2 = this->add_triangle({fb, fc, pi}, {i});
+    const auto t3 = this->add_triangle({fc, fa, pi}, {i});
+
+    // Makes the new triangles Delaunay.
+    this->make_delaunay(pi, {fa, fb, true}, t1);
+    this->make_delaunay(pi, {fb, fc, true}, t2);
+    this->make_delaunay(pi, {fc, fa, true}, t3);
+}
+
+const point_2d_set_t &delaunay_split_tree_2d_t::get_vertices() const {
+    return this->vertices;
+}
+
 /* -------- *
  * bvh_2d_t *
  * -------- */
 
-void sort_bounding_boxes(const std::vector<bounding_box_2d_t> &boxes,
-                         std::vector<size_t> &indices, tree_t &tree, size_t lo,
-                         size_t hi) {
+void sort_bounding_boxes_for_bvh(const std::vector<bounding_box_2d_t> &boxes,
+                                 std::vector<size_t> &indices, bvh_tree_t &tree,
+                                 size_t lo, size_t hi) {
     if (hi - lo < 2) {
         tree[lo] = {indices[lo], -1, -1, boxes[indices[lo]]};
         return;
     }
 
-    float min_x = std::numeric_limits<float>::max(),
-          min_y = std::numeric_limits<float>::max(),
-          max_x = std::numeric_limits<float>::lowest(),
-          max_y = std::numeric_limits<float>::lowest();
+    double min_x = std::numeric_limits<double>::max(),
+           min_y = std::numeric_limits<double>::max(),
+           max_x = std::numeric_limits<double>::lowest(),
+           max_y = std::numeric_limits<double>::lowest();
     for (size_t i = lo; i < hi; i++) {
         const auto &box = boxes[indices[i]];
         min_x = std::min(min_x, box.min.x);
@@ -344,7 +574,7 @@ void sort_bounding_boxes(const std::vector<bounding_box_2d_t> &boxes,
         max_y = std::max(max_y, box.max.y);
     }
 
-    float dx = max_x - min_x, dy = max_y - min_y;
+    double dx = max_x - min_x, dy = max_y - min_y;
     size_t axis = 0;
     if (dx < dy) axis = 1;
 
@@ -377,8 +607,8 @@ void sort_bounding_boxes(const std::vector<bounding_box_2d_t> &boxes,
                 mid == (hi - lo) ? -1 : lo + mid,
                 {{min_x, min_y}, {max_x, max_y}}};
 
-    sort_bounding_boxes(boxes, indices, tree, lo + 1, lo + mid);
-    sort_bounding_boxes(boxes, indices, tree, lo + mid, hi);
+    sort_bounding_boxes_for_bvh(boxes, indices, tree, lo + 1, lo + mid);
+    sort_bounding_boxes_for_bvh(boxes, indices, tree, lo + mid, hi);
 }
 
 bvh_2d_t::bvh_2d_t(const trimesh_2d_t &t) : bvh_2d_t(t.faces(), t.vertices()) {}
@@ -394,10 +624,10 @@ bvh_2d_t::bvh_2d_t(const face_list_t &faces,
     std::vector<size_t> indices(boxes.size());
     std::iota(indices.begin(), indices.end(), 0);
     tree.resize(boxes.size());
-    sort_bounding_boxes(boxes, indices, tree, 0, boxes.size());
+    sort_bounding_boxes_for_bvh(boxes, indices, tree, 0, boxes.size());
 }
 
-void line_intersections_helper(const tree_t tree, const face_list_t &faces,
+void line_intersections_helper(const bvh_tree_t tree, const face_list_t &faces,
                                const std::vector<point_2d_t> &vertices, int id,
                                const line_2d_t &l, std::vector<face_t> &intrs,
                                const std::optional<size_t> max_intersections) {
@@ -439,7 +669,7 @@ std::vector<face_t> bvh_2d_t::line_intersections(
 }
 
 void triangle_intersections_helper(
-    const tree_t tree, const face_list_t &faces,
+    const bvh_tree_t tree, const face_list_t &faces,
     const std::vector<point_2d_t> &vertices, int id, const triangle_2d_t &t,
     std::vector<face_t> &intrs, const std::optional<size_t> max_intersections) {
     if (id < 0 || id >= tree.size()) throw std::runtime_error("Invalid ID");
@@ -481,7 +711,7 @@ std::vector<face_t> bvh_2d_t::triangle_intersections(
 }
 
 std::optional<face_t> get_containing_face_helper(
-    const tree_t tree, const face_list_t &faces,
+    const bvh_tree_t tree, const face_list_t &faces,
     const std::vector<point_2d_t> &vertices, int id, const triangle_2d_t &t) {
     if (id < 0 || id >= tree.size()) return std::nullopt;
 
@@ -527,6 +757,9 @@ void add_2d_bvh_modules(py::module &m) {
     auto ttree_2d = py::class_<triangle_split_tree_2d_t,
                                std::shared_ptr<triangle_split_tree_2d_t>>(
         m, "TriangleSplitTree2D");
+    auto dtree_2d = py::class_<delaunay_split_tree_2d_t,
+                               std::shared_ptr<delaunay_split_tree_2d_t>>(
+        m, "DelaunaySplitTree2D");
     auto bvh_2d = py::class_<bvh_2d_t, std::shared_ptr<bvh_2d_t>>(m, "BVH2D");
 
     ttree_2d
@@ -539,7 +772,13 @@ void add_2d_bvh_modules(py::module &m) {
         .def("get_leaf_triangles_which_intersect",
              &triangle_split_tree_2d_t::get_leaf_triangles_which_intersect,
              "line"_a, "Returns the triangles which intersect the line.")
-        .def("split_triangle", &triangle_split_tree_2d_t::split_triangle,
+        .def("split_triangle",
+             py::overload_cast<const point_2d_t &, size_t>(
+                 &triangle_split_tree_2d_t::split_triangle),
+             "point"_a, "i"_a, "Splits a triangle at a point.")
+        .def("split_triangle",
+             py::overload_cast<const line_2d_t &, size_t>(
+                 &triangle_split_tree_2d_t::split_triangle),
              "line"_a, "i"_a, "Splits a triangle at a line.")
         .def("get_triangle", &triangle_split_tree_2d_t::get_triangle, "i"_a,
              "Returns the triangle associated with the node.")
@@ -552,15 +791,25 @@ void add_2d_bvh_modules(py::module &m) {
         .def("__getitem__", &triangle_split_tree_2d_t::get_triangle, "i"_a,
              "Get a node", py::is_operator());
 
+    dtree_2d
+        .def(py::init<const triangle_2d_t &>(), "root"_a,
+             "Constructs a 2D Delaunay split tree from a face and a list "
+             "of vertices.")
+        .def("is_leaf", &delaunay_split_tree_2d_t::is_leaf, "i"_a,
+             "Returns true if the node is a leaf.")
+        .def("get_leaf_triangles",
+             &delaunay_split_tree_2d_t::get_leaf_triangles,
+             "Returns the triangles associated with a leaf.")
+        .def("split_triangle", &delaunay_split_tree_2d_t::split_triangle,
+             "point"_a, "i"_a, "Splits a triangle at a point.");
+
     bvh_2d
         .def(py::init<const trimesh_2d_t &>(), "Boundary volume hierarchy",
              "trimesh"_a)
         .def(py::init<const face_list_t &, const std::vector<point_2d_t> &>(),
              "Boundary volume hierarchy", "faces"_a, "vertices"_a)
-        .def("__str__", &bvh_2d_t::to_string, "String representation",
-             py::is_operator())
-        .def("__repr__", &bvh_2d_t::to_string, "String representation",
-             py::is_operator())
+        .def("__str__", &bvh_2d_t::to_string, py::is_operator())
+        .def("__repr__", &bvh_2d_t::to_string, py::is_operator())
         .def("line_intersections", &bvh_2d_t::line_intersections,
              "Intersections", "triangle"_a,
              "max_intersections"_a = std::nullopt)

@@ -4,30 +4,12 @@ from typing import List, Union
 
 import matplotlib.pyplot as plt
 
-from tmesh import Line2D, Point2D, Triangle2D, Trimesh2D
+from tmesh import Circle2D, Line2D, Point2D, Triangle2D, Trimesh2D
 
-Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D]
-
-import math
-
-from tmesh import *
-
-# Create a cuboid.
-a = regular_polygon_mesh(1.0, n=4)
-b = regular_polygon_mesh(1.0, n=4)
-
-# Move the second cuboid around.
-rot = Affine2D(rot=math.pi / 4)
-trans = Affine2D(trans=(0.0, 0.5))
-b <<= rot @ trans
-
-c = a | b
-cube = linear_extrude(c, 1.0)
+Thing = Union[Line2D, Point2D, Triangle2D, Trimesh2D, Circle2D]
 
 # To plot things, add them to this list.
-THINGS_TO_PLOT: List[Thing] = [
-    c,
-]
+THINGS_TO_PLOT: List[Thing] = []
 
 ALPHA = 1.0
 
@@ -104,6 +86,26 @@ def plot_trimesh(trimesh: Trimesh2D, i: int) -> None:
         plot_triangle(triangle, i, labels=(str(face.a), str(face.b), str(face.c)))
 
 
+def plot_circle(circle: Circle2D, i: int) -> None:
+    """Plots a circle.
+
+    Args:
+        circle: Circle to plot.
+        i: Index of circle.
+    """
+
+    plt_circle = plt.Circle((circle.center.x, circle.center.y), circle.radius, color=get_color(i), fill=False)
+    plt.gca().add_patch(plt_circle)
+
+    # Adjusts the plot to fit the circle.
+    cur_min_x, cur_max_x = plt.xlim()
+    cur_min_y, cur_max_y = plt.ylim()
+    new_min_x, new_max_x = circle.center.x - circle.radius, circle.center.x + circle.radius
+    new_min_y, new_max_y = circle.center.y - circle.radius, circle.center.y + circle.radius
+    plt.xlim(min(cur_min_x, new_min_x), max(cur_max_x, new_max_x))
+    plt.ylim(min(cur_min_y, new_min_y), max(cur_max_y, new_max_y))
+
+
 def main() -> None:
     """Plots the things in THINGS_TO_PLOT.
 
@@ -122,6 +124,8 @@ def main() -> None:
             plot_triangle(thing, i)
         elif isinstance(thing, Trimesh2D):
             plot_trimesh(thing, i)
+        elif isinstance(thing, Circle2D):
+            plot_circle(thing, i)
         else:
             raise ValueError(f"Unsupported type: {type(thing)}")
 

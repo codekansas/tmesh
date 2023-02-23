@@ -1,4 +1,4 @@
-"""Tests the CPU trimesh implementation."""
+"""Tests 3D IO functions."""
 
 import random
 from pathlib import Path
@@ -7,8 +7,6 @@ import pytest
 
 from tmesh import (
     Affine3D,
-    Point2D,
-    Polygon2D,
     cuboid,
     load_obj,
     load_ply,
@@ -21,31 +19,7 @@ from tmesh import (
 )
 
 
-@pytest.mark.parametrize(
-    "points,valid",
-    [
-        ([], False),
-        ([Point2D(0.0, 0.0)], False),
-        ([Point2D(0.0, 0.0), Point2D(1.0, 0.0)], False),
-        ([Point2D(0.0, 0.0), Point2D(1.0, 0.0), Point2D(0.0, 1.0)], True),
-    ],
-)
-def test_validate_2d_trimesh(points: list[Point2D], valid: bool) -> None:
-    """Tests validating a 2D trimesh.
-
-    Args:
-        points: The polygon to test.
-        valid: Whether the polygon is valid.
-    """
-
-    if valid:
-        Polygon2D(points).get_trimesh()
-    else:
-        with pytest.raises(RuntimeError):
-            Polygon2D(points).get_trimesh()
-
-
-def test_simple_trimesh_ops(tmpdir: Path) -> None:
+def test_trimesh_io(tmpdir: Path) -> None:
     """Tests simple trimesh operations.
 
     This test creates two trimeshes, adds some random vertices and

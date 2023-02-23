@@ -7,7 +7,7 @@ using namespace pybind11::literals;
 
 namespace trimesh {
 
-polygon_2d_t rectangle(float width, float height, bool center) {
+polygon_2d_t rectangle(double width, double height, bool center) {
     if (center) {
         std::vector<point_2d_t> vertices = {{-width / 2, -height / 2},
                                             {width / 2, -height / 2},
@@ -21,19 +21,19 @@ polygon_2d_t rectangle(float width, float height, bool center) {
     }
 }
 
-polygon_2d_t regular_polygon(float radius, size_t n) {
+polygon_2d_t regular_polygon(double radius, size_t n) {
     if (radius < 0)
         throw std::runtime_error("Polygon radius must be positive.");
     if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
     std::vector<point_2d_t> vertices;
     for (size_t i = 0; i < n; i++) {
-        float theta = 2 * M_PI * i / n;
+        double theta = 2 * M_PI * i / n;
         vertices.push_back({radius * cos(theta), radius * sin(theta)});
     }
     return {vertices};
 }
 
-trimesh_2d_t regular_polygon_mesh(float radius, size_t n) {
+trimesh_2d_t regular_polygon_mesh(double radius, size_t n) {
     if (radius < 0)
         throw std::runtime_error("Polygon radius must be positive.");
     if (n < 3) throw std::runtime_error("Polygon must have at least 3 sides.");
@@ -41,14 +41,14 @@ trimesh_2d_t regular_polygon_mesh(float radius, size_t n) {
     face_list_t faces;
     vertices.push_back({0, 0});
     for (size_t i = 0; i < n; i++) {
-        float theta = 2 * M_PI * i / n;
+        double theta = 2 * M_PI * i / n;
         vertices.push_back({radius * cos(theta), radius * sin(theta)});
         faces.push_back({0, i + 1, (i + 1) % n + 1});
     }
     return {vertices, faces};
 }
 
-trimesh_3d_t cuboid(float width, float height, float depth, bool center) {
+trimesh_3d_t cuboid(double width, double height, double depth, bool center) {
     if (width < 0 || height < 0 || depth < 0)
         throw std::runtime_error("Cuboid dimensions must be positive.");
 
@@ -63,12 +63,12 @@ trimesh_3d_t cuboid(float width, float height, float depth, bool center) {
 
     std::vector<point_3d_t> vertices = bbox.corners();
     face_set_t faces;
-    for (auto &face : bbox.triangle_indices()) faces.insert(face);
+    for (auto &face : bbox.triangle_faces()) faces.insert(face);
 
     return {vertices, faces};
 }
 
-trimesh_3d_t tetrahedron(float radius) {
+trimesh_3d_t tetrahedron(double radius) {
     if (radius <= 0)
         throw std::runtime_error("Tetrahedron radius must be positive.");
 
@@ -82,12 +82,12 @@ trimesh_3d_t tetrahedron(float radius) {
     return {vertices, faces};
 }
 
-trimesh_3d_t icosphere(float radius, size_t n) {
+trimesh_3d_t icosphere(double radius, size_t n) {
     if (radius <= 0)
         throw std::runtime_error("Sphere radius must be positive.");
 
     // Gets icosahedron vertices.
-    float t = (1.0f + std::sqrt(5.0f)) / 2.0f;
+    double t = (1.0f + std::sqrt(5.0f)) / 2.0f;
 
     std::vector<point_3d_t> vertices = {
         {-1.0f, t, 0.0f}, {1.0f, t, 0.0f}, {-1.0f, -t, 0.0f}, {1.0f, -t, 0.0f},
@@ -140,7 +140,7 @@ trimesh_3d_t icosphere(float radius, size_t n) {
     return {vertices, faces};
 }
 
-trimesh_3d_t uv_sphere(float radius, size_t n, size_t m) {
+trimesh_3d_t uv_sphere(double radius, size_t n, size_t m) {
     if (radius <= 0)
         throw std::runtime_error("Sphere radius must be positive.");
     if (n < 0) throw std::runtime_error("Sphere subdivision must be positive.");
@@ -149,12 +149,12 @@ trimesh_3d_t uv_sphere(float radius, size_t n, size_t m) {
     // Gets vertices.
     std::vector<point_3d_t> vertices;
     for (size_t i = 0; i <= n; i++) {
-        float theta = M_PI * i / n;
+        double theta = M_PI * i / n;
         for (size_t j = 0; j <= m; j++) {
-            float phi = 2 * M_PI * j / m;
-            float x = radius * std::sin(theta) * std::cos(phi);
-            float y = radius * std::sin(theta) * std::sin(phi);
-            float z = radius * std::cos(theta);
+            double phi = 2 * M_PI * j / m;
+            double x = radius * std::sin(theta) * std::cos(phi);
+            double y = radius * std::sin(theta) * std::sin(phi);
+            double z = radius * std::cos(theta);
             vertices.push_back({x, y, z});
         }
     }

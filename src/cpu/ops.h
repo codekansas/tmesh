@@ -12,14 +12,14 @@ namespace py = pybind11;
 
 namespace trimesh {
 
-trimesh_3d_t linear_extrude(const polygon_2d_t &polygon, float height);
+trimesh_3d_t linear_extrude(const polygon_2d_t &polygon, double height);
 trimesh_3d_t linear_extrude(
     const polygon_2d_t &polygon,
-    const std::function<float(float, float)> &height_func);
-trimesh_3d_t linear_extrude(const trimesh_2d_t &polygon, float height);
+    const std::function<double(double, double)> &height_func);
+trimesh_3d_t linear_extrude(const trimesh_2d_t &polygon, double height);
 trimesh_3d_t linear_extrude(
     const trimesh_2d_t &mesh,
-    const std::function<float(float, float)> &height_func);
+    const std::function<double(double, double)> &height_func);
 
 void add_ops_modules(py::module &m);
 

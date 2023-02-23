@@ -6,8 +6,8 @@ namespace py = pybind11;
 
 namespace trimesh {
 
-void set_tolerance(float tolerance);
-float get_tolerance();
+void set_tolerance(double tolerance);
+double get_tolerance();
 
 void add_options_modules(py::module &m);
 

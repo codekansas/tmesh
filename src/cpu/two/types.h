@@ -15,55 +15,62 @@ namespace trimesh {
 struct point_2d_t;
 struct line_2d_t;
 struct triangle_2d_t;
+struct circle_2d_t;
 struct bounding_box_2d_t;
 struct polygon_2d_t;
 struct affine_2d_t;
 struct trimesh_2d_t;
 
 struct point_2d_t {
-    float x, y;
+    double x, y;
 
     point_2d_t operator+=(const point_2d_t &p);
     point_2d_t operator-=(const point_2d_t &p);
     point_2d_t operator*=(const point_2d_t &p);
-    point_2d_t operator*=(float s);
+    point_2d_t operator*=(double s);
     point_2d_t operator/=(const point_2d_t &p);
-    point_2d_t operator/=(float s);
+    point_2d_t operator/=(double s);
     bool operator==(const point_2d_t &p) const;
     bool operator!=(const point_2d_t &p) const;
     bool operator<(const point_2d_t &p) const;
     point_2d_t operator<<=(const affine_2d_t &a);
 
     point_2d_t normalize() const;
-    point_2d_t rotate(float angle) const;
-    float determinant(const point_2d_t &other) const;
-    float length() const;
-    float dot(const point_2d_t &other) const;
-    float cross(const point_2d_t &other) const;
-    float angle(const point_2d_t &other) const;
+    point_2d_t rotate(double angle) const;
+    double determinant(const point_2d_t &other) const;
+    double length() const;
+    double dot(const point_2d_t &other) const;
+    double cross(const point_2d_t &other) const;
+    double angle(const point_2d_t &other) const;
 
     barycentric_coordinates_t barycentric_coordinates(
         const triangle_2d_t &t) const;
     bool is_inside_triangle(const triangle_2d_t &t) const;
     bool is_inside_bounding_box(const bounding_box_2d_t &bb) const;
 
-    float distance_to_point(const point_2d_t &other) const;
-    float distance_to_line(const line_2d_t &l) const;
-    float distance_to_triangle(const triangle_2d_t &t) const;
-    float distance_to_bounding_box(const bounding_box_2d_t &bb) const;
+    double distance_to_point(const point_2d_t &other) const;
+    double distance_to_line(const line_2d_t &l) const;
+    double distance_to_triangle(const triangle_2d_t &t) const;
+    double distance_to_bounding_box(const bounding_box_2d_t &bb) const;
 
     std::optional<point_2d_t> project_to_line(const line_2d_t &l) const;
 
     std::string to_string() const;
 };
 
+size_t point_hash_fn(const point_2d_t &p);
+
+struct __point_hash_fn {
+    size_t operator()(const point_2d_t &p) const;
+};
+
 point_2d_t operator+(const point_2d_t &p1, const point_2d_t &p2);
 point_2d_t operator-(const point_2d_t &p1, const point_2d_t &p2);
 point_2d_t operator*(const point_2d_t &p1, const point_2d_t &p2);
-point_2d_t operator*(float s, const point_2d_t &p);
-point_2d_t operator*(const point_2d_t &p, float s);
+point_2d_t operator*(double s, const point_2d_t &p);
+point_2d_t operator*(const point_2d_t &p, double s);
 point_2d_t operator/(const point_2d_t &p1, const point_2d_t &p2);
-point_2d_t operator/(const point_2d_t &p, float s);
+point_2d_t operator/(const point_2d_t &p, double s);
 
 bool is_convex(const point_2d_t &a, const point_2d_t &b, const point_2d_t &c);
 
@@ -81,10 +88,10 @@ struct line_2d_t {
     std::vector<point_2d_t> triangle_intersection(const triangle_2d_t &t) const;
     bool intersects_bounding_box(const bounding_box_2d_t &b) const;
 
-    float distance_to_point(const point_2d_t &p) const;
-    float distance_to_line(const line_2d_t &l) const;
-    float distance_to_triangle(const triangle_2d_t &t) const;
-    float distance_to_bounding_box(const bounding_box_2d_t &bb) const;
+    double distance_to_point(const point_2d_t &p) const;
+    double distance_to_line(const line_2d_t &l) const;
+    double distance_to_triangle(const triangle_2d_t &t) const;
+    double distance_to_bounding_box(const bounding_box_2d_t &bb) const;
 
     std::string to_string() const;
 };
@@ -97,23 +104,43 @@ struct triangle_2d_t {
     bool operator<(const triangle_2d_t &p) const;
     triangle_2d_t operator<<=(const affine_2d_t &a);
 
-    float area() const;
+    double area() const;
     point_2d_t center() const;
     std::vector<point_2d_t> vertices() const;
     std::vector<line_2d_t> edges() const;
     bool is_clockwise() const;
 
+    circle_2d_t circumcircle() const;
+    bool circumcircle_contains(const point_2d_t &p) const;
     bool contains_point(const point_2d_t &p) const;
     bool contains_triangle(const triangle_2d_t &t) const;
     bool intersects_bounding_box(const bounding_box_2d_t &bb) const;
     bool intersects_triangle(const triangle_2d_t &t) const;
     std::vector<point_2d_t> triangle_intersection(const triangle_2d_t &t) const;
-    float distance_to_point(const point_2d_t &p) const;
-    float distance_to_line(const line_2d_t &l) const;
-    float distance_to_triangle(const triangle_2d_t &t) const;
-    float distance_to_bounding_box(const bounding_box_2d_t &bb) const;
+    double distance_to_point(const point_2d_t &p) const;
+    double distance_to_line(const line_2d_t &l) const;
+    double distance_to_triangle(const triangle_2d_t &t) const;
+    double distance_to_bounding_box(const bounding_box_2d_t &bb) const;
     point_2d_t point_from_barycentric_coords(
         const barycentric_coordinates_t &b) const;
+
+    std::string to_string() const;
+};
+
+struct circle_2d_t {
+    point_2d_t center;
+    double radius;
+
+    circle_2d_t();
+    circle_2d_t(const point_2d_t &c, double r);
+    circle_2d_t(const triangle_2d_t &t);
+
+    bool operator==(const circle_2d_t &c) const;
+    bool operator!=(const circle_2d_t &c) const;
+
+    double area() const;
+    double circumference() const;
+    bool contains_point(const point_2d_t &p, double tolerance = 0.0f) const;
 
     std::string to_string() const;
 };
@@ -132,7 +159,7 @@ struct bounding_box_2d_t {
     bool operator!=(const bounding_box_2d_t &bb) const;
     bounding_box_2d_t operator<<=(const affine_2d_t &a);
 
-    float area() const;
+    double area() const;
     point_2d_t center() const;
     std::vector<point_2d_t> vertices() const;
     std::vector<line_2d_t> edges() const;
@@ -140,10 +167,10 @@ struct bounding_box_2d_t {
     bool intersects_triangle(const triangle_2d_t &t) const;
     bool contains_point(const point_2d_t &p) const;
     bool contains_triangle(const triangle_2d_t &t) const;
-    float distance_to_point(const point_2d_t &p) const;
-    float distance_to_line(const line_2d_t &l) const;
-    float distance_to_triangle(const triangle_2d_t &t) const;
-    float distance_to_bounding_box(const bounding_box_2d_t &bb) const;
+    double distance_to_point(const point_2d_t &p) const;
+    double distance_to_line(const line_2d_t &l) const;
+    double distance_to_triangle(const triangle_2d_t &t) const;
+    double distance_to_bounding_box(const bounding_box_2d_t &bb) const;
 
     std::string to_string() const;
 };
@@ -159,13 +186,12 @@ struct polygon_2d_t {
     polygon_2d_t operator+(const polygon_2d_t &p) const;
     polygon_2d_t operator+=(const polygon_2d_t &p);
 
-    float signed_area() const;
+    double signed_area() const;
     bool is_clockwise() const;
     void reverse();
     polygon_2d_t convex_hull() const;
     bounding_box_2d_t bounding_box() const;
     point_2d_t center() const;
-    bool is_ear(int vi, int vj, int vk) const;
     trimesh_2d_t get_trimesh(bool is_convex = false) const;
 
     std::string to_string() const;
@@ -177,12 +203,13 @@ struct affine_2d_t {
     // r10 r11 ty
     // 0   0   1
 
-    float r00, r01, r10, r11, tx, ty;
+    double r00, r01, r10, r11, tx, ty;
 
-    affine_2d_t(float r00, float r01, float r10, float r11, float tx, float ty);
-    affine_2d_t(std::optional<float> rot = std::nullopt,
-                std::optional<std::tuple<float, float>> trans = std::nullopt,
-                std::optional<float> scale = std::nullopt);
+    affine_2d_t(double r00, double r01, double r10, double r11, double tx,
+                double ty);
+    affine_2d_t(std::optional<double> rot = std::nullopt,
+                std::optional<std::tuple<double, double>> trans = std::nullopt,
+                std::optional<double> scale = std::nullopt);
 
     affine_2d_t operator*=(const affine_2d_t &a);
 
@@ -233,6 +260,7 @@ struct trimesh_2d_t {
     const std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>>
     get_polygons() const;
     trimesh_2d_t subdivide(bool at_edges = true) const;
+    trimesh_2d_t make_delaunay() const;
     std::string to_string() const;
 
     trimesh_2d_t operator<<(const affine_2d_t &tf) const;
@@ -240,6 +268,9 @@ struct trimesh_2d_t {
     trimesh_2d_t operator&(const trimesh_2d_t &other) const;
     trimesh_2d_t operator-(const trimesh_2d_t &other) const;
 };
+
+trimesh_2d_t triangulate(const std::vector<point_2d_t> &points,
+                         bool triangulate = true);
 
 void add_2d_types_modules(py::module &m);
 
