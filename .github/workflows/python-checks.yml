@@ -28,6 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           make install-conda
+          make install
       - name: Check formatting
         run: |
           make check-formatting

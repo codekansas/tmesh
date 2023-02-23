@@ -50,18 +50,6 @@ install-conda: initialize
 		clang-format
 .PHONY: install-conda
 
-install-pip: initialize
-	@python -m pip install \
-		black \
-		cmake \
-		darglint \
-		flake8 \
-		isort \
-		mypy \
-		pybind11 \
-		pylint \
-		pytest \
-
 install: initialize
 	python -m pip install .
 .PHONY: install
@@ -91,15 +79,19 @@ build-ext-inplace: initialize
 
 cpp-files := $$(git ls-files '*.c' '*.cpp' '*.h' '*.hpp' '*.cu' '*.cuh')
 cmake-files := $$(git ls-files '*/CMakeLists.txt')
+py-files := $$(git ls-files '*.py')
 
 format: initialize
 	@cmake-format -i $(cmake-files)
 	@clang-format -i $(cpp-files)
+	@ruff --fix $(py-files)
 .PHONY: format
 
 check-formatting: initialize
 	@cmake-format --check $(cmake-files) > /dev/null
 	@clang-format --dry-run --Werror $(cpp-files) > /dev/null
+	@ruff $(py-files)
+	@darglint $(py-files)
 .PHONY: check-formatting
 
 # -----
@@ -107,7 +99,7 @@ check-formatting: initialize
 # -----
 
 clean-py:
-	rm -rf **/*.pyc **/*.pyd **/*.pyo **/__pycache__ 
+	rm -rf **/*.pyc **/*.pyd **/*.pyo **/__pycache__
 
 clean-package:
 	rm -rf build dist *.so **/*.so **/*.pyi *.egg-info .eggs/ tmesh/
