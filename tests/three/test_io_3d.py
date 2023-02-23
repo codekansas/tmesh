@@ -1,4 +1,4 @@
-"""Tests the CPU trimesh implementation."""
+"""Tests 3D IO functions."""
 
 import random
 from pathlib import Path

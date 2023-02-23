@@ -1578,6 +1578,86 @@ trimesh_2d_t trimesh_2d_t::subdivide(bool at_edges) const {
     return {vertices, faces};
 }
 
+trimesh_2d_t trimesh_2d_t::make_delaunay() const {
+    // Progressively flips edges to make the mesh Delaunay.
+
+    face_list_t faces = _faces;
+
+    // Map from each edge to the associated face.
+    edge_map_t edge_to_face;
+    for (size_t i = 0; i < faces.size(); i++) {
+        const auto &face = faces[i];
+        for (const auto &edge : face.get_edges(true)) {
+            if (edge_to_face.find(edge) != edge_to_face.end()) {
+                throw std::runtime_error("Mesh is not manifold.");
+            }
+            edge_to_face[edge] = i;
+        }
+    }
+
+    // Visit each edge and check if it needs to be flipped.
+    edge_set_t edges;
+    std::queue<edge_t> queue;
+    edge_set_t in_queue;
+    for (auto &[edge, face] : edge_to_face) {
+        edges.insert(edge);
+        queue.push(edge);
+        in_queue.insert(edge);
+    }
+    while (!queue.empty()) {
+        auto &edge = queue.front();
+        queue.pop();
+        in_queue.erase(edge);
+        auto rev_edge = edge.flip();
+        if (edge_to_face.find(rev_edge) == edge_to_face.end()) continue;
+        size_t face_id = edge_to_face[edge],
+               rev_face_id = edge_to_face[rev_edge];
+        auto &face = faces[face_id], &rev_face = faces[rev_face_id];
+        const auto v1 = edge.a, v2 = edge.b, v3 = face.get_other_vertex(edge),
+                   v4 = rev_face.get_other_vertex(rev_edge);
+        const auto &p1 = _vertices[v1], &p2 = _vertices[v2],
+                   &p3 = _vertices[v3], &p4 = _vertices[v4];
+
+        if (!this->get_triangle(face).circumcircle_contains(p4)) continue;
+
+        // Removes old edge and add new edge.
+        edges.erase(edge);
+        edges.erase(rev_edge);
+        edge_t new_edge = {v3, v4, true}, new_rev_edge = new_edge.flip();
+        edges.insert(new_edge);
+        edges.insert(new_rev_edge);
+
+        // Removes previous edge to face mappings.
+        for (const auto &e : face.get_edges(true)) edge_to_face.erase(e);
+        for (const auto &e : rev_face.get_edges(true)) edge_to_face.erase(e);
+
+        // Updates the faces.
+        face = {v1, v4, v3};
+        rev_face = {v2, v3, v4};
+
+        // Adds new edge to face mappings.
+        for (const auto &e : face.get_edges(true)) edge_to_face[e] = face_id;
+        for (const auto &e : rev_face.get_edges(true))
+            edge_to_face[e] = rev_face_id;
+
+        // Adds the other edges of the new faces to the queue.
+        for (const auto &e : face.get_edges(true)) {
+            if (in_queue.find(e) == in_queue.end()) {
+                queue.push(e);
+                in_queue.insert(e);
+            }
+        }
+        for (const auto &e : rev_face.get_edges(true)) {
+            if (in_queue.find(e) == in_queue.end()) {
+                queue.push(e);
+                in_queue.insert(e);
+            }
+        }
+    }
+
+    return {this->_vertices, faces};
+}
+
 std::string trimesh_2d_t::to_string() const {
     std::stringstream ss;
     ss << "Trimesh2D(" << std::endl;
@@ -2070,6 +2150,8 @@ void add_2d_types_modules(py::module &m) {
         .def("subdivide", &trimesh_2d_t::subdivide,
              "Splits each triangle into four smaller triangles",
              "at_edges"_a = true)
+        .def("make_delaunay", &trimesh_2d_t::make_delaunay,
+             "Creates a Delaunay triangulation of the mesh")
         .def("union", &trimesh_2d_t::operator|,
              "Computes the union of two 2D meshes", "other"_a)
         .def("intersection", &trimesh_2d_t::operator&,

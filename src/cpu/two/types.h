@@ -260,6 +260,7 @@ struct trimesh_2d_t {
     const std::vector<std::tuple<polygon_2d_t, std::vector<size_t>>>
     get_polygons() const;
     trimesh_2d_t subdivide(bool at_edges = true) const;
+    trimesh_2d_t make_delaunay() const;
     std::string to_string() const;
 
     trimesh_2d_t operator<<(const affine_2d_t &tf) const;
