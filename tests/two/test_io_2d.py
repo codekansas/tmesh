@@ -3,7 +3,7 @@
 import random
 from pathlib import Path
 
-from tmesh import Affine2D, Point2D, regular_polygon_mesh, save_svg, triangulate_2d
+from tmesh import Point2D, regular_polygon_mesh, save_svg, triangulate_2d
 
 
 def test_simple_trimesh_io_2d(tmpdir: Path) -> None:

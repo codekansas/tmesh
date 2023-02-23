@@ -13,7 +13,8 @@ namespace py = pybind11;
 namespace trimesh {
 
 // Functions for saving and loading SVGs.
-void save_svg(const std::string &filename, const trimesh_2d_t &mesh);
+void save_svg(const std::string &filename, const trimesh_2d_t &mesh,
+              double stroke_width_mul = 1.0);
 
 void add_2d_io_modules(py::module &m);
 
