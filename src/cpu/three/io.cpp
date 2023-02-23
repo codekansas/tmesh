@@ -51,6 +51,10 @@ void save_stl(const std::string &filename, const trimesh_3d_t &mesh) {
     f.close();
 }
 
+void save_stl(const std::string &filename, const tetramesh_3d_t &mesh) {
+    save_stl(filename, mesh.to_trimesh());
+}
+
 trimesh_3d_t load_stl(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in | std::ios::binary);
@@ -145,6 +149,10 @@ void save_stl_text(const std::string &filename, const trimesh_3d_t &mesh) {
     f.close();
 }
 
+void save_stl_text(const std::string &filename, const tetramesh_3d_t &mesh) {
+    save_stl_text(filename, mesh.to_trimesh());
+}
+
 trimesh_3d_t load_stl_text(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
@@ -235,6 +243,10 @@ void save_obj(const std::string &filename, const trimesh_3d_t &mesh) {
     f.close();
 }
 
+void save_obj(const std::string &filename, const tetramesh_3d_t &mesh) {
+    save_obj(filename, mesh.to_trimesh());
+}
+
 trimesh_3d_t load_obj(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
@@ -299,6 +311,10 @@ void save_ply(const std::string &filename, const trimesh_3d_t &mesh) {
     f.close();
 }
 
+void save_ply(const std::string &filename, const tetramesh_3d_t &mesh) {
+    save_ply(filename, mesh.to_trimesh());
+}
+
 trimesh_3d_t load_ply(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
@@ -340,21 +356,45 @@ trimesh_3d_t load_ply(const std::string &filename) {
 }
 
 void add_3d_io_modules(py::module &m) {
-    m.def("save_stl", &save_stl, "Saves a mesh to an STL file", "filename"_a,
-          "mesh"_a);
+    m.def(
+        "save_stl",
+        py::overload_cast<const std::string &, const trimesh_3d_t &>(&save_stl),
+        "Saves a mesh to an STL file", "filename"_a, "mesh"_a);
+    m.def("save_stl",
+          py::overload_cast<const std::string &, const tetramesh_3d_t &>(
+              &save_stl),
+          "Saves a mesh to an STL file", "filename"_a, "mesh"_a);
     m.def("load_stl", &load_stl, "Loads a mesh from an STL file", "filename"_a);
 
-    m.def("save_stl_text", &save_stl_text,
+    m.def("save_stl_text",
+          py::overload_cast<const std::string &, const trimesh_3d_t &>(
+              &save_stl_text),
+          "Saves a mesh to an STL file in text format", "filename"_a, "mesh"_a);
+    m.def("save_stl_text",
+          py::overload_cast<const std::string &, const tetramesh_3d_t &>(
+              &save_stl_text),
           "Saves a mesh to an STL file in text format", "filename"_a, "mesh"_a);
     m.def("load_stl_text", &load_stl_text,
           "Loads a mesh from an STL file in text format", "filename"_a);
 
-    m.def("save_obj", &save_obj, "Saves a mesh to an OBJ file", "filename"_a,
-          "mesh"_a);
+    m.def(
+        "save_obj",
+        py::overload_cast<const std::string &, const trimesh_3d_t &>(&save_obj),
+        "Saves a mesh to an OBJ file", "filename"_a, "mesh"_a);
+    m.def("save_obj",
+          py::overload_cast<const std::string &, const tetramesh_3d_t &>(
+              &save_obj),
+          "Saves a mesh to an OBJ file", "filename"_a, "mesh"_a);
     m.def("load_obj", &load_obj, "Loads a mesh from an OBJ file", "filename"_a);
 
-    m.def("save_ply", &save_ply, "Saves a mesh to a PLY file", "filename"_a,
-          "mesh"_a);
+    m.def(
+        "save_ply",
+        py::overload_cast<const std::string &, const trimesh_3d_t &>(&save_ply),
+        "Saves a mesh to a PLY file", "filename"_a, "mesh"_a);
+    m.def("save_ply",
+          py::overload_cast<const std::string &, const tetramesh_3d_t &>(
+              &save_ply),
+          "Saves a mesh to a PLY file", "filename"_a, "mesh"_a);
     m.def("load_ply", &load_ply, "Loads a mesh from a PLY file", "filename"_a);
 }
 

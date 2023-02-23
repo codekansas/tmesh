@@ -166,6 +166,15 @@ std::string point_3d_t::to_string() const {
     return ss.str();
 }
 
+size_t point_3d_hash_fn(const point_3d_t &p) {
+    auto hf = std::hash<double>();
+    return hf(p.x) ^ hf(p.y) ^ hf(p.z);
+}
+
+size_t __point_3d_hash_fn::operator()(const point_3d_t &p) const {
+    return point_3d_hash_fn(p);
+}
+
 point_3d_t operator+(const point_3d_t &p1, const point_3d_t &p2) {
     return {p1.x + p2.x, p1.y + p2.y, p1.z + p2.z};
 }
@@ -482,7 +491,8 @@ tetrahedron_3d_t tetrahedron_3d_t::flip_inside_out() const {
 }
 
 std::vector<triangle_3d_t> tetrahedron_3d_t::faces() const {
-    return {{p1, p2, p3}, {p1, p3, p4}, {p1, p4, p2}, {p2, p3, p4}};
+    // return {{a, c, b}, {a, d, c}, {a, b, d}, {b, c, d}};
+    return {{p1, p3, p2}, {p1, p4, p3}, {p1, p2, p4}, {p2, p3, p4}};
 }
 
 std::string tetrahedron_3d_t::to_string() const {
@@ -1024,7 +1034,9 @@ void trimesh_3d_t::validate() const {
         auto &[vi, vj, vk] = face;
         if (vi >= _vertices.size() || vj >= _vertices.size() ||
             vk >= _vertices.size()) {
-            throw std::runtime_error("Invalid face");
+            throw std::invalid_argument(
+                "Invalid face: " + face.to_string() + " for " +
+                std::to_string(_vertices.size()) + " vertices");
         }
     }
 
@@ -1216,7 +1228,9 @@ void tetramesh_3d_t::validate() const {
         auto &[vi, vj, vk, vl] = volume;
         if (vi >= _vertices.size() || vj >= _vertices.size() ||
             vk >= _vertices.size() || vl >= _vertices.size()) {
-            throw std::runtime_error("Invalid face");
+            throw std::invalid_argument(
+                "Invalid volume: " + volume.to_string() + " for " +
+                std::to_string(_vertices.size()) + " vertices");
         }
     }
 
@@ -1266,23 +1280,23 @@ std::vector<tetrahedron_3d_t> tetramesh_3d_t::get_tetrahedrons() const {
 }
 
 trimesh_3d_t tetramesh_3d_t::to_trimesh() const {
-    std::vector<point_3d_t> vertices;
-    face_set_t faces, duplicate_faces;
+    face_set_t faces;
 
-    // Any face that appears twice is an interior face. This gets all exterior
-    // faces by getting all faces which only appear once.
+    // Any face that is paired with it's flipped face is not on the surface.
     for (const auto &volume : _volumes) {
         for (const auto &face : volume.faces()) {
-            if (duplicate_faces.find(face) != duplicate_faces.end()) continue;
-            if (faces.find(face) != faces.end()) {
-                faces.erase(face);
-                duplicate_faces.insert(face);
+            const auto flipped_face = face.flip();
+            if (faces.find(face) != faces.end())
+                throw std::runtime_error("Degenerate tetramesh");
+            if (faces.find(flipped_face) != faces.end()) {
+                faces.erase(flipped_face);
+            } else {
+                faces.insert(face);
             }
-            faces.insert(face);
         }
     }
 
-    return {vertices, faces};
+    return {_vertices, faces};
 }
 
 std::string tetramesh_3d_t::to_string() const {
@@ -1358,6 +1372,7 @@ void add_3d_types_modules(py::module &m) {
         .def_readwrite("z", &point_3d_t::z, "The point's z coordinate")
         .def("__str__", &point_3d_t::to_string, py::is_operator())
         .def("__repr__", &point_3d_t::to_string, py::is_operator())
+        .def("__hash__", &point_3d_hash_fn, py::is_operator())
         .def("__add__",
              py::overload_cast<const point_3d_t &, const point_3d_t &>(
                  &operator+),
@@ -1745,6 +1760,8 @@ void add_3d_types_modules(py::module &m) {
              "Gets a mesh tetrahedron from a volume", "volume"_a)
         .def("get_tetraherdons", &tetramesh_3d_t::get_tetrahedrons,
              "Gets all mesh tetrahedrons")
+        .def("to_trimesh", &tetramesh_3d_t::to_trimesh,
+             "Converts the tetrahedral mesh to a triangular mesh")
         .def("union", &tetramesh_3d_t::operator|,
              "Computes the union of two 3D meshes", "other"_a)
         .def("__or__", &tetramesh_3d_t::operator|,

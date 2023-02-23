@@ -59,6 +59,12 @@ struct point_3d_t {
     std::string to_string() const;
 };
 
+size_t point_3d_hash_fn(const point_3d_t &p);
+
+struct __point_3d_hash_fn {
+    size_t operator()(const point_3d_t &p) const;
+};
+
 point_3d_t operator+(const point_3d_t &p1, const point_3d_t &p2);
 point_3d_t operator-(const point_3d_t &p1, const point_3d_t &p2);
 point_3d_t operator*(const point_3d_t &p1, const point_3d_t &p2);

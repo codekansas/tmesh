@@ -77,6 +77,14 @@ face_t face_t::operator+(size_t offset) const {
     return {a + offset, b + offset, c + offset};
 }
 
+std::tuple<size_t, size_t, size_t> face_t::sorted_indices() const {
+    auto [a1, b1, c1] = *this;
+    if (a1 > b1) std::swap(a1, b1);
+    if (a1 > c1) std::swap(a1, c1);
+    if (b1 > c1) std::swap(b1, c1);
+    return {a1, b1, c1};
+}
+
 std::vector<size_t> face_t::get_vertices() const { return {a, b, c}; }
 
 std::vector<edge_t> face_t::get_edges(bool directed) const {
@@ -98,14 +106,21 @@ size_t face_t::get_other_vertex(const edge_t &e) const {
     throw std::runtime_error("Edge is not part of face");
 }
 
+face_t face_t::flip() const { return {c, b, a}; }
+
 std::string face_t::to_string() const {
     return "Face(" + std::to_string(a) + ", " + std::to_string(b) + ", " +
            std::to_string(c) + ")";
 }
 
-size_t __face_hash_fn::operator()(const face_t &e) const {
+size_t face_hash_fn(const face_t &f) {
+    auto [a, b, c] = f.sorted_indices();
     auto hf = std::hash<size_t>();
-    return hf(e.a) ^ hf(e.b) ^ hf(e.c);
+    return hf(a) ^ hf(b) ^ hf(c);
+}
+
+size_t __face_hash_fn::operator()(const face_t &f) const {
+    return face_hash_fn(f);
 }
 
 /* -------- *
@@ -132,18 +147,36 @@ volume_t volume_t::operator+(size_t offset) const {
     return {a + offset, b + offset, c + offset, d + offset};
 }
 
-face_list_t volume_t::faces() const {
-    return {{a, b, c}, {a, c, d}, {a, d, b}, {b, c, d}};
+std::tuple<size_t, size_t, size_t, size_t> volume_t::sorted_indices() const {
+    auto [a1, b1, c1, d1] = *this;
+    if (a1 > b1) std::swap(a1, b1);
+    if (a1 > c1) std::swap(a1, c1);
+    if (a1 > d1) std::swap(a1, d1);
+    if (b1 > c1) std::swap(b1, c1);
+    if (b1 > d1) std::swap(b1, d1);
+    if (c1 > d1) std::swap(c1, d1);
+    return {a1, b1, c1, d1};
 }
+
+face_list_t volume_t::faces() const {
+    return {{a, c, b}, {a, d, c}, {a, b, d}, {b, c, d}};
+}
+
+volume_t volume_t::flip() const { return {d, c, b, a}; }
 
 std::string volume_t::to_string() const {
     return "(" + std::to_string(a) + ", " + std::to_string(b) + ", " +
            std::to_string(c) + ", " + std::to_string(d) + ")";
 }
 
-size_t __volume_hash_fn::operator()(const volume_t &e) const {
+size_t volume_hash_fn(const volume_t &v) {
+    auto [a, b, c, d] = v.sorted_indices();
     auto hf = std::hash<size_t>();
-    return hf(e.a) ^ hf(e.b) ^ hf(e.c) ^ hf(e.d);
+    return hf(a) ^ hf(b) ^ hf(c) ^ hf(d);
+}
+
+size_t __volume_hash_fn::operator()(const volume_t &v) const {
+    return volume_hash_fn(v);
 }
 
 /* ------------------------- *
@@ -213,9 +246,11 @@ void add_types_modules(py::module &m) {
         .def_readwrite("a", &face_t::a, "First vertex index.")
         .def_readwrite("b", &face_t::b, "Second vertex index.")
         .def_readwrite("c", &face_t::c, "Third vertex index.")
+        .def("__hash__", &face_hash_fn, py::is_operator())
         .def("get_vertices", &face_t::get_vertices, "Returns the vertices.")
         .def("get_edges", &face_t::get_edges, "directed"_a = false,
              "Returns the edges.")
+        .def("flip", &face_t::flip, "Returns the flipped face.")
         .def("__contains__", &face_t::has_edge, "edge"_a,
              "Checks if an edge is in the face.", py::is_operator())
         .def("__contains__", &face_t::has_vertex, "vertex"_a,
@@ -237,10 +272,12 @@ void add_types_modules(py::module &m) {
         .def_readwrite("b", &volume_t::b, "Second vertex index.")
         .def_readwrite("c", &volume_t::c, "Third vertex index.")
         .def_readwrite("d", &volume_t::d, "Fourth vertex index.")
+        .def("flip", &volume_t::flip, "Returns the flipped volume.")
         .def("__eq__", &volume_t::operator==, "other"_a,
              "Checks if two volumes are equal.", py::is_operator())
         .def("__ne__", &volume_t::operator!=, "other"_a,
              "Checks if two volumes are not equal.", py::is_operator())
+        .def("__hash__", &volume_hash_fn, py::is_operator())
         .def("__lt__", &volume_t::operator<, "other"_a,
              "Checks if one volumes is less than another.", py::is_operator())
         .def("__str__", &volume_t::to_string, py::is_operator())

@@ -169,13 +169,13 @@ std::string point_2d_t::to_string() const {
     return ss.str();
 }
 
-size_t point_hash_fn(const point_2d_t &p) {
+size_t point_2d_hash_fn(const point_2d_t &p) {
     auto hf = std::hash<double>();
     return hf(p.x) ^ hf(p.y);
 }
 
-size_t __point_hash_fn::operator()(const point_2d_t &p) const {
-    return point_hash_fn(p);
+size_t __point_2d_hash_fn::operator()(const point_2d_t &p) const {
+    return point_2d_hash_fn(p);
 }
 
 point_2d_t operator+(const point_2d_t &p1, const point_2d_t &p2) {
@@ -1089,7 +1089,9 @@ void trimesh_2d_t::validate() const {
         auto &[vi, vj, vk] = face;
         if (vi >= _vertices.size() || vj >= _vertices.size() ||
             vk >= _vertices.size()) {
-            throw std::invalid_argument("Invalid face");
+            throw std::invalid_argument(
+                "Invalid face: " + face.to_string() + " for " +
+                std::to_string(_vertices.size()) + " vertices");
         }
     }
 
@@ -1800,7 +1802,7 @@ void add_2d_types_modules(py::module &m) {
         .def_readwrite("y", &point_2d_t::y, "The point's y coordinate")
         .def("__str__", &point_2d_t::to_string, py::is_operator())
         .def("__repr__", &point_2d_t::to_string, py::is_operator())
-        .def("__hash__", &point_hash_fn, py::is_operator())
+        .def("__hash__", &point_2d_hash_fn, py::is_operator())
         .def("__add__",
              py::overload_cast<const point_2d_t &, const point_2d_t &>(
                  &operator+),
