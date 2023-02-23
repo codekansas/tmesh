@@ -101,8 +101,13 @@ format: initialize
 # Clean
 # -----
 
-clean:
-	rm -rf build dist *.so **/*.so **/*.pyi **/*.pyc **/*.pyd **/*.pyo **/__pycache__ *.egg-info .eggs/ tmesh/
+clean-py:
+	rm -rf **/*.pyc **/*.pyd **/*.pyo **/__pycache__ 
+
+clean-package:
+	rm -rf build dist *.so **/*.so **/*.pyi *.egg-info .eggs/ tmesh/
+
+clean: clean-py clean-package
 .PHONY: clean
 
 # ------------

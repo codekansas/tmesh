@@ -20,8 +20,6 @@ def test_simple_trimesh_io_2d(tmpdir: Path) -> None:
     svg_path = str(tmpdir / "file.svg")
     save_svg(svg_path, tr)
 
-    save_svg("test3.svg", tr)
-
 
 def test_trimesh_union_io_2d(tmpdir: Path) -> None:
     """Tests simple IO operations for 2D triangular meshes.
