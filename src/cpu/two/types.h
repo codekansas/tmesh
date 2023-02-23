@@ -192,7 +192,8 @@ struct polygon_2d_t {
     polygon_2d_t convex_hull() const;
     bounding_box_2d_t bounding_box() const;
     point_2d_t center() const;
-    trimesh_2d_t get_trimesh(bool is_convex = false) const;
+    trimesh_2d_t get_trimesh(bool delaunay = false,
+                             bool is_convex = false) const;
 
     std::string to_string() const;
 };
@@ -205,8 +206,9 @@ struct affine_2d_t {
 
     double r00, r01, r10, r11, tx, ty;
 
-    affine_2d_t(double r00, double r01, double r10, double r11, double tx,
-                double ty);
+    affine_2d_t(
+        std::tuple<std::tuple<double, double>, std::tuple<double, double>> rot,
+        std::tuple<double, double> trans);
     affine_2d_t(std::optional<double> rot = std::nullopt,
                 std::optional<std::tuple<double, double>> trans = std::nullopt,
                 std::optional<double> scale = std::nullopt);
@@ -214,6 +216,9 @@ struct affine_2d_t {
     affine_2d_t operator*=(const affine_2d_t &a);
 
     affine_2d_t inverse() const;
+    std::tuple<std::tuple<double, double>, std::tuple<double, double>>
+    rotation() const;
+    std::tuple<double, double> translation() const;
 
     std::string to_string() const;
 };

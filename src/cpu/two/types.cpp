@@ -869,7 +869,7 @@ bool is_ear(const bvh_2d_t &bvh, const std::vector<point_2d_t> &points, int vi,
     return true;
 }
 
-trimesh_2d_t polygon_2d_t::get_trimesh(bool is_convex) const {
+trimesh_2d_t polygon_2d_t::get_trimesh(bool delaunay, bool is_convex) const {
     if (points.size() < 3) throw std::runtime_error("Invalid polygon.");
 
     // Gets the vertex indices from 0 to n - 1.
@@ -912,7 +912,8 @@ trimesh_2d_t polygon_2d_t::get_trimesh(bool is_convex) const {
     }
     faces.push_back({indices[0], indices[1], indices[2]});
 
-    return {vertices, faces};
+    const trimesh_2d_t trimesh{vertices, faces};
+    return delaunay ? trimesh.make_delaunay() : trimesh;
 }
 
 std::string polygon_2d_t::to_string() const {
@@ -959,9 +960,15 @@ affine_2d_t::affine_2d_t(std::optional<double> rot,
     }
 }
 
-affine_2d_t::affine_2d_t(double r00, double r01, double r10, double r11,
-                         double tx, double ty)
-    : r00(r00), r01(r01), r10(r10), r11(r11), tx(tx), ty(ty) {}
+affine_2d_t::affine_2d_t(
+    std::tuple<std::tuple<double, double>, std::tuple<double, double>> rot,
+    std::tuple<double, double> trans)
+    : r00(std::get<0>(std::get<0>(rot))),
+      r01(std::get<0>(std::get<1>(rot))),
+      r10(std::get<1>(std::get<0>(rot))),
+      r11(std::get<1>(std::get<1>(rot))),
+      tx(std::get<0>(trans)),
+      ty(std::get<1>(trans)) {}
 
 affine_2d_t affine_2d_t::operator*=(const affine_2d_t &a) {
     double r00_ = r00 * a.r00 + r01 * a.r10;
@@ -987,13 +994,20 @@ affine_2d_t affine_2d_t::inverse() const {
     double r11_ = r00 / det;
     double tx_ = (r10 * ty - r11 * tx) / det;
     double ty_ = (r01 * tx - r00 * ty) / det;
-    return {r00_, r01_, r10_, r11_, tx_, ty_};
+    return {{{r00_, r01_}, {r10_, r11_}}, {tx_, ty_}};
 }
+
+std::tuple<std::tuple<double, double>, std::tuple<double, double>>
+affine_2d_t::rotation() const {
+    return {{r00, r01}, {r10, r11}};
+}
+
+std::tuple<double, double> affine_2d_t::translation() const { return {tx, ty}; }
 
 std::string affine_2d_t::to_string() const {
     std::ostringstream ss;
-    ss << "Affine2D([[" << r00 << ", " << r01 << "], [" << r10 << ", " << r11
-       << "]], [" << tx << ", " << ty << "])";
+    ss << "Affine2D(((" << r00 << ", " << r01 << "), (" << r10 << ", " << r11
+       << ")), (" << tx << ", " << ty << "))";
     return ss.str();
 }
 
@@ -2079,10 +2093,16 @@ void add_2d_types_modules(py::module &m) {
              "Returns a triangle mesh representation of the polygon. Set "
              "`is_convex` to True if the polygon is definitely convex; this "
              "will speed up the computation",
-             "is_convex"_a = false);
+             "delaunay"_a = false, "is_convex"_a = false);
 
     // Defines Affine2D methods.
     affine_2d
+        .def(py::init<std::tuple<std::tuple<double, double>,
+                                 std::tuple<double, double>>,
+                      std::tuple<double, double>>(),
+             "Creates an affine transformation from a 2x2 matrix and a 2x1 "
+             "translation vector",
+             "matrix"_a, "translation"_a)
         .def(py::init<std::optional<double>,
                       std::optional<std::tuple<double, double>>,
                       std::optional<double>>(),
@@ -2126,7 +2146,12 @@ void add_2d_types_modules(py::module &m) {
              "Applies an affine transformation to a polygon", "other"_a,
              py::is_operator())
         .def("inverse", &affine_2d_t::inverse,
-             "The inverse of the affine transformation");
+             "The inverse of the affine transformation")
+        .def_property_readonly("rotation", &affine_2d_t::rotation,
+                               "The affine transformation's rotation matrix")
+        .def_property_readonly(
+            "translation", &affine_2d_t::translation,
+            "The affine transformation's translation vector");
 
     // Defines Trimesh2D methods.
     trimesh_2d

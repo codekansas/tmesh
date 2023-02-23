@@ -762,21 +762,23 @@ std::string polygon_3d_t::to_string() const {
  * affine_3d_t *
  * ----------- */
 
-affine_3d_t::affine_3d_t(double r00, double r01, double r02, double r10,
-                         double r11, double r12, double r20, double r21,
-                         double r22, double tx, double ty, double tz)
-    : r00(r00),
-      r01(r01),
-      r02(r02),
-      r10(r10),
-      r11(r11),
-      r12(r12),
-      r20(r20),
-      r21(r21),
-      r22(r22),
-      tx(tx),
-      ty(ty),
-      tz(tz) {}
+affine_3d_t::affine_3d_t(std::tuple<std::tuple<double, double, double>,
+                                    std::tuple<double, double, double>,
+                                    std::tuple<double, double, double>>
+                             rot,
+                         std::tuple<double, double, double> trans)
+    : r00(std::get<0>(std::get<0>(rot))),
+      r01(std::get<0>(std::get<1>(rot))),
+      r02(std::get<0>(std::get<2>(rot))),
+      r10(std::get<1>(std::get<0>(rot))),
+      r11(std::get<1>(std::get<1>(rot))),
+      r12(std::get<1>(std::get<2>(rot))),
+      r20(std::get<2>(std::get<0>(rot))),
+      r21(std::get<2>(std::get<1>(rot))),
+      r22(std::get<2>(std::get<2>(rot))),
+      tx(std::get<0>(trans)),
+      ty(std::get<1>(trans)),
+      tz(std::get<2>(trans)) {}
 
 affine_3d_t::affine_3d_t(
     std::optional<std::tuple<double, double, double>> rot,
@@ -879,15 +881,26 @@ affine_3d_t affine_3d_t::inverse() const {
     double tx_ = -(r00 * tx + r01 * ty + r02 * tz);
     double ty_ = -(r10 * tx + r11 * ty + r12 * tz);
     double tz_ = -(r20 * tx + r21 * ty + r22 * tz);
-    return {r00_, r01_, r02_, r10_, r11_, r12_,
-            r20_, r21_, r22_, tx_,  ty_,  tz_};
+    return {{{r00_, r01_, r02_}, {r10_, r11_, r12_}, {r20_, r21_, r22_}},
+            {tx_, ty_, tz_}};
+}
+
+std::tuple<std::tuple<double, double, double>,
+           std::tuple<double, double, double>,
+           std::tuple<double, double, double>>
+affine_3d_t::rotation() {
+    return {{r00, r01, r02}, {r10, r11, r12}, {r20, r21, r22}};
+}
+
+std::tuple<double, double, double> affine_3d_t::translation() {
+    return {tx, ty, tz};
 }
 
 std::string affine_3d_t::to_string() const {
     std::stringstream ss;
-    ss << "Affine3D([[" << r00 << ", " << r01 << ", " << r02 << "], [" << r10
-       << ", " << r11 << ", " << r12 << "], [" << r20 << ", " << r21 << ", "
-       << r22 << "]], [" << tx << ", " << ty << ", " << tz << "])";
+    ss << "Affine3D(((" << r00 << ", " << r01 << ", " << r02 << "), (" << r10
+       << ", " << r11 << ", " << r12 << "), (" << r20 << ", " << r21 << ", "
+       << r22 << ")), (" << tx << ", " << ty << ", " << tz << "))";
     return ss.str();
 }
 
@@ -1624,6 +1637,13 @@ void add_3d_types_modules(py::module &m) {
 
     // Defines Affine3D methods.
     affine_3d
+        .def(py::init<std::tuple<std::tuple<double, double, double>,
+                                 std::tuple<double, double, double>,
+                                 std::tuple<double, double, double>>,
+                      std::tuple<double, double, double>>(),
+             "Creates an affine transformation from a rotation and translation "
+             "matrices",
+             "rot"_a, "trans"_a)
         .def(py::init<std::optional<std::tuple<double, double, double>>,
                       std::optional<std::tuple<double, double, double>>,
                       std::optional<double>>(),
@@ -1682,7 +1702,12 @@ void add_3d_types_modules(py::module &m) {
              "Applies an affine transformation to a tetrahedron mesh",
              "tetramesh"_a, py::is_operator())
         .def("inverse", &affine_3d_t::inverse,
-             "The inverse of the affine transformation");
+             "The inverse of the affine transformation")
+        .def_property_readonly("rotation", &affine_3d_t::rotation,
+                               "The affine transformation's rotation matrix")
+        .def_property_readonly(
+            "translation", &affine_3d_t::translation,
+            "The affine transformation's translation matrix");
 
     // Defines Trimesh3D methods.
     trimesh_3d
