@@ -78,7 +78,7 @@ point_3d_t point_3d_t::operator<<=(const affine_3d_t &a) {
 }
 
 point_3d_t point_3d_t::normalize() const {
-    double inv_length = 1.0f / length();
+    double inv_length = 1.0 / length();
     return {x * inv_length, y * inv_length, z * inv_length};
 }
 
@@ -111,7 +111,7 @@ barycentric_coordinates_t point_3d_t::barycentric_coordinates(
     double denom = d00 * d11 - d01 * d01;
     double v = (d11 * d20 - d01 * d21) / denom;
     double w = (d00 * d21 - d01 * d20) / denom;
-    double u = 1.0f - v - w;
+    double u = 1.0 - v - w;
     return {u, v, w};
 }
 
@@ -291,9 +291,9 @@ bool line_3d_t::intersects_bounding_box(const bounding_box_3d_t &b) const {
 double line_3d_t::distance_to_point(const point_3d_t &p) const {
     point_3d_t d = p2 - p1;
     double t = d.dot(p - p1) / d.dot(d);
-    if (t < 0.0f) {
+    if (t < 0.0) {
         return p.distance_to_point(p1);
-    } else if (t > 1.0f) {
+    } else if (t > 1.0) {
         return p.distance_to_point(p2);
     }
     return p.distance_to_point(p1 + t * d);
@@ -364,7 +364,7 @@ double triangle_3d_t::area() const {
     return 0.5f * v1.cross(v2).length();
 }
 
-point_3d_t triangle_3d_t::center() const { return (p1 + p2 + p3) / 3.0f; }
+point_3d_t triangle_3d_t::center() const { return (p1 + p2 + p3) / 3.0; }
 
 point_3d_t triangle_3d_t::normal() const {
     point_3d_t v1 = p2 - p1;
@@ -409,7 +409,7 @@ circumcircle_3d_t triangle_3d_t::circumcircle() const {
     double c = v3.length();
     double s = 0.5f * (a + b + c);
     double area = std::sqrt(s * (s - a) * (s - b) * (s - c));
-    double r = a * b * c / (4.0f * area);
+    double r = a * b * c / (4.0 * area);
     point_3d_t center = (p1 * a + p2 * b + p3 * c) / (a + b + c);
     return {center, r};
 }
@@ -677,7 +677,7 @@ std::vector<tetrahedron_3d_t> bounding_box_3d_t::tetrahedrons() const {
     return tetrahedrons;
 }
 
-point_3d_t bounding_box_3d_t::center() const { return (min + max) / 2.0f; }
+point_3d_t bounding_box_3d_t::center() const { return (min + max) / 2.0; }
 
 double bounding_box_3d_t::volume() const {
     return (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
@@ -708,8 +708,8 @@ polygon_3d_t polygon_3d_t::operator<<=(const affine_3d_t &a) {
 }
 
 double polygon_3d_t::area() const {
-    if (points.size() < 3) return 0.0f;
-    double area = 0.0f;
+    if (points.size() < 3) return 0.0;
+    double area = 0.0;
     point_3d_t p1 = points[0];
     for (size_t i = 1; i < points.size(); ++i) {
         size_t j = (i + 1) % points.size();
@@ -717,7 +717,7 @@ double polygon_3d_t::area() const {
         point_3d_t v2 = points[j] - p1;
         area += v1.cross(v2).length();
     }
-    return std::abs(area) / 2.0f;
+    return std::abs(area) / 2.0;
 }
 
 point_3d_t polygon_3d_t::center() const {
@@ -1104,7 +1104,7 @@ trimesh_3d_t trimesh_3d_t::subdivide(bool at_edges) const {
                 edge_map[edge1] = vertices.size();
                 edge_map[edge2] = vertices.size();
                 const auto &v1 = _vertices[p1], &v2 = _vertices[p2];
-                vertices.push_back(v1 + (v2 - v1) / 2.0f);
+                vertices.push_back(v1 + (v2 - v1) / 2.0);
             }
         };
         for (auto &face : _faces) {
@@ -1128,8 +1128,7 @@ trimesh_3d_t trimesh_3d_t::subdivide(bool at_edges) const {
         // Add center point of each face as an additional vertex.
         for (auto &face : _faces) {
             auto &[vi, vj, vk] = face;
-            auto center =
-                (_vertices[vi] + _vertices[vj] + _vertices[vk]) / 3.0f;
+            auto center = (_vertices[vi] + _vertices[vj] + _vertices[vk]) / 3.0;
             vertices.push_back(center);
         }
 

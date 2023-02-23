@@ -172,6 +172,18 @@ std::string barycentric_coordinates_t::to_string() const {
     return ss.str();
 }
 
+/* --------- *
+ * Utilities *
+ * --------- */
+
+void check_file_ext(const std::string &filename, const std::string &ext) {
+    const auto ref_ext = filename.substr(filename.find_last_of(".") + 1);
+    if (ref_ext != ext) {
+        throw std::runtime_error("File extension must be ." + ext + ", not ." +
+                                 ref_ext);
+    }
+}
+
 void add_types_modules(py::module &m) {
     // Defines the classes first, so that methods can resolve types
     // correctly.

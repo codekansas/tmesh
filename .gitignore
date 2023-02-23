@@ -12,3 +12,4 @@ docs.*
 *.stl
 *.obj
 *.ply
+*.svg

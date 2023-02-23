@@ -111,7 +111,8 @@ struct triangle_2d_t {
     bool is_clockwise() const;
 
     circle_2d_t circumcircle() const;
-    bool circumcircle_contains(const point_2d_t &p) const;
+    bool circumcircle_contains(const point_2d_t &p,
+                               double tolerance = 0.0) const;
     bool contains_point(const point_2d_t &p) const;
     bool contains_triangle(const triangle_2d_t &t) const;
     bool intersects_bounding_box(const bounding_box_2d_t &bb) const;
@@ -140,7 +141,7 @@ struct circle_2d_t {
 
     double area() const;
     double circumference() const;
-    bool contains_point(const point_2d_t &p, double tolerance = 0.0f) const;
+    bool contains_point(const point_2d_t &p, double tolerance = 0.0) const;
 
     std::string to_string() const;
 };

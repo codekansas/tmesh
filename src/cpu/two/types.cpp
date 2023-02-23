@@ -124,7 +124,7 @@ barycentric_coordinates_t point_2d_t::barycentric_coordinates(
 
     double v = (d11 * d20 - d01 * d21) / denom;
     double w = (d00 * d21 - d01 * d20) / denom;
-    double u = 1.0f - v - w;
+    double u = 1.0 - v - w;
 
     return {u, v, w};
 }
@@ -159,7 +159,7 @@ std::optional<point_2d_t> point_2d_t::project_to_line(
     const line_2d_t &l) const {
     double dx = l.p2.x - l.p1.x, dy = l.p2.y - l.p1.y;
     double t = ((x - l.p1.x) * dx + (y - l.p1.y) * dy) / (dx * dx + dy * dy);
-    if (t < 0.0f || t > 1.0f) return std::nullopt;
+    if (t < 0.0 || t > 1.0) return std::nullopt;
     return point_2d_t{l.p1.x + t * dx, l.p1.y + t * dy};
 }
 
@@ -239,7 +239,7 @@ point_2d_t line_2d_t::closest_point(const point_2d_t &p) const {
     point_2d_t w = p - p1;
 
     double c1 = w.dot(v);
-    if (c1 <= 0.0f) return p1;
+    if (c1 <= 0.0) return p1;
 
     double c2 = v.dot(v);
     if (c2 <= c1) return p2;
@@ -260,8 +260,8 @@ std::optional<point_2d_t> line_2d_t::line_intersection(
     double t = qmp1.cross(s) / rxs;
     double u = qmp1.cross(r) / rxs;
 
-    if (t < -get_tolerance() || t > 1.0f + get_tolerance() ||
-        u < -get_tolerance() || u > 1.0f + get_tolerance())
+    if (t < -get_tolerance() || t > 1.0 + get_tolerance() ||
+        u < -get_tolerance() || u > 1.0 + get_tolerance())
         return std::nullopt;
 
     return p1 + r * t;
@@ -307,7 +307,7 @@ double line_2d_t::distance_to_point(const point_2d_t &p) const {
 double line_2d_t::distance_to_line(const line_2d_t &l) const {
     std::optional<point_2d_t> p = line_intersection(l);
 
-    if (p) return 0.0f;
+    if (p) return 0.0;
 
     return std::min({distance_to_point(l.p1), distance_to_point(l.p2),
                      l.distance_to_point(p1), l.distance_to_point(p2)});
@@ -366,10 +366,10 @@ triangle_2d_t triangle_2d_t::operator<<=(const affine_2d_t &a) {
 double triangle_2d_t::area() const {
     return std::abs((p1.x - p3.x) * (p2.y - p1.y) -
                     (p1.x - p2.x) * (p3.y - p1.y)) /
-           2.0f;
+           2.0;
 }
 
-point_2d_t triangle_2d_t::center() const { return (p1 + p2 + p3) / 3.0f; }
+point_2d_t triangle_2d_t::center() const { return (p1 + p2 + p3) / 3.0; }
 
 std::vector<point_2d_t> triangle_2d_t::vertices() const { return {p1, p2, p3}; }
 
@@ -378,13 +378,14 @@ std::vector<line_2d_t> triangle_2d_t::edges() const {
 }
 
 bool triangle_2d_t::is_clockwise() const {
-    return (p3 - p1).cross(p2 - p1) < 0.0f;
+    return (p3 - p1).cross(p2 - p1) < 0.0;
 }
 
 circle_2d_t triangle_2d_t::circumcircle() const { return {*this}; }
 
-bool triangle_2d_t::circumcircle_contains(const point_2d_t &p) const {
-    return circumcircle().contains_point(p);
+bool triangle_2d_t::circumcircle_contains(const point_2d_t &p,
+                                          double tolerance) const {
+    return circumcircle().contains_point(p, tolerance);
 
     // Faster version.
     // double a = p1.x - p.x;
@@ -401,7 +402,7 @@ bool triangle_2d_t::circumcircle_contains(const point_2d_t &p) const {
     // double det = a * (d * f - e * B) - b * (c * f - e * C) + A * (c * B - d *
     // C);
 
-    // return det > 0.0f;
+    // return det > 0.0;
 }
 
 bool triangle_2d_t::contains_point(const point_2d_t &p) const {
@@ -439,7 +440,7 @@ std::vector<point_2d_t> triangle_2d_t::triangle_intersection(
 }
 
 double triangle_2d_t::distance_to_point(const point_2d_t &p) const {
-    if (p.is_inside_triangle(*this)) return 0.0f;
+    if (p.is_inside_triangle(*this)) return 0.0;
     line_2d_t l1 = {p1, p2}, l2 = {p2, p3}, l3 = {p3, p1};
     return std::min({l1.distance_to_point(p), l2.distance_to_point(p),
                      l3.distance_to_point(p)});
@@ -447,7 +448,7 @@ double triangle_2d_t::distance_to_point(const point_2d_t &p) const {
 
 double triangle_2d_t::distance_to_line(const line_2d_t &l) const {
     if (l.p1.is_inside_triangle(*this) || l.p2.is_inside_triangle(*this))
-        return 0.0f;
+        return 0.0;
     line_2d_t l1 = {p1, p2}, l2 = {p2, p3}, l3 = {p3, p1};
     return std::min({l1.distance_to_line(l), l2.distance_to_line(l),
                      l3.distance_to_line(l)});
@@ -485,8 +486,8 @@ std::string triangle_2d_t::to_string() const {
  * ----------- */
 
 circle_2d_t::circle_2d_t() {
-    center = {0.0f, 0.0f};
-    radius = 0.0f;
+    center = {0.0, 0.0};
+    radius = 0.0;
 }
 
 circle_2d_t::circle_2d_t(const point_2d_t &c, double r) {
@@ -502,7 +503,7 @@ circle_2d_t::circle_2d_t(const triangle_2d_t &t) {
     double d = p3.y - p1.y;
     double e = a * (p1.x + p2.x) + b * (p1.y + p2.y);
     double f = c * (p1.x + p3.x) + d * (p1.y + p3.y);
-    double g = 2.0f * (a * (p3.y - p2.y) - b * (p3.x - p2.x));
+    double g = 2.0 * (a * (p3.y - p2.y) - b * (p3.x - p2.x));
     center = {(d * e - b * f) / g, (a * f - c * e) / g};
     radius = center.distance_to_point(p1);
 }
@@ -517,7 +518,7 @@ bool circle_2d_t::operator!=(const circle_2d_t &c) const {
 
 double circle_2d_t::area() const { return M_PI * radius * radius; }
 
-double circle_2d_t::circumference() const { return 2.0f * M_PI * radius; }
+double circle_2d_t::circumference() const { return 2.0 * M_PI * radius; }
 
 bool circle_2d_t::contains_point(const point_2d_t &p, double tolerance) const {
     return center.distance_to_point(p) <= radius + tolerance;
@@ -650,7 +651,7 @@ double bounding_box_2d_t::area() const {
 }
 
 point_2d_t bounding_box_2d_t::center() const {
-    return {(min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f};
+    return {(min.x + max.x) / 2.0, (min.y + max.y) / 2.0};
 }
 
 std::vector<point_2d_t> bounding_box_2d_t::vertices() const {
@@ -680,7 +681,7 @@ bool bounding_box_2d_t::contains_triangle(const triangle_2d_t &t) const {
 }
 
 double bounding_box_2d_t::distance_to_point(const point_2d_t &p) const {
-    if (p.is_inside_bounding_box(*this)) return 0.0f;
+    if (p.is_inside_bounding_box(*this)) return 0.0;
     return std::min({p.distance_to_line({min, {max.x, min.y}}),
                      p.distance_to_line({{max.x, min.y}, max}),
                      p.distance_to_line({max, {min.x, max.y}}),
@@ -690,7 +691,7 @@ double bounding_box_2d_t::distance_to_point(const point_2d_t &p) const {
 double bounding_box_2d_t::distance_to_line(const line_2d_t &l) const {
     if (l.p1.is_inside_bounding_box(*this) ||
         l.p2.is_inside_bounding_box(*this))
-        return 0.0f;
+        return 0.0;
     return std::min({l.distance_to_line({min, {max.x, min.y}}),
                      l.distance_to_line({{max.x, min.y}, max}),
                      l.distance_to_line({max, {min.x, max.y}}),
@@ -701,7 +702,7 @@ double bounding_box_2d_t::distance_to_triangle(const triangle_2d_t &t) const {
     if (t.p1.is_inside_bounding_box(*this) ||
         t.p2.is_inside_bounding_box(*this) ||
         t.p3.is_inside_bounding_box(*this))
-        return 0.0f;
+        return 0.0;
     return std::min({t.distance_to_line({min, {max.x, min.y}}),
                      t.distance_to_line({{max.x, min.y}, max}),
                      t.distance_to_line({max, {min.x, max.y}}),
@@ -713,7 +714,7 @@ double bounding_box_2d_t::distance_to_bounding_box(
     point_2d_t p1 = min, p2 = {max.x, min.y}, p3 = max, p4 = {min.x, max.y};
     if (p1.is_inside_bounding_box(b) || p2.is_inside_bounding_box(b) ||
         p3.is_inside_bounding_box(b) || p4.is_inside_bounding_box(b))
-        return 0.0f;
+        return 0.0;
     return std::min({b.distance_to_line({p1, p2}), b.distance_to_line({p2, p3}),
                      b.distance_to_line({p3, p4}),
                      b.distance_to_line({p4, p1})});
@@ -759,7 +760,7 @@ polygon_2d_t polygon_2d_t::operator+=(const polygon_2d_t &p) {
 }
 
 double polygon_2d_t::signed_area() const {
-    double area = 0.0f;
+    double area = 0.0;
     for (size_t i = 0; i < points.size(); ++i) {
         const point_2d_t &p1 = points[i];
         const point_2d_t &p2 = points[(i + 1) % points.size()];
@@ -768,7 +769,7 @@ double polygon_2d_t::signed_area() const {
     return area * 0.5f;
 }
 
-bool polygon_2d_t::is_clockwise() const { return signed_area() < 0.0f; }
+bool polygon_2d_t::is_clockwise() const { return signed_area() < 0.0; }
 
 void polygon_2d_t::reverse() { std::reverse(points.begin(), points.end()); }
 
@@ -1416,7 +1417,7 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
     // Determine if each vertex is a boundary vertex.
     std::unordered_set<size_t> boundary_pts;
     for (auto &[i, angle] : angles) {
-        if (std::abs(angles[i] - 360.0f) > 0.1f) {
+        if (std::abs(angles[i] - 360.0) > 0.1f) {
             boundary_pts.insert(i);
         }
     }
@@ -1549,7 +1550,7 @@ trimesh_2d_t trimesh_2d_t::subdivide(bool at_edges) const {
                 edge_map[edge1] = vertices.size();
                 edge_map[edge2] = vertices.size();
                 const auto &v1 = _vertices[p1], &v2 = _vertices[p2];
-                vertices.push_back(v1 + (v2 - v1) / 2.0f);
+                vertices.push_back(v1 + (v2 - v1) / 2.0);
             }
         };
         for (auto &face : _faces) {
@@ -1573,8 +1574,7 @@ trimesh_2d_t trimesh_2d_t::subdivide(bool at_edges) const {
         // Add center point of each face as an additional vertex.
         for (auto &face : _faces) {
             auto &[vi, vj, vk] = face;
-            auto center =
-                (_vertices[vi] + _vertices[vj] + _vertices[vk]) / 3.0f;
+            auto center = (_vertices[vi] + _vertices[vj] + _vertices[vk]) / 3.0;
             vertices.push_back(center);
         }
 
@@ -1632,7 +1632,9 @@ trimesh_2d_t trimesh_2d_t::make_delaunay() const {
         const auto &p1 = _vertices[v1], &p2 = _vertices[v2],
                    &p3 = _vertices[v3], &p4 = _vertices[v4];
 
-        if (!this->get_triangle(face).circumcircle_contains(p4)) continue;
+        if (!this->get_triangle(face).circumcircle_contains(p4,
+                                                            -get_tolerance()))
+            continue;
 
         // Removes old edge and add new edge.
         edges.erase(edge);
@@ -1960,7 +1962,8 @@ void add_2d_types_modules(py::module &m) {
         .def("circumcircle", &triangle_2d_t::circumcircle,
              "The triangle's circumscribed circle")
         .def("circumcircle_contains", &triangle_2d_t::circumcircle_contains,
-             "Is the point inside the circumcircle of the triangle", "p"_a)
+             "Is the point inside the circumcircle of the triangle", "p"_a,
+             "tolerance"_a = 0.0)
         .def("contains_point", &triangle_2d_t::contains_point,
              "Does the triangle contain a point", "p"_a)
         .def("contains_triangle", &triangle_2d_t::contains_triangle,
@@ -2000,7 +2003,7 @@ void add_2d_types_modules(py::module &m) {
         .def("__ne__", &circle_2d_t::operator!=,
              "Inequality with another circle", "other"_a, py::is_operator())
         .def("contains_point", &circle_2d_t::contains_point,
-             "Does the circle contain a point", "p"_a, "tolerance"_a = 0.0f);
+             "Does the circle contain a point", "p"_a, "tolerance"_a = 0.0);
 
     // Defines BoundingBox2D methods.
     bbox_2d

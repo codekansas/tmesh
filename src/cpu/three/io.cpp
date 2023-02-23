@@ -15,6 +15,8 @@ face_list_t get_sorted_faces(const face_list_t &faces) {
 }
 
 void save_stl(const std::string &filename, const trimesh_3d_t &mesh) {
+    check_file_ext(filename, "stl");
+
     std::ofstream f;
     f.open(filename, std::ios::out | std::ios::binary);
 
@@ -108,6 +110,8 @@ trimesh_3d_t load_stl(const std::string &filename) {
 }
 
 void save_stl_text(const std::string &filename, const trimesh_3d_t &mesh) {
+    check_file_ext(filename, "stl");
+
     std::ofstream f;
     f.open(filename, std::ios::out);
 
@@ -211,6 +215,8 @@ trimesh_3d_t load_stl_text(const std::string &filename) {
 }
 
 void save_obj(const std::string &filename, const trimesh_3d_t &mesh) {
+    check_file_ext(filename, "obj");
+
     std::ofstream f;
     f.open(filename, std::ios::out);
 
@@ -264,6 +270,8 @@ trimesh_3d_t load_obj(const std::string &filename) {
 }
 
 void save_ply(const std::string &filename, const trimesh_3d_t &mesh) {
+    check_file_ext(filename, "ply");
+
     std::ofstream f;
     f.open(filename, std::ios::out);
 
