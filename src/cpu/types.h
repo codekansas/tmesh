@@ -48,6 +48,7 @@ struct face_t {
     std::vector<size_t> get_vertices() const;
     std::vector<edge_t> get_edges(bool directed = true) const;
     bool has_edge(const edge_t &e) const;
+    bool has_vertex(size_t v) const;
     size_t get_other_vertex(const edge_t &e) const;
     std::string to_string() const;
 };

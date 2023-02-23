@@ -58,6 +58,12 @@ struct point_2d_t {
     std::string to_string() const;
 };
 
+size_t point_hash_fn(const point_2d_t &p);
+
+struct __point_hash_fn {
+    size_t operator()(const point_2d_t &p) const;
+};
+
 point_2d_t operator+(const point_2d_t &p1, const point_2d_t &p2);
 point_2d_t operator-(const point_2d_t &p1, const point_2d_t &p2);
 point_2d_t operator*(const point_2d_t &p1, const point_2d_t &p2);

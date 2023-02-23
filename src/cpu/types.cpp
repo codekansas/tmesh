@@ -42,10 +42,10 @@ edge_t edge_t::flip() const {
 
 std::string edge_t::to_string() const {
     if (directed)
-        return "(" + std::to_string(a) + ", " + std::to_string(b) +
-               ", directed)";
+        return "Edge(" + std::to_string(a) + ", " + std::to_string(b) +
+               ", directed=True)";
     if (a < b) return "(" + std::to_string(a) + ", " + std::to_string(b) + ")";
-    return "(" + std::to_string(b) + ", " + std::to_string(a) + ")";
+    return "Edge(" + std::to_string(b) + ", " + std::to_string(a) + ")";
 }
 
 size_t __edge_hash_fn::operator()(const edge_t &e) const {
@@ -89,6 +89,8 @@ bool face_t::has_edge(const edge_t &e) const {
            (e.a == c && e.b == a) || (e.a == a && e.b == c);
 }
 
+bool face_t::has_vertex(size_t v) const { return v == a || v == b || v == c; }
+
 size_t face_t::get_other_vertex(const edge_t &e) const {
     if ((e.a == a && e.b == b) || (e.a == b && e.b == a)) return c;
     if ((e.a == b && e.b == c) || (e.a == c && e.b == b)) return a;
@@ -97,7 +99,7 @@ size_t face_t::get_other_vertex(const edge_t &e) const {
 }
 
 std::string face_t::to_string() const {
-    return "(" + std::to_string(a) + ", " + std::to_string(b) + ", " +
+    return "Face(" + std::to_string(a) + ", " + std::to_string(b) + ", " +
            std::to_string(c) + ")";
 }
 
@@ -202,6 +204,10 @@ void add_types_modules(py::module &m) {
         .def("get_vertices", &face_t::get_vertices, "Returns the vertices.")
         .def("get_edges", &face_t::get_edges, "directed"_a = false,
              "Returns the edges.")
+        .def("__contains__", &face_t::has_edge, "edge"_a,
+             "Checks if an edge is in the face.", py::is_operator())
+        .def("__contains__", &face_t::has_vertex, "vertex"_a,
+             "Checks if a vertex is in the face.", py::is_operator())
         .def("__eq__", &face_t::operator==, "other"_a,
              "Checks if two faces are equal.", py::is_operator())
         .def("__ne__", &face_t::operator!=, "other"_a,

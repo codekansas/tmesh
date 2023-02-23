@@ -178,6 +178,6 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     setup_requires=["cmake", "mypy", "pybind11"],
-    extras_require={"test": ["pytest"]},
+    extras_require={"test": ["pytest", "ruff"]},
     python_requires=">=3.7",
 )

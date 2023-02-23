@@ -1,5 +1,6 @@
 {
   "recommendations": [
+    "charliermarsh.ruff",
     "cheshirekow.cmake-format",
     "ms-vscode.cmake-tools",
     "ms-vscode.cpptools",
