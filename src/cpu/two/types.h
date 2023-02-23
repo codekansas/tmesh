@@ -111,7 +111,8 @@ struct triangle_2d_t {
     bool is_clockwise() const;
 
     circle_2d_t circumcircle() const;
-    bool circumcircle_contains(const point_2d_t &p) const;
+    bool circumcircle_contains(const point_2d_t &p,
+                               double tolerance = 0.0) const;
     bool contains_point(const point_2d_t &p) const;
     bool contains_triangle(const triangle_2d_t &t) const;
     bool intersects_bounding_box(const bounding_box_2d_t &bb) const;
@@ -140,7 +141,7 @@ struct circle_2d_t {
 
     double area() const;
     double circumference() const;
-    bool contains_point(const point_2d_t &p, double tolerance = 0.0f) const;
+    bool contains_point(const point_2d_t &p, double tolerance = 0.0) const;
 
     std::string to_string() const;
 };
@@ -192,7 +193,8 @@ struct polygon_2d_t {
     polygon_2d_t convex_hull() const;
     bounding_box_2d_t bounding_box() const;
     point_2d_t center() const;
-    trimesh_2d_t get_trimesh(bool is_convex = false) const;
+    trimesh_2d_t get_trimesh(bool delaunay = false,
+                             bool is_convex = false) const;
 
     std::string to_string() const;
 };
@@ -205,8 +207,9 @@ struct affine_2d_t {
 
     double r00, r01, r10, r11, tx, ty;
 
-    affine_2d_t(double r00, double r01, double r10, double r11, double tx,
-                double ty);
+    affine_2d_t(
+        std::tuple<std::tuple<double, double>, std::tuple<double, double>> rot,
+        std::tuple<double, double> trans);
     affine_2d_t(std::optional<double> rot = std::nullopt,
                 std::optional<std::tuple<double, double>> trans = std::nullopt,
                 std::optional<double> scale = std::nullopt);
@@ -214,6 +217,9 @@ struct affine_2d_t {
     affine_2d_t operator*=(const affine_2d_t &a);
 
     affine_2d_t inverse() const;
+    std::tuple<std::tuple<double, double>, std::tuple<double, double>>
+    rotation() const;
+    std::tuple<double, double> translation() const;
 
     std::string to_string() const;
 };

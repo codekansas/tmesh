@@ -96,6 +96,8 @@ struct barycentric_coordinates_t {
     std::string to_string() const;
 };
 
+void check_file_ext(const std::string &filename, const std::string &ext);
+
 void add_types_modules(py::module &m);
 
 }  // namespace trimesh

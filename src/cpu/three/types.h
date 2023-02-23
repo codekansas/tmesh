@@ -192,9 +192,11 @@ struct affine_3d_t {
 
     double r00, r01, r02, r10, r11, r12, r20, r21, r22, tx, ty, tz;
 
-    affine_3d_t(double r00, double r01, double r02, double r10, double r11,
-                double r12, double r20, double r21, double r22, double tx,
-                double ty, double tz);
+    affine_3d_t(std::tuple<std::tuple<double, double, double>,
+                           std::tuple<double, double, double>,
+                           std::tuple<double, double, double>>
+                    rot,
+                std::tuple<double, double, double> trans);
     affine_3d_t(
         std::optional<std::tuple<double, double, double>> rot = std::nullopt,
         std::optional<std::tuple<double, double, double>> trans = std::nullopt,
@@ -203,6 +205,11 @@ struct affine_3d_t {
     affine_3d_t operator*=(const affine_3d_t &a);
 
     affine_3d_t inverse() const;
+    std::tuple<std::tuple<double, double, double>,
+               std::tuple<double, double, double>,
+               std::tuple<double, double, double>>
+    rotation();
+    std::tuple<double, double, double> translation();
 
     std::string to_string() const;
 };

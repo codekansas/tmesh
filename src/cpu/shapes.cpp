@@ -73,10 +73,10 @@ trimesh_3d_t tetrahedron(double radius) {
         throw std::runtime_error("Tetrahedron radius must be positive.");
 
     std::vector<point_3d_t> vertices = {
-        {std::sqrt(8.0f / 9.0f), 0.0f, -1.0f / 3.0f},
-        {-std::sqrt(2.0f / 9.0f), std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
-        {-std::sqrt(2.0f / 9.0f), -std::sqrt(2.0f / 3.0f), -1.0f / 3.0f},
-        {0.0f, 0.0f, 1.0f}};
+        {std::sqrt(8.0 / 9.0), 0.0, -1.0 / 3.0},
+        {-std::sqrt(2.0 / 9.0), std::sqrt(2.0 / 3.0), -1.0 / 3.0},
+        {-std::sqrt(2.0 / 9.0), -std::sqrt(2.0 / 3.0), -1.0 / 3.0},
+        {0.0, 0.0, 1.0}};
     face_set_t faces = {{0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {2, 0, 3}};
 
     return {vertices, faces};
@@ -87,12 +87,12 @@ trimesh_3d_t icosphere(double radius, size_t n) {
         throw std::runtime_error("Sphere radius must be positive.");
 
     // Gets icosahedron vertices.
-    double t = (1.0f + std::sqrt(5.0f)) / 2.0f;
+    double t = (1.0 + std::sqrt(5.0)) / 2.0;
 
     std::vector<point_3d_t> vertices = {
-        {-1.0f, t, 0.0f}, {1.0f, t, 0.0f}, {-1.0f, -t, 0.0f}, {1.0f, -t, 0.0f},
-        {0.0f, -1.0f, t}, {0.0f, 1.0f, t}, {0.0f, -1.0f, -t}, {0.0f, 1.0f, -t},
-        {t, 0.0f, -1.0f}, {t, 0.0f, 1.0f}, {-t, 0.0f, -1.0f}, {-t, 0.0f, 1.0f}};
+        {-1.0, t, 0.0}, {1.0, t, 0.0}, {-1.0, -t, 0.0}, {1.0, -t, 0.0},
+        {0.0, -1.0, t}, {0.0, 1.0, t}, {0.0, -1.0, -t}, {0.0, 1.0, -t},
+        {t, 0.0, -1.0}, {t, 0.0, 1.0}, {-t, 0.0, -1.0}, {-t, 0.0, 1.0}};
 
     // Gets icosahedron faces.
     face_list_t faces = {{0, 11, 5},  {0, 5, 1},  {0, 1, 7},  {0, 7, 10},
@@ -113,9 +113,9 @@ trimesh_3d_t icosphere(double radius, size_t n) {
             point_3d_t v2 = vertices[p2];
 
             // Gets face midpoints.
-            point_3d_t v01 = (v0 + v1) / 2.0f;
-            point_3d_t v12 = (v1 + v2) / 2.0f;
-            point_3d_t v20 = (v2 + v0) / 2.0f;
+            point_3d_t v01 = (v0 + v1) / 2.0;
+            point_3d_t v12 = (v1 + v2) / 2.0;
+            point_3d_t v20 = (v2 + v0) / 2.0;
 
             // Adds new vertices.
             size_t v01_index = vertices.size();

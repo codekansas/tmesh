@@ -1,8 +1,31 @@
 """Tests Delaunay triangulation."""
 
+import math
 import random
 
-from tmesh import Point2D, triangulate_2d
+import pytest
+
+from tmesh import Point2D, Polygon2D, triangulate_2d
+
+
+@pytest.mark.parametrize("make_delaunay", [True, False])
+def test_triangulate_polygon(make_delaunay: bool) -> None:
+    """Tests simple triangulation.
+
+    This test creates a polygon, adds some random vertices to it, and
+    then tests triangulating the polygon.
+
+    Args:
+        make_delaunay: If set, the triangulation will be made Delaunay.
+    """
+
+    # Gets the triangulation of some points in a circle.
+    vertices = [Point2D(math.cos(2 * math.pi * i / 10), math.sin(2 * math.pi * i / 10)) for i in range(10)]
+    poly = Polygon2D(vertices)
+    trimesh = poly.get_trimesh(delaunay=make_delaunay, is_convex=False)
+
+    assert len(trimesh.vertices) == 10, trimesh.vertices
+    assert len(trimesh.faces) == 8, trimesh.faces
 
 
 def test_simple_triangulate_2d() -> None:
@@ -59,3 +82,7 @@ def test_large_triangulate_2d() -> None:
                 if neighbor in face:
                     continue
                 assert not triangle.contains_point(points[neighbor])
+
+
+if __name__ == "__main__":
+    test_triangulate_polygon(True)

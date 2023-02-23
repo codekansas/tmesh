@@ -10,6 +10,8 @@ namespace trimesh {
 
 void save_svg(const std::string &filename, const trimesh_2d_t &mesh,
               double stroke_width_mul) {
+    check_file_ext(filename, "svg");
+
     std::ofstream file(filename);
     if (!file.is_open()) throw std::runtime_error("Could not open file");
 
