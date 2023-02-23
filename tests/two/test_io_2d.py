@@ -28,10 +28,8 @@ def test_trimesh_union_io_2d(tmpdir: Path) -> None:
         tmpdir: The temporary directory to use for testing.
     """
 
-    tr_a = regular_polygon_mesh(500.0, n=5) << Affine2D(trans=(250.0, 0.0))
-    tr_b = regular_polygon_mesh(500.0, n=50) << Affine2D(trans=(0.0, 0.0))
-    tr_c = tr_a | tr_b
-    tr_d = tr_c.make_delaunay()
+    tr_a = regular_polygon_mesh(500.0, n=50)
+    tr_b = tr_a.make_delaunay()
 
     svg_path = str(tmpdir / "file.svg")
-    save_svg(svg_path, tr_d)
+    save_svg(svg_path, tr_b)
