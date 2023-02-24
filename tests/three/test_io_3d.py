@@ -54,6 +54,7 @@ def test_trimesh_io(tmpdir: Path) -> None:
     # Converts the faces and vertices to the absolute vertices.
     tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i.get_vertices()) for i in tr_a.faces])
     tr_d_face_vertices = sorted([tuple(tr_d.vertices[j] for j in i.get_vertices()) for i in tr_d.faces])
+    breakpoint()
     assert tr_a_face_vertices == tr_d_face_vertices
 
     # Tests saving and loading the trimesh as a text STL.

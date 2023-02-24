@@ -66,7 +66,7 @@ tetramesh_3d_t linear_extrude(
         const size_t ba = a, bb = b, bc = c, ta = a + top_offset,
                      tb = b + top_offset, tc = c + top_offset;
         volumes.insert({ba, bc, bb, ta});
-        volumes.insert({ta, tb, tc, bb});
+        volumes.insert({ta, tc, tb, bb});
         volumes.insert({ta, tc, bc, bb});
     }
 
