@@ -20,11 +20,15 @@ def test_simple_linear_extrude() -> None:
     assert len(extruded_mesh.vertices) == 6
     assert len(extruded_mesh.volumes) == 3
 
+    signed_volumes = [t.signed_volume() for t in extruded_mesh.get_tetrahedra()]
+
+    breakpoint()
+
     # Checks that the tetrahedrons are all oriented correctly and have the
     # expected volume.
-    for tetra in extruded_mesh.get_tetraherdons():
+    for tetra in extruded_mesh.get_tetrahedra():
         assert tetra.signed_volume() == pytest.approx(height * math.sqrt(3) / 4)
-    assert sum(t.signed_volume() for t in extruded_mesh.get_tetraherdons()) == pytest.approx(exp_volume)
+    assert sum(t.signed_volume() for t in extruded_mesh.get_tetrahedra()) == pytest.approx(exp_volume)
 
     # Checks the triangular mesh.
     trimesh = extruded_mesh.to_trimesh()

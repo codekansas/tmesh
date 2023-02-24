@@ -279,7 +279,7 @@ struct tetramesh_3d_t {
     const std::vector<point_3d_t> &vertices() const;
     const volume_list_t &volumes() const;
     tetrahedron_3d_t get_tetrahedron(const volume_t &volume) const;
-    std::vector<tetrahedron_3d_t> get_tetrahedrons() const;
+    std::vector<tetrahedron_3d_t> get_tetrahedra() const;
     trimesh_3d_t to_trimesh() const;
     std::string to_string() const;
 

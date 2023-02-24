@@ -1271,12 +1271,12 @@ tetrahedron_3d_t tetramesh_3d_t::get_tetrahedron(const volume_t &volume) const {
             this->_vertices[vl]};
 }
 
-std::vector<tetrahedron_3d_t> tetramesh_3d_t::get_tetrahedrons() const {
-    std::vector<tetrahedron_3d_t> tetrahedrons;
+std::vector<tetrahedron_3d_t> tetramesh_3d_t::get_tetrahedra() const {
+    std::vector<tetrahedron_3d_t> tetrahedra;
     for (auto &volume : _volumes) {
-        tetrahedrons.push_back(get_tetrahedron(volume));
+        tetrahedra.push_back(get_tetrahedron(volume));
     }
-    return tetrahedrons;
+    return tetrahedra;
 }
 
 trimesh_3d_t tetramesh_3d_t::to_trimesh() const {
@@ -1758,7 +1758,7 @@ void add_3d_types_modules(py::module &m) {
                                "The mesh volumes")
         .def("get_tetrahedron", &tetramesh_3d_t::get_tetrahedron,
              "Gets a mesh tetrahedron from a volume", "volume"_a)
-        .def("get_tetraherdons", &tetramesh_3d_t::get_tetrahedrons,
+        .def("get_tetrahedra", &tetramesh_3d_t::get_tetrahedra,
              "Gets all mesh tetrahedrons")
         .def("to_trimesh", &tetramesh_3d_t::to_trimesh,
              "Converts the tetrahedral mesh to a triangular mesh")

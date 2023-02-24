@@ -105,7 +105,7 @@ def plot_tetramesh(axes: plt.Axes, tetramesh: Tetramesh3D, i: int) -> None:
         i: Index of tetramesh.
     """
 
-    for tetrahedron in tetramesh.get_tetraherdons():
+    for tetrahedron in tetramesh.get_tetrahedra():
         plot_tetrahedron(axes, tetrahedron, i)
 
 
