@@ -59,7 +59,23 @@ size_t __edge_hash_fn::operator()(const edge_t &e) const {
  * face_t *
  * ------ */
 
-face_t::face_t(size_t a, size_t b, size_t c) : a(a), b(b), c(c) {}
+face_t::face_t(size_t a, size_t b, size_t c) {
+    // Put the smallest vertex first.
+    auto min = std::min({a, b, c});
+    if (min == a) {
+        this->a = a;
+        this->b = b;
+        this->c = c;
+    } else if (min == b) {
+        this->a = b;
+        this->b = c;
+        this->c = a;
+    } else {
+        this->a = c;
+        this->b = a;
+        this->c = b;
+    }
+}
 
 bool face_t::operator==(const face_t &f) const {
     return (a == f.a && b == f.b && c == f.c) ||
@@ -75,14 +91,6 @@ bool face_t::operator<(const face_t &f) const {
 
 face_t face_t::operator+(size_t offset) const {
     return {a + offset, b + offset, c + offset};
-}
-
-std::tuple<size_t, size_t, size_t> face_t::sorted_indices() const {
-    auto [a1, b1, c1] = *this;
-    if (a1 > b1) std::swap(a1, b1);
-    if (a1 > c1) std::swap(a1, c1);
-    if (b1 > c1) std::swap(b1, c1);
-    return {a1, b1, c1};
 }
 
 std::vector<size_t> face_t::get_vertices() const { return {a, b, c}; }
@@ -114,9 +122,8 @@ std::string face_t::to_string() const {
 }
 
 size_t face_hash_fn(const face_t &f) {
-    auto [a, b, c] = f.sorted_indices();
     auto hf = std::hash<size_t>();
-    return hf(a) ^ hf(b) ^ hf(c);
+    return hf(f.a) ^ hf(f.b) ^ hf(f.c);
 }
 
 size_t __face_hash_fn::operator()(const face_t &f) const {
@@ -127,8 +134,31 @@ size_t __face_hash_fn::operator()(const face_t &f) const {
  * volume_t *
  * -------- */
 
-volume_t::volume_t(size_t a, size_t b, size_t c, size_t d)
-    : a(a), b(b), c(c), d(d) {}
+volume_t::volume_t(size_t a, size_t b, size_t c, size_t d) {
+    // Put the smallest vertex first.
+    auto min = std::min({a, b, c, d});
+    if (min == a) {
+        this->a = a;
+        this->b = b;
+        this->c = c;
+        this->d = d;
+    } else if (min == b) {
+        this->a = b;
+        this->b = c;
+        this->c = d;
+        this->d = a;
+    } else if (min == c) {
+        this->a = c;
+        this->b = d;
+        this->c = a;
+        this->d = b;
+    } else {
+        this->a = d;
+        this->b = a;
+        this->c = b;
+        this->d = c;
+    }
+}
 
 bool volume_t::operator==(const volume_t &f) const {
     return (a == f.a && b == f.b && c == f.c && d == f.d) ||
@@ -147,17 +177,6 @@ volume_t volume_t::operator+(size_t offset) const {
     return {a + offset, b + offset, c + offset, d + offset};
 }
 
-std::tuple<size_t, size_t, size_t, size_t> volume_t::sorted_indices() const {
-    auto [a1, b1, c1, d1] = *this;
-    if (a1 > b1) std::swap(a1, b1);
-    if (a1 > c1) std::swap(a1, c1);
-    if (a1 > d1) std::swap(a1, d1);
-    if (b1 > c1) std::swap(b1, c1);
-    if (b1 > d1) std::swap(b1, d1);
-    if (c1 > d1) std::swap(c1, d1);
-    return {a1, b1, c1, d1};
-}
-
 face_list_t volume_t::faces() const {
     return {{a, c, b}, {a, d, c}, {a, b, d}, {b, c, d}};
 }
@@ -170,9 +189,8 @@ std::string volume_t::to_string() const {
 }
 
 size_t volume_hash_fn(const volume_t &v) {
-    auto [a, b, c, d] = v.sorted_indices();
     auto hf = std::hash<size_t>();
-    return hf(a) ^ hf(b) ^ hf(c) ^ hf(d);
+    return hf(v.a) ^ hf(v.b) ^ hf(v.c) ^ hf(v.d);
 }
 
 size_t __volume_hash_fn::operator()(const volume_t &v) const {

@@ -45,7 +45,6 @@ struct face_t {
     bool operator<(const face_t &f) const;
     face_t operator+(size_t offset) const;
 
-    std::tuple<size_t, size_t, size_t> sorted_indices() const;
     std::vector<size_t> get_vertices() const;
     std::vector<edge_t> get_edges(bool directed = true) const;
     bool has_edge(const edge_t &e) const;
@@ -76,7 +75,6 @@ struct volume_t {
     bool operator<(const volume_t &f) const;
     volume_t operator+(size_t offset) const;
 
-    std::tuple<size_t, size_t, size_t, size_t> sorted_indices() const;
     face_list_t faces() const;
     volume_t flip() const;
     std::string to_string() const;
