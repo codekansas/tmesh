@@ -1,12 +1,11 @@
 """Tests 3D IO functions."""
 
-import random
 from pathlib import Path
 
 import pytest
 
 from tmesh import (
-    Affine3D,
+    Face,
     cuboid,
     load_obj,
     load_ply,
@@ -20,27 +19,14 @@ from tmesh import (
 
 
 def test_trimesh_io(tmpdir: Path) -> None:
-    """Tests simple trimesh operations.
-
-    This test creates two trimeshes, adds some random vertices and
-    faces to each, and then tests adding the two trimeshes together.
-
-    This test also tests serializing the trimeshes to disk using various
-    formats.
+    """Tests serializing and deserializing 3D trimeshes.
 
     Args:
         tmpdir: The temporary directory to use for testing.
     """
 
-    # Gets two trimeshes.
-    tr_a, tr_b = cuboid(1.0, 1.0, 1.0), cuboid(1.0, 1.0, 1.0)
-
-    # Applies a random transformation to the second trimesh, moving it
-    # far enough away from the first trimesh that the two trimeshes
-    # should not overlap.
-    rot = Affine3D(rot=(random.random(), random.random(), random.random()))
-    trans = Affine3D(trans=(3.0, 3.0, 3.0))
-    tr_b = tr_b << rot @ trans
+    # Gets a trimesh.
+    tr_a = cuboid(1.0, 1.0, 1.0)
 
     # Tests saving and loading the trimesh as an STL.
     stl_path = str(tmpdir / "file.stl")
@@ -51,11 +37,14 @@ def test_trimesh_io(tmpdir: Path) -> None:
     assert len(tr_d.faces) == len(tr_a.faces), len(tr_d.faces)
     assert sorted(tr_d.vertices) == sorted(tr_a.vertices)
 
-    # Converts the faces and vertices to the absolute vertices.
-    tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i.get_vertices()) for i in tr_a.faces])
-    tr_d_face_vertices = sorted([tuple(tr_d.vertices[j] for j in i.get_vertices()) for i in tr_d.faces])
-    breakpoint()
-    assert tr_a_face_vertices == tr_d_face_vertices
+    # Remaps `tr_d` faces to `tr_a` faces.
+    tr_a_ids = {v: i for i, v in enumerate(tr_a.vertices)}
+    tr_d_mappings = {i: tr_a_ids[v] for i, v in enumerate(tr_d.vertices)}
+    tr_d_faces = [Face(tr_d_mappings[f.a], tr_d_mappings[f.b], tr_d_mappings[f.c]) for f in tr_d.faces]
+
+    # Checks that the sorted faces are the same.
+    for a_face, d_face in zip(sorted(tr_a.faces), sorted(tr_d_faces)):
+        assert a_face == d_face
 
     # Tests saving and loading the trimesh as a text STL.
     stl_path = str(tmpdir / "file.stl")
@@ -69,14 +58,13 @@ def test_trimesh_io(tmpdir: Path) -> None:
         for a, b in zip(sorted(tr_e.vertices), sorted(tr_a.vertices))
     )
 
-    # Converts the faces and vertices to the absolute vertices.
-    tr_a_face_vertices = sorted([tuple(tr_a.vertices[j] for j in i.get_vertices()) for i in tr_a.faces])
-    tr_e_face_vertices = sorted([tuple(tr_e.vertices[j] for j in i.get_vertices()) for i in tr_e.faces])
-    assert all(
-        aa.distance_to_point(bb) == pytest.approx(0, abs=1e-3)
-        for a, b in zip(tr_a_face_vertices, tr_e_face_vertices)
-        for aa, bb in zip(a, b)
-    )
+    # Remaps `tr_e` faces to `tr_a` faces.
+    tr_e_mappings = {i: tr_a_ids[v] for i, v in enumerate(tr_e.vertices)}
+    tr_e_faces = [Face(tr_e_mappings[f.a], tr_e_mappings[f.b], tr_e_mappings[f.c]) for f in tr_e.faces]
+
+    # Checks that the sorted faces are the same.
+    for a_face, e_face in zip(sorted(tr_a.faces), sorted(tr_e_faces)):
+        assert a_face == e_face
 
     # Tests saving and loading the trimesh as an OBJ.
     obj_path = str(tmpdir / "file.obj")
@@ -95,3 +83,11 @@ def test_trimesh_io(tmpdir: Path) -> None:
     assert len(tr_g.faces) == len(tr_a.faces), len(tr_g.faces)
     assert all(a.distance_to_point(b) == pytest.approx(0, abs=1e-5) for a, b in zip(tr_g.vertices, tr_a.vertices))
     assert sorted(tr_g.faces) == sorted(tr_a.faces)
+
+
+if __name__ == "__main__":
+    outdir = Path("out")
+    outdir.mkdir(exist_ok=True)
+    for file in outdir.glob("*"):
+        file.unlink()
+    test_trimesh_io(outdir)

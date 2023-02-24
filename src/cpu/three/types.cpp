@@ -1058,7 +1058,8 @@ void trimesh_3d_t::validate() const {
     for (auto &face : _faces) {
         auto &[vi, vj, vk] = face;
         if (vi == vj || vi == vk || vj == vk) {
-            throw std::runtime_error("Degenerate face");
+            throw std::runtime_error(
+                "Degenerate face; one or more vertices are the same");
         }
     }
 }
