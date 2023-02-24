@@ -9,7 +9,7 @@ from tmesh import Affine3D, Line3D, Point3D, Triangle3D
 SQRT_2 = math.sqrt(2)
 SQRT_3 = math.sqrt(3)
 
-g
+
 @pytest.mark.parametrize(
     "lhs,rhs,expected",
     [
