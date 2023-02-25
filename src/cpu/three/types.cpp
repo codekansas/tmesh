@@ -324,25 +324,39 @@ std::string line_3d_t::to_string() const {
     return ss.str();
 }
 
-/* ----------------- *
- * circumcircle_3d_t *
- * ----------------- */
+/* ----------- *
+ * sphere_3d_t *
+ * ----------- */
 
-bool circumcircle_3d_t::operator==(const circumcircle_3d_t &c) const {
+sphere_3d_t::sphere_3d_t() : center({0.0, 0.0, 0.0}), radius(0.0) {}
+
+sphere_3d_t::sphere_3d_t(const point_3d_t &c, double r)
+    : center(c), radius(r) {}
+
+sphere_3d_t::sphere_3d_t(const tetrahedron_3d_t &t) {
+    center = t.circumcenter();
+    radius = center.distance_to_point(t.p1);
+}
+
+bool sphere_3d_t::operator==(const sphere_3d_t &c) const {
     return center == c.center && std::abs(radius - c.radius) < get_tolerance();
 }
 
-bool circumcircle_3d_t::operator!=(const circumcircle_3d_t &c) const {
+bool sphere_3d_t::operator!=(const sphere_3d_t &c) const {
     return !(*this == c);
 }
 
-bool circumcircle_3d_t::contains_point(const point_3d_t &p) const {
+double sphere_3d_t::volume() const {
+    return 4.0 / 3.0 * M_PI * radius * radius * radius;
+}
+
+bool sphere_3d_t::contains_point(const point_3d_t &p) const {
     return center.distance_to_point(p) < radius + get_tolerance();
 }
 
-std::string circumcircle_3d_t::to_string() const {
+std::string sphere_3d_t::to_string() const {
     std::ostringstream ss;
-    ss << "Circumcircle3D(" << center.to_string() << ", " << radius << ")";
+    ss << "Sphere3D(" << center.to_string() << ", " << radius << ")";
     return ss.str();
 }
 
@@ -409,20 +423,6 @@ bool triangle_3d_t::is_coplanar(const triangle_3d_t &t) const {
            std::abs(n.dot(t.p3 - p1)) < get_tolerance();
 }
 
-circumcircle_3d_t triangle_3d_t::circumcircle() const {
-    point_3d_t v1 = p2 - p1;
-    point_3d_t v2 = p3 - p1;
-    point_3d_t v3 = p3 - p2;
-    double a = v1.length();
-    double b = v2.length();
-    double c = v3.length();
-    double s = 0.5f * (a + b + c);
-    double area = std::sqrt(s * (s - a) * (s - b) * (s - c));
-    double r = a * b * c / (4.0 * area);
-    point_3d_t center = (p1 * a + p2 * b + p3 * c) / (a + b + c);
-    return {center, r};
-}
-
 point_3d_t triangle_3d_t::point_from_barycentric_coords(
     const barycentric_coordinates_t &b) const {
     return p1 * b.u + p2 * b.v + p3 * b.w;
@@ -455,6 +455,20 @@ std::vector<point_3d_t> triangle_3d_t::triangle_intersection(
     return points;
 }
 
+point_3d_t triangle_3d_t::orthocenter() const {
+    point_3d_t v1 = p2 - p1;
+    point_3d_t v2 = p3 - p1;
+    point_3d_t v3 = p3 - p2;
+    double a = v1.length();
+    double b = v2.length();
+    double c = v3.length();
+    double s = 0.5f * (a + b + c);
+    double area = std::sqrt(s * (s - a) * (s - b) * (s - c));
+    double r = 2.0 * area / (a + b + c);
+    point_3d_t center = (p1 * a + p2 * b + p3 * c) / (a + b + c);
+    return center;
+}
+
 std::string triangle_3d_t::to_string() const {
     std::ostringstream ss;
     ss << "Triangle3D(" << p1.to_string() << ", " << p2.to_string() << ", "
@@ -483,17 +497,59 @@ tetrahedron_3d_t tetrahedron_3d_t::operator<<=(const affine_3d_t &a) {
 }
 
 double tetrahedron_3d_t::signed_volume() const {
-    return (1.0 / 6.0) * (p2 - p1).cross(p3 - p1).dot(p4 - p1);
-}
-
-tetrahedron_3d_t tetrahedron_3d_t::flip_inside_out() const {
-    return {p1, p2, p4, p3};
+    point_3d_t v1 = p2 - p1;
+    point_3d_t v2 = p3 - p1;
+    point_3d_t v3 = p4 - p1;
+    return v1.dot(v2.cross(v3)) / 6.0;
 }
 
 std::vector<triangle_3d_t> tetrahedron_3d_t::faces() const {
-    // return {{a, c, b}, {a, d, c}, {a, b, d}, {b, c, d}};
-    return {{p1, p3, p2}, {p1, p4, p3}, {p1, p2, p4}, {p2, p3, p4}};
+    volume_t v{0, 1, 2, 3};
+    std::vector<point_3d_t> points{p1, p2, p3, p4};
+    const auto get_face = [&points](const face_t &f) {
+        return triangle_3d_t{points[f.a], points[f.b], points[f.c]};
+    };
+    face_list_t faces = v.faces();
+    return {get_face(faces[0]), get_face(faces[1]), get_face(faces[2]),
+            get_face(faces[3])};
 }
+
+double tetrahedron_3d_t::surface_area() const {
+    double area = 0.0;
+    for (const triangle_3d_t &t : faces()) {
+        area += t.area();
+    }
+    return area;
+}
+
+point_3d_t tetrahedron_3d_t::circumcenter() const {
+    point_3d_t e1 = p2 - p1, e2 = p3 - p1, e3 = p4 - p1;
+    point_3d_t a = e2.cross(e3) * e1.dot(e1), b = e3.cross(e1) * e2.dot(e2),
+               c = e1.cross(e2) * e3.dot(e3);
+    double alpha = 2.0 * e1.determinant(e2, e3);
+    return (a + b + c) / alpha + p1;
+}
+
+point_3d_t tetrahedron_3d_t::incenter() const {
+    double a = (p2 - p3).length();
+    double b = (p3 - p4).length();
+    double c = (p4 - p2).length();
+    double d = (p1 - p3).length();
+    double e = (p1 - p4).length();
+    double f = (p1 - p2).length();
+    double s = 0.5 * (a + b + c);
+    double t = 0.5 * (d + e + f);
+    double area1 = std::sqrt(s * (s - a) * (s - b) * (s - c));
+    double area2 = std::sqrt(t * (t - d) * (t - e) * (t - f));
+    double r = 3.0 * (area1 + area2) / (a + b + c + d + e + f);
+    return (p1 * a + p2 * b + p3 * c + p4 * d) / (a + b + c + d);
+}
+
+point_3d_t tetrahedron_3d_t::centroid() const {
+    return (p1 + p2 + p3 + p4) / 4.0;
+}
+
+sphere_3d_t tetrahedron_3d_t::circumsphere() const { return {*this}; }
 
 std::string tetrahedron_3d_t::to_string() const {
     return "Tetrahedron3D(" + p1.to_string() + ", " + p2.to_string() + ", " +
@@ -1093,16 +1149,6 @@ double trimesh_3d_t::signed_volume() const {
     return volume;
 }
 
-trimesh_3d_t trimesh_3d_t::flip_inside_out() const {
-    std::vector<point_3d_t> vertices = this->_vertices;
-    face_list_t faces;
-    std::transform(this->_faces.begin(), this->_faces.end(),
-                   std::inserter(faces, faces.begin()), [](const face_t &face) {
-                       return face_t(face.a, face.c, face.b);
-                   });
-    return {vertices, faces};
-}
-
 trimesh_3d_t trimesh_3d_t::subdivide(bool at_edges) const {
     std::vector<point_3d_t> vertices = _vertices;
     face_list_t faces;
@@ -1288,7 +1334,8 @@ trimesh_3d_t tetramesh_3d_t::to_trimesh() const {
         for (const auto &face : volume.faces()) {
             const auto flipped_face = face.flip();
             if (faces.find(face) != faces.end())
-                throw std::runtime_error("Degenerate tetramesh");
+                throw std::runtime_error("Degenerate tetramesh; face " +
+                                         face.to_string() + " is used twice");
             if (faces.find(flipped_face) != faces.end()) {
                 faces.erase(flipped_face);
             } else {
@@ -1352,7 +1399,7 @@ void add_3d_types_modules(py::module &m) {
     // correctly.
     auto point_3d = py::class_<point_3d_t>(m, "Point3D");
     auto line_3d = py::class_<line_3d_t>(m, "Line3D");
-    auto circumcircle_3d = py::class_<circumcircle_3d_t>(m, "Circumcircle3D");
+    auto sphere_3d = py::class_<sphere_3d_t>(m, "Sphere3D");
     auto triangle_3d = py::class_<triangle_3d_t>(m, "Triangle3D");
     auto tetrahedron_3d = py::class_<tetrahedron_3d_t>(m, "Tetrahedron3D");
     auto bbox_3d = py::class_<bounding_box_3d_t>(m, "BoundingBox3D");
@@ -1496,25 +1543,25 @@ void add_3d_types_modules(py::module &m) {
         .def("intersects_bounding_box", &line_3d_t::intersects_bounding_box,
              "Checks if the line intersects a bounding box", "bb"_a);
 
-    // Defines Circumcircle3D methods.
-    circumcircle_3d
+    // Defines Sphere3D methods.
+    sphere_3d
         .def(py::init<const point_3d_t &, double>(),
-             "A circumcircle with a given center and radius", "center"_a,
-             "radius"_a)
-        .def_readwrite("center", &circumcircle_3d_t::center,
-                       "The circumcircle's center")
-        .def_readwrite("radius", &circumcircle_3d_t::radius,
-                       "The circumcircle's radius")
-        .def("__str__", &circumcircle_3d_t::to_string, py::is_operator())
-        .def("__repr__", &circumcircle_3d_t::to_string, py::is_operator())
-        .def("__eq__", &circumcircle_3d_t::operator==,
-             "Checks if two circumcircles are equal", "other"_a,
+             "A sphere with a given center and radius", "center"_a, "radius"_a)
+        .def(py::init<const tetrahedron_3d_t &>(),
+             "The circumsphere of a tetrahedron", "t"_a)
+        .def_readwrite("center", &sphere_3d_t::center, "The sphere's center")
+        .def_readwrite("radius", &sphere_3d_t::radius, "The sphere's radius")
+        .def("__str__", &sphere_3d_t::to_string, py::is_operator())
+        .def("__repr__", &sphere_3d_t::to_string, py::is_operator())
+        .def("__eq__", &sphere_3d_t::operator==,
+             "Checks if two spheres are equal", "other"_a, py::is_operator())
+        .def("__ne__", &sphere_3d_t::operator!=,
+             "Checks if two spheres are not equal", "other"_a,
              py::is_operator())
-        .def("__ne__", &circumcircle_3d_t::operator!=,
-             "Checks if two circumcircles are not equal", "other"_a,
-             py::is_operator())
-        .def("contains_point", &circumcircle_3d_t::contains_point,
-             "Checks if the circumcircle contains a point", "p"_a);
+        .def_property_readonly("volume", &sphere_3d_t::volume,
+                               "The sphere's volume")
+        .def("contains_point", &sphere_3d_t::contains_point,
+             "Checks if the sphere contains a point", "p"_a);
 
     // Defines Triangle3D methods.
     triangle_3d
@@ -1549,8 +1596,6 @@ void add_3d_types_modules(py::module &m) {
         .def("is_coplanar", &triangle_3d_t::is_coplanar,
              "Checks if the triangle is coplanar with another triangle",
              "other"_a)
-        .def("circumcircle", &triangle_3d_t::circumcircle,
-             "The triangle's circumcircle")
         .def("point_from_barycentric_coords",
              &triangle_3d_t::point_from_barycentric_coords,
              "The point from barycentric coordinates", "b"_a);
@@ -1561,6 +1606,14 @@ void add_3d_types_modules(py::module &m) {
                       const point_3d_t &, const point_3d_t &>(),
              "Creates a tetrahedron from four points", "a"_a, "b"_a, "c"_a,
              "d"_a)
+        .def_readwrite("p1", &tetrahedron_3d_t::p1,
+                       "The tetrahedron's first point")
+        .def_readwrite("p2", &tetrahedron_3d_t::p2,
+                       "The tetrahedron's second point")
+        .def_readwrite("p3", &tetrahedron_3d_t::p3,
+                       "The tetrahedron's third point")
+        .def_readwrite("p4", &tetrahedron_3d_t::p4,
+                       "The tetrahedron's fourth point")
         .def("__str__", &tetrahedron_3d_t::to_string, py::is_operator())
         .def("__repr__", &tetrahedron_3d_t::to_string, py::is_operator())
         .def("__eq__", &tetrahedron_3d_t::operator==,
@@ -1576,10 +1629,18 @@ void add_3d_types_modules(py::module &m) {
              "transform"_a, py::is_operator())
         .def("signed_volume", &tetrahedron_3d_t::signed_volume,
              "The signed volume of the tetrahedron")
-        .def("flip_inside_out", &tetrahedron_3d_t::flip_inside_out,
-             "Gets a tetrahedron which is flipped inside out")
         .def_property_readonly("faces", &tetrahedron_3d_t::faces,
-                               "The faces of the tetrahedron");
+                               "The faces of the tetrahedron")
+        .def("surface_area", &tetrahedron_3d_t::surface_area,
+             "The surface area of the tetrahedron")
+        .def("circumcenter", &tetrahedron_3d_t::circumcenter,
+             "The circumcenter of the tetrahedron")
+        .def("incenter", &tetrahedron_3d_t::incenter,
+             "The incenter of the tetrahedron")
+        .def("centroid", &tetrahedron_3d_t::centroid,
+             "The centroid of the tetrahedron")
+        .def("circumsphere", &tetrahedron_3d_t::circumsphere,
+             "The circumsphere of the tetrahedron");
 
     // Defines BoundingBox3D methods.
     bbox_3d
@@ -1738,8 +1799,6 @@ void add_3d_types_modules(py::module &m) {
              "Gets all mesh triangles")
         .def("signed_volume", &trimesh_3d_t::signed_volume,
              "Computes the signed volume of the mesh")
-        .def("flip_inside_out", &trimesh_3d_t::flip_inside_out,
-             "Flips the mesh inside out")
         .def("subdivide", &trimesh_3d_t::subdivide,
              "Subdivides the mesh into smaller triangles", "at_edges"_a = true)
         .def("__str__", &trimesh_3d_t::to_string, py::is_operator())

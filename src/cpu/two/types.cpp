@@ -485,10 +485,7 @@ std::string triangle_2d_t::to_string() const {
  * circle_2d_t *
  * ----------- */
 
-circle_2d_t::circle_2d_t() {
-    center = {0.0, 0.0};
-    radius = 0.0;
-}
+circle_2d_t::circle_2d_t() : center({0.0, 0.0}), radius(0.0) {}
 
 circle_2d_t::circle_2d_t(const point_2d_t &c, double r) {
     center = c;

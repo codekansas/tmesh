@@ -3,10 +3,11 @@
 from typing import List, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 
-from tmesh import Line3D, Point3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D
+from tmesh import Line3D, Point3D, Sphere3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D
 
-Thing = Union[Line3D, Point3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D]
+Thing = Union[Line3D, Point3D, Sphere3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D]
 
 # To plot things, add them to this list.
 THINGS_TO_PLOT: List[Thing] = []
@@ -52,13 +53,30 @@ def plot_point(axes: plt.Axes, point: Point3D, i: int) -> None:
     axes.plot3D(point.x, point.y, point.z, get_color(i) + "o", alpha=ALPHA)
 
 
-def plot_triangle(axes: plt.Axes, triangle: Triangle3D, i: int) -> None:
+def plot_sphere(axes: plt.Axes, sphere: Sphere3D, i: int) -> None:
+    """Plots a sphere.
+
+    Args:
+        axes: Axes to plot on.
+        sphere: Sphere to plot.
+        i: Index of sphere.
+    """
+
+    u, v = np.mgrid[0 : 2 * np.pi : 20j, 0 : np.pi : 10j]
+    x = sphere.center.x + sphere.radius * np.cos(u) * np.sin(v)
+    y = sphere.center.y + sphere.radius * np.sin(u) * np.sin(v)
+    z = sphere.center.z + sphere.radius * np.cos(v)
+    axes.plot_wireframe(x, y, z, color=get_color(i), alpha=ALPHA)
+
+
+def plot_triangle(axes: plt.Axes, triangle: Triangle3D, i: int, labels: tuple[str, str, str] | None = None) -> None:
     """Plots a triangle.
 
     Args:
         axes: Axes to plot on.
         triangle: Triangle to plot.
         i: Index of triangle.
+        lables: Labels for the vertices.
     """
 
     axes.plot3D(
@@ -68,6 +86,11 @@ def plot_triangle(axes: plt.Axes, triangle: Triangle3D, i: int) -> None:
         get_color(i),
         alpha=ALPHA,
     )
+
+    if labels is not None:
+        axes.text(triangle.p1.x, triangle.p1.y, triangle.p1.z, labels[0])
+        axes.text(triangle.p2.x, triangle.p2.y, triangle.p2.z, labels[1])
+        axes.text(triangle.p3.x, triangle.p3.y, triangle.p3.z, labels[2])
 
 
 def plot_tetrahedron(axes: plt.Axes, tetrahedron: Tetrahedron3D, i: int) -> None:
@@ -123,6 +146,8 @@ def main() -> None:
             plot_line(axes, thing, i)
         elif isinstance(thing, Point3D):
             plot_point(axes, thing, i)
+        elif isinstance(thing, Sphere3D):
+            plot_sphere(axes, thing, i)
         elif isinstance(thing, Triangle3D):
             plot_triangle(axes, thing, i)
         elif isinstance(thing, Trimesh3D):

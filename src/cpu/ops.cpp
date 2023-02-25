@@ -44,7 +44,6 @@ tetramesh_3d_t linear_extrude(
     bool is_cw = false, is_ccw = false;
 
     // Adds bottom and top faces.
-    edge_set_t edges;
     for (auto &face : mesh.faces()) {
         bool tri_is_cw = mesh.get_triangle(face).is_clockwise();
         is_cw |= tri_is_cw;
@@ -58,15 +57,11 @@ tetramesh_3d_t linear_extrude(
         auto [a, b, c] = face;
         if (is_cw) std::swap(b, c);
 
-        edges.insert({a, b, true});
-        edges.insert({b, c, true});
-        edges.insert({c, a, true});
-
         // Indices of bottom and top faces.
         const size_t ba = a, bb = b, bc = c, ta = a + top_offset,
                      tb = b + top_offset, tc = c + top_offset;
         volumes.insert({ba, bc, bb, ta});
-        volumes.insert({ta, tc, tb, bb});
+        volumes.insert({ta, tb, tc, bb});
         volumes.insert({ta, tc, bc, bb});
     }
 
