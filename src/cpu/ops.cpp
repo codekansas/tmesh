@@ -62,7 +62,7 @@ tetramesh_3d_t linear_extrude(
                      tb = b + top_offset, tc = c + top_offset;
         volumes.insert({ba, bc, bb, ta});
         volumes.insert({ta, tb, tc, bb});
-        volumes.insert({ta, tc, bc, bb});
+        volumes.insert({ta, bc, tc, bb});
     }
 
     return {vertices, volumes};

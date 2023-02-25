@@ -78,9 +78,7 @@ face_t::face_t(size_t a, size_t b, size_t c) {
 }
 
 bool face_t::operator==(const face_t &f) const {
-    return (a == f.a && b == f.b && c == f.c) ||
-           (a == f.b && b == f.c && c == f.a) ||
-           (a == f.c && b == f.a && c == f.b);
+    return a == f.a && b == f.b && c == f.c;
 }
 
 bool face_t::operator!=(const face_t &f) const { return !(*this == f); }
@@ -136,35 +134,74 @@ size_t __face_hash_fn::operator()(const face_t &f) const {
 
 volume_t::volume_t(size_t a, size_t b, size_t c, size_t d) {
     // Put the smallest vertex first.
-    auto min = std::min({a, b, c, d});
-    if (min == a) {
+    std::vector<size_t> indices{a, b, c, d};
+    std::sort(indices.begin(), indices.end());
+
+    if (indices[0] == a) {
         this->a = a;
-        this->b = b;
-        this->c = c;
-        this->d = d;
-    } else if (min == b) {
+        if (indices[1] == b) {  // 0 1 2 3
+            this->b = b;
+            this->c = c;
+            this->d = d;
+        } else if (indices[1] == c) {  // 0 3 1 2
+            this->b = c;
+            this->c = d;
+            this->d = b;
+        } else {  // 0 2 3 1
+            this->b = d;
+            this->c = b;
+            this->d = c;
+        }
+    } else if (indices[0] == b) {
         this->a = b;
-        this->b = c;
-        this->c = d;
-        this->d = a;
-    } else if (min == c) {
+        if (indices[1] == a) {  // 1 0 3 2
+            this->b = a;
+            this->c = d;
+            this->d = c;
+        } else if (indices[1] == c) {  // 1 2 0 3
+            this->b = c;
+            this->c = a;
+            this->d = d;
+        } else {  // 1 3 2 0
+            this->b = d;
+            this->c = c;
+            this->d = a;
+        }
+    } else if (indices[0] == c) {
         this->a = c;
-        this->b = d;
-        this->c = a;
-        this->d = b;
+        if (indices[1] == a) {  // 2 0 1 3
+            this->b = a;
+            this->c = b;
+            this->d = d;
+        } else if (indices[1] == b) {  // 2 1 3 0
+            this->b = b;
+            this->c = d;
+            this->d = a;
+        } else {  // 2 3 0 1
+            this->b = d;
+            this->c = a;
+            this->d = b;
+        }
     } else {
         this->a = d;
-        this->b = a;
-        this->c = b;
-        this->d = c;
+        if (indices[1] == a) {  // 3 0 2 1
+            this->b = a;
+            this->c = c;
+            this->d = b;
+        } else if (indices[1] == b) {  // 3 1 0 2
+            this->b = b;
+            this->c = a;
+            this->d = c;
+        } else {  // 3 2 1 0
+            this->b = c;
+            this->c = b;
+            this->d = a;
+        }
     }
 }
 
 bool volume_t::operator==(const volume_t &f) const {
-    return (a == f.a && b == f.b && c == f.c && d == f.d) ||
-           (a == f.b && b == f.c && c == f.d && d == f.a) ||
-           (a == f.c && b == f.d && c == f.a && d == f.b) ||
-           (a == f.d && b == f.a && c == f.b && d == f.c);
+    return a == f.a && b == f.b && c == f.c && d == f.d;
 }
 
 bool volume_t::operator!=(const volume_t &f) const { return !(*this == f); }

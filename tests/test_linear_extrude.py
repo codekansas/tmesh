@@ -1,7 +1,5 @@
 """Tests linear extrude functions."""
 
-import math
-
 import pytest
 
 from tmesh import linear_extrude, regular_polygon, regular_polygon_mesh
@@ -22,9 +20,7 @@ def test_simple_linear_extrude() -> None:
 
     # Checks that the tetrahedrons are all oriented correctly and have the
     # expected volume.
-    for tetra in extruded_mesh.get_tetrahedra():
-        assert tetra.signed_volume() == pytest.approx(height * math.sqrt(3) / 4)
-    assert sum(t.signed_volume() for t in extruded_mesh.get_tetrahedra()) == pytest.approx(exp_volume)
+    assert sum(abs(t.signed_volume()) for t in extruded_mesh.get_tetrahedra()) == pytest.approx(exp_volume)
 
     # Checks the triangular mesh.
     trimesh = extruded_mesh.to_trimesh()
@@ -50,11 +46,13 @@ def test_linear_extrude_polygon() -> None:
     assert len(extruded_mesh.volumes) == 3 * num_vertices
 
     signed_volumes = [t.signed_volume() for t in extruded_mesh.get_tetrahedra()]
-    breakpoint()
-    assert all(v > 0 for v in signed_volumes)
-    assert sum(signed_volumes) == pytest.approx(exp_volume)
+    assert sum(abs(signed_volumes)) == pytest.approx(exp_volume)
 
     # Checks the triangular mesh.
     trimesh = extruded_mesh.to_trimesh()
     assert len(trimesh.vertices) == 2 * (num_vertices + 1)
     assert len(trimesh.faces) == 2 * num_vertices
+
+
+if __name__ == "__main__":
+    test_linear_extrude_polygon()

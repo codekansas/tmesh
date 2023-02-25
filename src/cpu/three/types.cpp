@@ -1301,7 +1301,22 @@ void tetramesh_3d_t::validate() const {
         auto &[vi, vj, vk, vl] = volume;
         if (vi == vj || vi == vk || vj == vk || vi == vl || vj == vl ||
             vk == vl) {
-            throw std::runtime_error("Degenerate volume");
+            throw std::runtime_error(
+                "Degenerate volume; points are not unique");
+        }
+    }
+
+    // Checks that all faces point outwards.
+    for (auto &volume : _volumes) {
+        auto &[vi, vj, vk, vl] = volume;
+        auto &a = _vertices[vi];
+        auto &b = _vertices[vj];
+        auto &c = _vertices[vk];
+        auto &d = _vertices[vl];
+        auto n = (b - a).cross(c - a);
+        if (n.dot(d - a) < 0) {
+            throw std::runtime_error("Volume " + volume.to_string() +
+                                     " is not oriented correctly");
         }
     }
 }
