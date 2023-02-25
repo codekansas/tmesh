@@ -33,14 +33,16 @@ void save_stl(const std::string &filename, const trimesh_3d_t &mesh) {
         triangle_3d_t triangle{mesh.vertices()[face.a], mesh.vertices()[face.b],
                                mesh.vertices()[face.c]};
         point_3d_t normal = triangle.normal();
-        f.write(reinterpret_cast<const char *>(&normal), 3 * sizeof(double));
+        float ns[3] = {(float)normal.x, (float)normal.y, (float)normal.z};
+        f.write(reinterpret_cast<const char *>(ns), sizeof(ns));
 
         // Vertices.
         point_3d_t v1 = mesh.vertices()[face.a], v2 = mesh.vertices()[face.b],
                    v3 = mesh.vertices()[face.c];
-        f.write(reinterpret_cast<const char *>(&v1), 3 * sizeof(double));
-        f.write(reinterpret_cast<const char *>(&v2), 3 * sizeof(double));
-        f.write(reinterpret_cast<const char *>(&v3), 3 * sizeof(double));
+        float vs[9] = {(float)v1.x, (float)v1.y, (float)v1.z,
+                       (float)v2.x, (float)v2.y, (float)v2.z,
+                       (float)v3.x, (float)v3.y, (float)v3.z};
+        f.write(reinterpret_cast<const char *>(vs), sizeof(vs));
 
         // Attribute byte count.
         uint16_t attribute_byte_count = 0;
@@ -49,6 +51,10 @@ void save_stl(const std::string &filename, const trimesh_3d_t &mesh) {
     }
 
     f.close();
+}
+
+void save_stl(const std::string &filename, const tetramesh_3d_t &mesh) {
+    save_stl(filename, mesh.to_trimesh());
 }
 
 trimesh_3d_t load_stl(const std::string &filename) {
@@ -82,14 +88,15 @@ trimesh_3d_t load_stl(const std::string &filename) {
     // Read each triangle.
     for (size_t i = 0; i < num_triangles; i++) {
         // Normal.
-        point_3d_t normal;
-        f.read(reinterpret_cast<char *>(&normal), 3 * sizeof(double));
+        float ns[3];
+        f.read(reinterpret_cast<char *>(ns), sizeof(ns));
+        point_3d_t normal{ns[0], ns[1], ns[2]};
 
         // Vertices.
-        point_3d_t v1, v2, v3;
-        f.read(reinterpret_cast<char *>(&v1), 3 * sizeof(double));
-        f.read(reinterpret_cast<char *>(&v2), 3 * sizeof(double));
-        f.read(reinterpret_cast<char *>(&v3), 3 * sizeof(double));
+        float vs[9];
+        f.read(reinterpret_cast<char *>(vs), sizeof(vs));
+        point_3d_t v1{vs[0], vs[1], vs[2]}, v2{vs[3], vs[4], vs[5]},
+            v3{vs[6], vs[7], vs[8]};
 
         // Add the vertices.
         size_t v1_index = get_vertex_index(v1), v2_index = get_vertex_index(v2),
@@ -143,6 +150,10 @@ void save_stl_text(const std::string &filename, const trimesh_3d_t &mesh) {
     f << "endsolid tmesh STL file" << std::endl;
 
     f.close();
+}
+
+void save_stl_text(const std::string &filename, const tetramesh_3d_t &mesh) {
+    save_stl_text(filename, mesh.to_trimesh());
 }
 
 trimesh_3d_t load_stl_text(const std::string &filename) {
@@ -235,6 +246,10 @@ void save_obj(const std::string &filename, const trimesh_3d_t &mesh) {
     f.close();
 }
 
+void save_obj(const std::string &filename, const tetramesh_3d_t &mesh) {
+    save_obj(filename, mesh.to_trimesh());
+}
+
 trimesh_3d_t load_obj(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
@@ -299,6 +314,10 @@ void save_ply(const std::string &filename, const trimesh_3d_t &mesh) {
     f.close();
 }
 
+void save_ply(const std::string &filename, const tetramesh_3d_t &mesh) {
+    save_ply(filename, mesh.to_trimesh());
+}
+
 trimesh_3d_t load_ply(const std::string &filename) {
     std::ifstream f;
     f.open(filename, std::ios::in);
@@ -340,21 +359,45 @@ trimesh_3d_t load_ply(const std::string &filename) {
 }
 
 void add_3d_io_modules(py::module &m) {
-    m.def("save_stl", &save_stl, "Saves a mesh to an STL file", "filename"_a,
-          "mesh"_a);
+    m.def(
+        "save_stl",
+        py::overload_cast<const std::string &, const trimesh_3d_t &>(&save_stl),
+        "Saves a mesh to an STL file", "filename"_a, "mesh"_a);
+    m.def("save_stl",
+          py::overload_cast<const std::string &, const tetramesh_3d_t &>(
+              &save_stl),
+          "Saves a mesh to an STL file", "filename"_a, "mesh"_a);
     m.def("load_stl", &load_stl, "Loads a mesh from an STL file", "filename"_a);
 
-    m.def("save_stl_text", &save_stl_text,
+    m.def("save_stl_text",
+          py::overload_cast<const std::string &, const trimesh_3d_t &>(
+              &save_stl_text),
+          "Saves a mesh to an STL file in text format", "filename"_a, "mesh"_a);
+    m.def("save_stl_text",
+          py::overload_cast<const std::string &, const tetramesh_3d_t &>(
+              &save_stl_text),
           "Saves a mesh to an STL file in text format", "filename"_a, "mesh"_a);
     m.def("load_stl_text", &load_stl_text,
           "Loads a mesh from an STL file in text format", "filename"_a);
 
-    m.def("save_obj", &save_obj, "Saves a mesh to an OBJ file", "filename"_a,
-          "mesh"_a);
+    m.def(
+        "save_obj",
+        py::overload_cast<const std::string &, const trimesh_3d_t &>(&save_obj),
+        "Saves a mesh to an OBJ file", "filename"_a, "mesh"_a);
+    m.def("save_obj",
+          py::overload_cast<const std::string &, const tetramesh_3d_t &>(
+              &save_obj),
+          "Saves a mesh to an OBJ file", "filename"_a, "mesh"_a);
     m.def("load_obj", &load_obj, "Loads a mesh from an OBJ file", "filename"_a);
 
-    m.def("save_ply", &save_ply, "Saves a mesh to a PLY file", "filename"_a,
-          "mesh"_a);
+    m.def(
+        "save_ply",
+        py::overload_cast<const std::string &, const trimesh_3d_t &>(&save_ply),
+        "Saves a mesh to a PLY file", "filename"_a, "mesh"_a);
+    m.def("save_ply",
+          py::overload_cast<const std::string &, const tetramesh_3d_t &>(
+              &save_ply),
+          "Saves a mesh to a PLY file", "filename"_a, "mesh"_a);
     m.def("load_ply", &load_ply, "Loads a mesh from a PLY file", "filename"_a);
 }
 

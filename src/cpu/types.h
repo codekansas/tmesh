@@ -50,11 +50,14 @@ struct face_t {
     bool has_edge(const edge_t &e) const;
     bool has_vertex(size_t v) const;
     size_t get_other_vertex(const edge_t &e) const;
+    face_t flip() const;
     std::string to_string() const;
 };
 
+size_t face_hash_fn(const face_t &f);
+
 struct __face_hash_fn {
-    size_t operator()(const face_t &e) const;
+    size_t operator()(const face_t &f) const;
 };
 
 typedef std::vector<face_t> face_list_t;
@@ -73,12 +76,14 @@ struct volume_t {
     volume_t operator+(size_t offset) const;
 
     face_list_t faces() const;
-
+    volume_t flip() const;
     std::string to_string() const;
 };
 
+size_t volume_hash_fn(const volume_t &v);
+
 struct __volume_hash_fn {
-    size_t operator()(const volume_t &e) const;
+    size_t operator()(const volume_t &v) const;
 };
 
 typedef std::vector<volume_t> volume_list_t;

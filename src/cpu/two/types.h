@@ -58,9 +58,9 @@ struct point_2d_t {
     std::string to_string() const;
 };
 
-size_t point_hash_fn(const point_2d_t &p);
+size_t point_2d_hash_fn(const point_2d_t &p);
 
-struct __point_hash_fn {
+struct __point_2d_hash_fn {
     size_t operator()(const point_2d_t &p) const;
 };
 

@@ -2,7 +2,7 @@
 
 import math
 
-from tmesh import Affine2D, linear_extrude, regular_polygon_mesh, save_stl
+from tmesh import Affine2D, linear_extrude, regular_polygon_mesh, save_stl_text
 
 # Create a square.
 a = regular_polygon_mesh(1.0, n=4)
@@ -20,4 +20,4 @@ c = a | b
 mesh = linear_extrude(c, 1.0)
 
 # Save the resulting mesh.
-save_stl("simple.stl", mesh)
+save_stl_text("simple.stl", mesh)

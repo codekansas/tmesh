@@ -14,7 +14,7 @@ namespace trimesh {
 
 struct point_3d_t;
 struct line_3d_t;
-struct circumcircle_3d_t;
+struct sphere_3d_t;
 struct triangle_3d_t;
 struct tetrahedron_3d_t;
 struct bounding_box_3d_t;
@@ -59,6 +59,12 @@ struct point_3d_t {
     std::string to_string() const;
 };
 
+size_t point_3d_hash_fn(const point_3d_t &p);
+
+struct __point_3d_hash_fn {
+    size_t operator()(const point_3d_t &p) const;
+};
+
 point_3d_t operator+(const point_3d_t &p1, const point_3d_t &p2);
 point_3d_t operator-(const point_3d_t &p1, const point_3d_t &p2);
 point_3d_t operator*(const point_3d_t &p1, const point_3d_t &p2);
@@ -89,13 +95,18 @@ struct line_3d_t {
     std::string to_string() const;
 };
 
-struct circumcircle_3d_t {
+struct sphere_3d_t {
     point_3d_t center;
     double radius;
 
-    bool operator==(const circumcircle_3d_t &c) const;
-    bool operator!=(const circumcircle_3d_t &c) const;
+    sphere_3d_t();
+    sphere_3d_t(const point_3d_t &c, double r);
+    sphere_3d_t(const tetrahedron_3d_t &t);
 
+    bool operator==(const sphere_3d_t &s) const;
+    bool operator!=(const sphere_3d_t &s) const;
+
+    double volume() const;
     bool contains_point(const point_3d_t &p) const;
 
     std::string to_string() const;
@@ -117,10 +128,10 @@ struct triangle_3d_t {
     double distance_to_point(const point_3d_t &p) const;
     bool contains_point(const point_3d_t &p) const;
     bool is_coplanar(const triangle_3d_t &t) const;
-    circumcircle_3d_t circumcircle() const;
     point_3d_t point_from_barycentric_coords(
         const barycentric_coordinates_t &b) const;
     std::vector<point_3d_t> triangle_intersection(const triangle_3d_t &t) const;
+    point_3d_t orthocenter() const;
 
     std::string to_string() const;
 };
@@ -133,8 +144,12 @@ struct tetrahedron_3d_t {
     tetrahedron_3d_t operator<<=(const affine_3d_t &a);
 
     double signed_volume() const;
-    tetrahedron_3d_t flip_inside_out() const;
     std::vector<triangle_3d_t> faces() const;
+    double surface_area() const;
+    point_3d_t circumcenter() const;
+    point_3d_t incenter() const;
+    point_3d_t centroid() const;
+    sphere_3d_t circumsphere() const;
 
     std::string to_string() const;
 };
@@ -250,7 +265,6 @@ struct trimesh_3d_t {
     triangle_3d_t get_triangle(const face_t &face) const;
     std::vector<triangle_3d_t> get_triangles() const;
     double signed_volume() const;
-    trimesh_3d_t flip_inside_out() const;
     trimesh_3d_t subdivide(bool at_edges = true) const;
     tetramesh_3d_t to_tetramesh() const;
     std::string to_string() const;
@@ -273,7 +287,7 @@ struct tetramesh_3d_t {
     const std::vector<point_3d_t> &vertices() const;
     const volume_list_t &volumes() const;
     tetrahedron_3d_t get_tetrahedron(const volume_t &volume) const;
-    std::vector<tetrahedron_3d_t> get_tetrahedrons() const;
+    std::vector<tetrahedron_3d_t> get_tetrahedra() const;
     trimesh_3d_t to_trimesh() const;
     std::string to_string() const;
 
