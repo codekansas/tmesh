@@ -133,17 +133,16 @@ size_t __face_hash_fn::operator()(const face_t &f) const {
  * -------- */
 
 volume_t::volume_t(size_t a, size_t b, size_t c, size_t d) {
-    // Put the smallest vertex first.
-    std::vector<size_t> indices{a, b, c, d};
-    std::sort(indices.begin(), indices.end());
+    auto min = std::min({a, b, c, d});
 
-    if (indices[0] == a) {
+    if (min == a) {
         this->a = a;
-        if (indices[1] == b) {  // 0 1 2 3
+        auto min2 = std::min({b, c, d});
+        if (min2 == b) {  // 0 1 2 3
             this->b = b;
             this->c = c;
             this->d = d;
-        } else if (indices[1] == c) {  // 0 3 1 2
+        } else if (min2 == c) {  // 0 3 1 2
             this->b = c;
             this->c = d;
             this->d = b;
@@ -152,13 +151,14 @@ volume_t::volume_t(size_t a, size_t b, size_t c, size_t d) {
             this->c = b;
             this->d = c;
         }
-    } else if (indices[0] == b) {
+    } else if (min == b) {
         this->a = b;
-        if (indices[1] == a) {  // 1 0 3 2
+        auto min2 = std::min({a, c, d});
+        if (min2 == a) {  // 1 0 3 2
             this->b = a;
             this->c = d;
             this->d = c;
-        } else if (indices[1] == c) {  // 1 2 0 3
+        } else if (min2 == c) {  // 1 2 0 3
             this->b = c;
             this->c = a;
             this->d = d;
@@ -167,13 +167,14 @@ volume_t::volume_t(size_t a, size_t b, size_t c, size_t d) {
             this->c = c;
             this->d = a;
         }
-    } else if (indices[0] == c) {
+    } else if (min == c) {
         this->a = c;
-        if (indices[1] == a) {  // 2 0 1 3
+        auto min2 = std::min({a, b, d});
+        if (min2 == a) {  // 2 0 1 3
             this->b = a;
             this->c = b;
             this->d = d;
-        } else if (indices[1] == b) {  // 2 1 3 0
+        } else if (min2 == b) {  // 2 1 3 0
             this->b = b;
             this->c = d;
             this->d = a;
@@ -184,11 +185,12 @@ volume_t::volume_t(size_t a, size_t b, size_t c, size_t d) {
         }
     } else {
         this->a = d;
-        if (indices[1] == a) {  // 3 0 2 1
+        auto min2 = std::min({a, b, c});
+        if (min2 == a) {  // 3 0 2 1
             this->b = a;
             this->c = c;
             this->d = b;
-        } else if (indices[1] == b) {  // 3 1 0 2
+        } else if (min2 == b) {  // 3 1 0 2
             this->b = b;
             this->c = a;
             this->d = c;

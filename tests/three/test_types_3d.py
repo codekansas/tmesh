@@ -4,23 +4,10 @@ import math
 
 import pytest
 
-from tmesh import Affine3D, Line3D, Point3D, Tetrahedron3D, Triangle3D
+from tmesh import Affine3D, Line3D, Point3D, Triangle3D
 
 SQRT_2 = math.sqrt(2)
 SQRT_3 = math.sqrt(3)
-
-
-def test_tetrahedron_equations() -> None:
-    points = [Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0), Point3D(0, 0, 1)]
-
-    tetr_a = Tetrahedron3D(points[0], points[1], points[2], points[3])
-    tetr_b = Tetrahedron3D(points[3], points[0], points[1], points[2])
-    tetr_c = Tetrahedron3D(points[2], points[3], points[0], points[1])
-    tetr_d = Tetrahedron3D(points[1], points[2], points[3], points[0])
-
-    assert tetr_a.signed_volume() == tetr_b.signed_volume()
-    assert tetr_a.signed_volume() == tetr_c.signed_volume()
-    assert tetr_a.signed_volume() == tetr_d.signed_volume()
 
 
 @pytest.mark.parametrize(

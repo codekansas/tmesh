@@ -1,5 +1,7 @@
 #include "ops.h"
 
+#include <iostream>
+
 #include "three/types.h"
 #include "two/types.h"
 
@@ -60,9 +62,10 @@ tetramesh_3d_t linear_extrude(
         // Indices of bottom and top faces.
         const size_t ba = a, bb = b, bc = c, ta = a + top_offset,
                      tb = b + top_offset, tc = c + top_offset;
+
         volumes.insert({ba, bc, bb, ta});
         volumes.insert({ta, tb, tc, bb});
-        volumes.insert({ta, bc, tc, bb});
+        volumes.insert({ta, tc, bc, bb});
     }
 
     return {vertices, volumes};

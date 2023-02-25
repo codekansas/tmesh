@@ -46,12 +46,13 @@ def test_linear_extrude_polygon() -> None:
     assert len(extruded_mesh.volumes) == 3 * num_vertices
 
     signed_volumes = [t.signed_volume() for t in extruded_mesh.get_tetrahedra()]
-    assert sum(abs(signed_volumes)) == pytest.approx(exp_volume)
+    assert all(v > 0 for v in signed_volumes)
+    assert sum(signed_volumes) == pytest.approx(exp_volume)
 
     # Checks the triangular mesh.
     trimesh = extruded_mesh.to_trimesh()
     assert len(trimesh.vertices) == 2 * (num_vertices + 1)
-    assert len(trimesh.faces) == 2 * num_vertices
+    assert len(trimesh.faces) == 4 * num_vertices
 
 
 if __name__ == "__main__":
