@@ -4,7 +4,7 @@ Fast operators for triangular meshes.
 
 ## Getting Started
 
-`tmesh` is available on PyPI:
+`tmesh` is available on [PyPI](https://pypi.org/project/tmesh/):
 
 ```bash
 pip install tmesh
