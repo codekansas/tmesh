@@ -12,6 +12,7 @@ Usage:
     python setup.py build_ext --inplace  # Build the extension inplace
 """
 
+import glob
 import os
 import re
 import shutil

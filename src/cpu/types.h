@@ -48,8 +48,10 @@ struct face_t {
     std::vector<size_t> get_vertices() const;
     edge_list_t get_edges(bool directed = true) const;
     bool has_edge(const edge_t &e) const;
+    bool has_directed_edge(const edge_t &e) const;
     bool has_vertex(size_t v) const;
     size_t get_other_vertex(const edge_t &e) const;
+    edge_t get_other_edge(const size_t &v) const;
     face_t flip() const;
     std::string to_string() const;
 };
@@ -81,6 +83,7 @@ struct volume_t {
     bool has_edge(const edge_t &e) const;
     bool has_vertex(size_t v) const;
     size_t get_other_vertex(const face_t &f) const;
+    std::tuple<face_t, face_t> get_faces_with_edge(const edge_t &e) const;
     volume_t flip() const;
     std::string to_string() const;
 };
