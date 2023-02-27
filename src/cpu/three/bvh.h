@@ -32,7 +32,7 @@ struct point_3d_set_t {
 
 struct delaunay_split_tree_3d_t {
    private:
-    const tetramesh_3d_t root;
+    const tetrahedron_3d_t root;
     std::vector<volume_t> volumes;
     std::vector<std::vector<size_t>> children;
     face_map_t face_to_volume;

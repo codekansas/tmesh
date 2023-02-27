@@ -80,8 +80,7 @@ struct volume_t {
     bool has_face(const face_t &f) const;
     bool has_edge(const edge_t &e) const;
     bool has_vertex(size_t v) const;
-    face_t get_other_vertex(const face_t &f) const;
-    face_list_t faces() const;
+    size_t get_other_vertex(const face_t &f) const;
     volume_t flip() const;
     std::string to_string() const;
 };

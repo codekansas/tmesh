@@ -24,11 +24,11 @@ void save_stl(const std::string &filename, const trimesh_3d_t &mesh) {
     f.write("tmesh STL file", 80);
 
     // Number of triangles.
-    uint32_t num_triangles = mesh.faces().size();
+    uint32_t num_triangles = mesh.get_faces().size();
     f.write(reinterpret_cast<char *>(&num_triangles), sizeof(uint32_t));
 
     // Write each triangle.
-    for (auto &face : get_sorted_faces(mesh.faces())) {
+    for (auto &face : get_sorted_faces(mesh.get_faces())) {
         // Normal.
         triangle_3d_t triangle{mesh.vertices()[face.a], mesh.vertices()[face.b],
                                mesh.vertices()[face.c]};
@@ -126,7 +126,7 @@ void save_stl_text(const std::string &filename, const trimesh_3d_t &mesh) {
     f << "solid tmesh STL file" << std::endl;
 
     // Write each triangle.
-    for (auto &face : get_sorted_faces(mesh.faces())) {
+    for (auto &face : get_sorted_faces(mesh.get_faces())) {
         // Normal.
         triangle_3d_t triangle{mesh.vertices()[face.a], mesh.vertices()[face.b],
                                mesh.vertices()[face.c]};
@@ -238,7 +238,7 @@ void save_obj(const std::string &filename, const trimesh_3d_t &mesh) {
     }
 
     // Write the faces.
-    for (auto &face : get_sorted_faces(mesh.faces())) {
+    for (auto &face : get_sorted_faces(mesh.get_faces())) {
         f << "f " << face.a + 1 << " " << face.b + 1 << " " << face.c + 1
           << std::endl;
     }
@@ -307,7 +307,7 @@ void save_ply(const std::string &filename, const trimesh_3d_t &mesh) {
     }
 
     // Write the faces.
-    for (auto &face : get_sorted_faces(mesh.faces())) {
+    for (auto &face : get_sorted_faces(mesh.get_faces())) {
         f << "3 " << face.a << " " << face.b << " " << face.c << std::endl;
     }
 

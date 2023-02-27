@@ -427,7 +427,8 @@ size_t delaunay_split_tree_2d_t::add_triangle(
 delaunay_split_tree_2d_t::delaunay_split_tree_2d_t(const triangle_2d_t &root)
     : root(root) {
     this->faces = {{0, 1, 2}};
-    this->edge_to_face = {{{0, 1}, 0}, {{1, 2}, 0}, {{2, 0}, 0}};
+    for (const auto &edge : this->faces[0].get_edges(true))
+        this->edge_to_face[edge] = 0;
     this->children = {{}};
     this->vertices = {root.p1, root.p2, root.p3};
 }
