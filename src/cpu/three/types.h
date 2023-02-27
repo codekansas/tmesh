@@ -50,6 +50,7 @@ struct point_3d_t {
     double distance_to_point(const point_3d_t &other) const;
     double distance_to_line(const line_3d_t &l) const;
     double distance_to_triangle(const triangle_3d_t &t) const;
+    double distance_to_tetrahedron(const tetrahedron_3d_t &t) const;
     bool is_coplanar(const triangle_3d_t &t) const;
 
     std::optional<point_3d_t> project_to_line(const line_3d_t &l) const;
@@ -81,6 +82,7 @@ struct line_3d_t {
     bool operator!=(const line_3d_t &l) const;
     line_3d_t operator<<=(const affine_3d_t &q);
 
+    point_3d_t closest_point(const point_3d_t &p) const;
     std::optional<std::tuple<point_3d_t, point_3d_t>> closest_points(
         const line_3d_t &p) const;
     std::optional<point_3d_t> line_intersection(const line_3d_t &l) const;
@@ -107,7 +109,7 @@ struct sphere_3d_t {
     bool operator!=(const sphere_3d_t &s) const;
 
     double volume() const;
-    bool contains_point(const point_3d_t &p) const;
+    bool contains_point(const point_3d_t &p, double tolerance = 0.0) const;
 
     std::string to_string() const;
 };
@@ -143,13 +145,17 @@ struct tetrahedron_3d_t {
     bool operator!=(const tetrahedron_3d_t &t) const;
     tetrahedron_3d_t operator<<=(const affine_3d_t &a);
 
+    bool point_is_inside(const point_3d_t &p) const;
+    double distance_to_point(const point_3d_t &p) const;
     double signed_volume() const;
-    std::vector<triangle_3d_t> faces() const;
+    std::vector<triangle_3d_t> get_faces() const;
     double surface_area() const;
     point_3d_t circumcenter() const;
     point_3d_t incenter() const;
     point_3d_t centroid() const;
     sphere_3d_t circumsphere() const;
+    bool circumsphere_contains(const point_3d_t &p,
+                               double tolerance = 0.0) const;
 
     std::string to_string() const;
 };
@@ -234,6 +240,8 @@ point_3d_t operator>>(const affine_3d_t &a, const point_3d_t &p);
 point_3d_t operator<<(const point_3d_t &p, const affine_3d_t &a);
 line_3d_t operator>>(const affine_3d_t &a, const line_3d_t &l);
 line_3d_t operator<<(const line_3d_t &l, const affine_3d_t &a);
+sphere_3d_t operator>>(const affine_3d_t &a, const sphere_3d_t &s);
+sphere_3d_t operator<<(const sphere_3d_t &s, const affine_3d_t &a);
 triangle_3d_t operator>>(const affine_3d_t &a, const triangle_3d_t &t);
 triangle_3d_t operator<<(const triangle_3d_t &t, const affine_3d_t &a);
 bounding_box_3d_t operator>>(const affine_3d_t &a, const bounding_box_3d_t &bb);
@@ -261,7 +269,7 @@ struct trimesh_3d_t {
     trimesh_3d_t(const std::vector<point_3d_t> &vertices);
 
     const std::vector<point_3d_t> &vertices() const;
-    const face_list_t &faces() const;
+    const face_list_t &get_faces() const;
     triangle_3d_t get_triangle(const face_t &face) const;
     std::vector<triangle_3d_t> get_triangles() const;
     double signed_volume() const;

@@ -427,7 +427,8 @@ size_t delaunay_split_tree_2d_t::add_triangle(
 delaunay_split_tree_2d_t::delaunay_split_tree_2d_t(const triangle_2d_t &root)
     : root(root) {
     this->faces = {{0, 1, 2}};
-    this->edge_to_face = {{{0, 1}, 0}, {{1, 2}, 0}, {{2, 0}, 0}};
+    for (const auto &edge : this->faces[0].get_edges(true))
+        this->edge_to_face[edge] = 0;
     this->children = {{}};
     this->vertices = {root.p1, root.p2, root.p3};
 }
@@ -603,8 +604,8 @@ void sort_bounding_boxes_for_bvh(const std::vector<bounding_box_2d_t> &boxes,
     size_t mid = (hi - lo + 1) / 2;
     std::swap(indices[lo], indices[lo + mid]);
     tree[lo] = {indices[lo],
-                mid == 1 ? -1 : lo + 1,
-                mid == (hi - lo) ? -1 : lo + mid,
+                mid == 1 ? -1 : (int)(lo + 1),
+                mid == (hi - lo) ? -1 : (int)(lo + mid),
                 {{min_x, min_y}, {max_x, max_y}}};
 
     sort_bounding_boxes_for_bvh(boxes, indices, tree, lo + 1, lo + mid);

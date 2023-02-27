@@ -135,6 +135,10 @@ double point_3d_t::distance_to_triangle(const triangle_3d_t &t) const {
     return t.distance_to_point(*this);
 }
 
+double point_3d_t::distance_to_tetrahedron(const tetrahedron_3d_t &t) const {
+    return t.distance_to_point(*this);
+}
+
 bool point_3d_t::is_coplanar(const triangle_3d_t &t) const {
     return std::abs((*this - t.p1).dot((t.p2 - t.p1).cross(t.p3 - t.p1))) <
            get_tolerance();
@@ -219,6 +223,20 @@ line_3d_t line_3d_t::operator<<=(const affine_3d_t &a) {
     p1 <<= a;
     p2 <<= a;
     return *this;
+}
+
+point_3d_t line_3d_t::closest_point(const point_3d_t &p) const {
+    point_3d_t v = p2 - p1;
+    point_3d_t w = p - p1;
+
+    double c1 = w.dot(v);
+    if (c1 <= 0) return p1;
+
+    double c2 = v.dot(v);
+    if (c2 <= c1) return p2;
+
+    double b = c1 / c2;
+    return p1 + b * v;
 }
 
 std::optional<std::tuple<point_3d_t, point_3d_t>> line_3d_t::closest_points(
@@ -350,8 +368,8 @@ double sphere_3d_t::volume() const {
     return 4.0 / 3.0 * M_PI * radius * radius * radius;
 }
 
-bool sphere_3d_t::contains_point(const point_3d_t &p) const {
-    return center.distance_to_point(p) < radius + get_tolerance();
+bool sphere_3d_t::contains_point(const point_3d_t &p, double tolerance) const {
+    return center.distance_to_point(p) < radius + tolerance;
 }
 
 std::string sphere_3d_t::to_string() const {
@@ -496,6 +514,29 @@ tetrahedron_3d_t tetrahedron_3d_t::operator<<=(const affine_3d_t &a) {
     return *this;
 }
 
+bool tetrahedron_3d_t::point_is_inside(const point_3d_t &p) const {
+    auto same_side = [](const point_3d_t &v1, const point_3d_t &v2,
+                        const point_3d_t &v3, const point_3d_t &v4,
+                        const point_3d_t &p) {
+        point_3d_t normal = (v2 - v1).cross(v3 - v1);
+        double dot_v4 = normal.dot(v4 - v1);
+        double dot_p = normal.dot(p - v1);
+        return std::signbit(dot_v4) == std::signbit(dot_p - get_tolerance()) ||
+               std::signbit(dot_v4) == std::signbit(dot_p + get_tolerance());
+    };
+
+    return same_side(p1, p2, p3, p4, p) && same_side(p2, p3, p4, p1, p) &&
+           same_side(p3, p4, p1, p2, p) && same_side(p4, p1, p2, p3, p);
+}
+
+double tetrahedron_3d_t::distance_to_point(const point_3d_t &p) const {
+    if (point_is_inside(p)) return 0.0;
+    return std::min({p.distance_to_triangle({p1, p2, p3}),
+                     p.distance_to_triangle({p1, p2, p4}),
+                     p.distance_to_triangle({p1, p3, p4}),
+                     p.distance_to_triangle({p2, p3, p4})});
+}
+
 double tetrahedron_3d_t::signed_volume() const {
     point_3d_t v1 = p2 - p1;
     point_3d_t v2 = p3 - p1;
@@ -503,20 +544,20 @@ double tetrahedron_3d_t::signed_volume() const {
     return v1.dot(v2.cross(v3)) / 6.0;
 }
 
-std::vector<triangle_3d_t> tetrahedron_3d_t::faces() const {
+std::vector<triangle_3d_t> tetrahedron_3d_t::get_faces() const {
     volume_t v{0, 1, 2, 3};
     std::vector<point_3d_t> points{p1, p2, p3, p4};
     const auto get_face = [&points](const face_t &f) {
         return triangle_3d_t{points[f.a], points[f.b], points[f.c]};
     };
-    face_list_t faces = v.faces();
+    face_list_t faces = v.get_faces();
     return {get_face(faces[0]), get_face(faces[1]), get_face(faces[2]),
             get_face(faces[3])};
 }
 
 double tetrahedron_3d_t::surface_area() const {
     double area = 0.0;
-    for (const triangle_3d_t &t : faces()) {
+    for (const triangle_3d_t &t : get_faces()) {
         area += t.area();
     }
     return area;
@@ -550,6 +591,11 @@ point_3d_t tetrahedron_3d_t::centroid() const {
 }
 
 sphere_3d_t tetrahedron_3d_t::circumsphere() const { return {*this}; }
+
+bool tetrahedron_3d_t::circumsphere_contains(const point_3d_t &p,
+                                             double tolerance) const {
+    return circumsphere().contains_point(p, tolerance);
+}
 
 std::string tetrahedron_3d_t::to_string() const {
     return "Tetrahedron3D(" + p1.to_string() + ", " + p2.to_string() + ", " +
@@ -997,6 +1043,14 @@ line_3d_t operator<<(const line_3d_t &l, const affine_3d_t &a) {
     return a >> l;
 }
 
+sphere_3d_t operator>>(const affine_3d_t &a, const sphere_3d_t &s) {
+    return {a >> s.center, s.radius};
+}
+
+sphere_3d_t operator<<(const sphere_3d_t &s, const affine_3d_t &a) {
+    return a >> s;
+}
+
 triangle_3d_t operator>>(const affine_3d_t &a, const triangle_3d_t &p) {
     return {a >> p.p1, a >> p.p2, a >> p.p3};
 }
@@ -1030,7 +1084,7 @@ trimesh_3d_t operator>>(const affine_3d_t &a, const trimesh_3d_t &t) {
     for (const auto &v : t.vertices()) {
         points.push_back(a >> v);
     }
-    return {points, t.faces()};
+    return {points, t.get_faces()};
 }
 
 trimesh_3d_t operator<<(const trimesh_3d_t &p, const affine_3d_t &a) {
@@ -1124,7 +1178,7 @@ const std::vector<point_3d_t> &trimesh_3d_t::vertices() const {
     return _vertices;
 }
 
-const face_list_t &trimesh_3d_t::faces() const { return _faces; }
+const face_list_t &trimesh_3d_t::get_faces() const { return _faces; }
 
 triangle_3d_t trimesh_3d_t::get_triangle(const face_t &face) const {
     auto &[vi, vj, vk] = face;
@@ -1346,7 +1400,7 @@ trimesh_3d_t tetramesh_3d_t::to_trimesh() const {
 
     // Any face that is paired with it's flipped face is not on the surface.
     for (const auto &volume : _volumes) {
-        for (const auto &face : volume.faces()) {
+        for (const auto &face : volume.get_faces()) {
             const auto flipped_face = face.flip();
             if (faces.find(face) != faces.end())
                 throw std::runtime_error("Degenerate tetramesh; face " +
@@ -1509,6 +1563,8 @@ void add_3d_types_modules(py::module &m) {
              "The distance to a line", "line"_a)
         .def("distance_to_triangle", &point_3d_t::distance_to_triangle,
              "The distance to a triangle", "triangle"_a)
+        .def("distance_to_tetrahedron", &point_3d_t::distance_to_tetrahedron,
+             "The distance to a tetrahedron", "tetrahedron"_a)
         .def("is_coplanar", &point_3d_t::is_coplanar,
              "Checks if the point is coplanar with a triangle", "t"_a)
         .def("project_to_line", &point_3d_t::project_to_line,
@@ -1540,10 +1596,11 @@ void add_3d_types_modules(py::module &m) {
              "The distance to another point", "other"_a)
         .def("distance_to_line", &line_3d_t::distance_to_line,
              "The distance to another line", "other"_a)
+        .def("closest_point", &line_3d_t::closest_point,
+             "The closest point on the line to another point", "other"_a)
         .def("closest_points", &line_3d_t::closest_points,
              "The closest points between two lines; returns None if the "
-             "lines "
-             "are parallel",
+             "lines are parallel",
              "other"_a)
         .def("line_intersection", &line_3d_t::line_intersection,
              "The intersection point between two lines; returns None if the "
@@ -1573,10 +1630,16 @@ void add_3d_types_modules(py::module &m) {
         .def("__ne__", &sphere_3d_t::operator!=,
              "Checks if two spheres are not equal", "other"_a,
              py::is_operator())
+        .def("__lshift__",
+             py::overload_cast<const sphere_3d_t &, const affine_3d_t &>(
+                 operator<<),
+             "Applies a affine transformation to the sphere", "other"_a,
+             py::is_operator())
         .def_property_readonly("volume", &sphere_3d_t::volume,
                                "The sphere's volume")
         .def("contains_point", &sphere_3d_t::contains_point,
-             "Checks if the sphere contains a point", "p"_a);
+             "Checks if the sphere contains a point", "p"_a,
+             "tolerance"_a = 0.0);
 
     // Defines Triangle3D methods.
     triangle_3d
@@ -1642,9 +1705,13 @@ void add_3d_types_modules(py::module &m) {
                  &operator<<),
              "Applies a affine transformation to the tetrahedron",
              "transform"_a, py::is_operator())
+        .def("point_is_inside", &tetrahedron_3d_t::point_is_inside,
+             "Checks if a point is inside the tetrahedron", "p"_a)
+        .def("distance_to_point", &tetrahedron_3d_t::distance_to_point,
+             "The distance to another point", "other"_a)
         .def("signed_volume", &tetrahedron_3d_t::signed_volume,
              "The signed volume of the tetrahedron")
-        .def_property_readonly("faces", &tetrahedron_3d_t::faces,
+        .def_property_readonly("faces", &tetrahedron_3d_t::get_faces,
                                "The faces of the tetrahedron")
         .def("surface_area", &tetrahedron_3d_t::surface_area,
              "The surface area of the tetrahedron")
@@ -1763,6 +1830,11 @@ void add_3d_types_modules(py::module &m) {
              "Applies an affine transformation to a line", "line"_a,
              py::is_operator())
         .def("__rshift__",
+             py::overload_cast<const affine_3d_t &, const sphere_3d_t &>(
+                 &operator>>),
+             "Applies an affine transformation to a sphere", "sphere"_a,
+             py::is_operator())
+        .def("__rshift__",
              py::overload_cast<const affine_3d_t &, const triangle_3d_t &>(
                  &operator>>),
              "Applies an affine transformation to a triangle", "triangle"_a,
@@ -1807,7 +1879,8 @@ void add_3d_types_modules(py::module &m) {
         //      "faces"_a)
         .def_property_readonly("vertices", &trimesh_3d_t::vertices,
                                "The mesh vertices")
-        .def_property_readonly("faces", &trimesh_3d_t::faces, "The mesh faces")
+        .def_property_readonly("faces", &trimesh_3d_t::get_faces,
+                               "The mesh faces")
         .def("get_triangle", &trimesh_3d_t::get_triangle,
              "Gets a mesh triangle from a face", "face"_a)
         .def("get_triangles", &trimesh_3d_t::get_triangles,

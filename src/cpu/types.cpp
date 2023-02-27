@@ -93,7 +93,7 @@ face_t face_t::operator+(size_t offset) const {
 
 std::vector<size_t> face_t::get_vertices() const { return {a, b, c}; }
 
-std::vector<edge_t> face_t::get_edges(bool directed) const {
+edge_list_t face_t::get_edges(bool directed) const {
     return {{a, b, directed}, {b, c, directed}, {c, a, directed}};
 }
 
@@ -106,9 +106,9 @@ bool face_t::has_edge(const edge_t &e) const {
 bool face_t::has_vertex(size_t v) const { return v == a || v == b || v == c; }
 
 size_t face_t::get_other_vertex(const edge_t &e) const {
-    if ((e.a == a && e.b == b) || (e.a == b && e.b == a)) return c;
-    if ((e.a == b && e.b == c) || (e.a == c && e.b == b)) return a;
-    if ((e.a == c && e.b == a) || (e.a == a && e.b == c)) return b;
+    if (a != e.a && a != e.b) return a;
+    if (b != e.a && b != e.b) return b;
+    if (c != e.a && c != e.b) return c;
     throw std::runtime_error("Edge is not part of face");
 }
 
@@ -216,8 +216,34 @@ volume_t volume_t::operator+(size_t offset) const {
     return {a + offset, b + offset, c + offset, d + offset};
 }
 
-face_list_t volume_t::faces() const {
+std::vector<size_t> volume_t::get_vertices() const { return {a, b, c, d}; }
+
+face_list_t volume_t::get_faces() const {
     return {{a, c, b}, {a, d, c}, {a, b, d}, {b, c, d}};
+}
+
+bool volume_t::has_face(const face_t &f) const {
+    for (const auto &other_f : this->get_faces())
+        if (f == other_f) return true;
+    return false;
+}
+
+bool volume_t::has_edge(const edge_t &e) const {
+    for (const auto &f : this->get_faces())
+        if (f.has_edge(e)) return true;
+    return false;
+}
+
+bool volume_t::has_vertex(size_t v) const {
+    return a == v || b == v || c == v || d == v;
+}
+
+size_t volume_t::get_other_vertex(const face_t &f) const {
+    if (a != f.a && a != f.b && a != f.c) return a;
+    if (b != f.a && b != f.b && b != f.c) return b;
+    if (c != f.a && c != f.b && c != f.c) return c;
+    if (d != f.a && d != f.b && d != f.c) return d;
+    throw std::runtime_error("Face is not part of volume");
 }
 
 volume_t volume_t::flip() const { return {d, c, b, a}; }
@@ -329,6 +355,16 @@ void add_types_modules(py::module &m) {
         .def_readwrite("b", &volume_t::b, "Second vertex index.")
         .def_readwrite("c", &volume_t::c, "Third vertex index.")
         .def_readwrite("d", &volume_t::d, "Fourth vertex index.")
+        .def("get_vertices", &volume_t::get_vertices, "Returns the vertices.")
+        .def("get_faces", &volume_t::get_faces, "Returns the faces.")
+        .def("has_face", &volume_t::has_face, "face"_a,
+             "Checks if a face is in the volume.")
+        .def("has_edge", &volume_t::has_edge, "edge"_a,
+             "Checks if an edge is in the volume.")
+        .def("has_vertex", &volume_t::has_vertex, "vertex"_a,
+             "Checks if a vertex is in the volume.")
+        .def("get_other_vertex", &volume_t::get_other_vertex, "face"_a,
+             "Returns the vertex not in the face.")
         .def("flip", &volume_t::flip, "Returns the flipped volume.")
         .def("__eq__", &volume_t::operator==, "other"_a,
              "Checks if two volumes are equal.", py::is_operator())
