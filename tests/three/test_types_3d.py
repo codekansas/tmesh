@@ -290,4 +290,4 @@ def test_bounding_box_tetrahedrons() -> None:
     bbox = BoundingBox3D([Point3D(*(random.random() for _ in range(3))) for _ in range(10)])
     volumes = [tetr.signed_volume() for tetr in bbox.tetrahedrons()]
     assert all(volume > 0 for volume in volumes)
-    assert sum(volumes) == bbox.volume()
+    assert sum(volumes) == pytest.approx(bbox.volume())

@@ -103,6 +103,11 @@ bool face_t::has_edge(const edge_t &e) const {
            (e.a == c && e.b == a) || (e.a == a && e.b == c);
 }
 
+bool face_t::has_directed_edge(const edge_t &e) const {
+    return (e.a == a && e.b == b) || (e.a == b && e.b == c) ||
+           (e.a == c && e.b == a);
+}
+
 bool face_t::has_vertex(size_t v) const { return v == a || v == b || v == c; }
 
 size_t face_t::get_other_vertex(const edge_t &e) const {
@@ -110,6 +115,13 @@ size_t face_t::get_other_vertex(const edge_t &e) const {
     if (b != e.a && b != e.b) return b;
     if (c != e.a && c != e.b) return c;
     throw std::runtime_error("Edge is not part of face");
+}
+
+edge_t face_t::get_other_edge(const size_t &v) const {
+    if (v == a) return {b, c, true};
+    if (v == b) return {c, a, true};
+    if (v == c) return {a, b, true};
+    throw std::runtime_error("Vertex is not part of face");
 }
 
 face_t face_t::flip() const { return {c, b, a}; }
@@ -244,6 +256,16 @@ size_t volume_t::get_other_vertex(const face_t &f) const {
     if (c != f.a && c != f.b && c != f.c) return c;
     if (d != f.a && d != f.b && d != f.c) return d;
     throw std::runtime_error("Face is not part of volume");
+}
+
+std::tuple<face_t, face_t> volume_t::get_faces_with_edge(
+    const edge_t &e) const {
+    std::vector<face_t> faces;
+    for (const auto &f : this->get_faces())
+        if (f.has_edge(e)) faces.push_back(f);
+    if (faces.size() != 2)
+        throw std::runtime_error("Edge is not part of volume");
+    return {faces[0], faces[1]};
 }
 
 volume_t volume_t::flip() const { return {d, c, b, a}; }

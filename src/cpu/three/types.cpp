@@ -1471,11 +1471,8 @@ void add_3d_types_modules(py::module &m) {
     auto bbox_3d = py::class_<bounding_box_3d_t>(m, "BoundingBox3D");
     auto polygon_3d = py::class_<polygon_3d_t>(m, "Polygon3D");
     auto affine_3d = py::class_<affine_3d_t>(m, "Affine3D");
-    auto trimesh_3d =
-        py::class_<trimesh_3d_t, std::shared_ptr<trimesh_3d_t>>(m, "Trimesh3D");
-    auto tetramesh_3d =
-        py::class_<tetramesh_3d_t, std::shared_ptr<tetramesh_3d_t>>(
-            m, "Tetramesh3D");
+    auto trimesh_3d = py::class_<trimesh_3d_t>(m, "Trimesh3D");
+    auto tetramesh_3d = py::class_<tetramesh_3d_t>(m, "Tetramesh3D");
 
     // Defines Point3D methods.
     point_3d

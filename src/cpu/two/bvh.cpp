@@ -755,13 +755,11 @@ std::string bvh_2d_t::to_string() const {
 }
 
 void add_2d_bvh_modules(py::module &m) {
-    auto ttree_2d = py::class_<triangle_split_tree_2d_t,
-                               std::shared_ptr<triangle_split_tree_2d_t>>(
-        m, "TriangleSplitTree2D");
-    auto dtree_2d = py::class_<delaunay_split_tree_2d_t,
-                               std::shared_ptr<delaunay_split_tree_2d_t>>(
-        m, "DelaunaySplitTree2D");
-    auto bvh_2d = py::class_<bvh_2d_t, std::shared_ptr<bvh_2d_t>>(m, "BVH2D");
+    auto ttree_2d =
+        py::class_<triangle_split_tree_2d_t>(m, "TriangleSplitTree2D");
+    auto dtree_2d =
+        py::class_<delaunay_split_tree_2d_t>(m, "DelaunaySplitTree2D");
+    auto bvh_2d = py::class_<bvh_2d_t>(m, "BVH2D");
 
     ttree_2d
         .def(py::init<const face_t &, const std::vector<point_2d_t> &>(),
@@ -794,8 +792,7 @@ void add_2d_bvh_modules(py::module &m) {
 
     dtree_2d
         .def(py::init<const triangle_2d_t &>(), "root"_a,
-             "Constructs a 2D Delaunay split tree from a face and a list "
-             "of vertices.")
+             "Constructs a 2D Delaunay split tree from a triangle.")
         .def("is_leaf", &delaunay_split_tree_2d_t::is_leaf, "i"_a,
              "Returns true if the node is a leaf.")
         .def("get_leaf_triangles",

@@ -1789,8 +1789,7 @@ void add_2d_types_modules(py::module &m) {
     auto bbox_2d = py::class_<bounding_box_2d_t>(m, "BoundingBox2D");
     auto polygon_2d = py::class_<polygon_2d_t>(m, "Polygon2D");
     auto affine_2d = py::class_<affine_2d_t>(m, "Affine2D");
-    auto trimesh_2d =
-        py::class_<trimesh_2d_t, std::shared_ptr<trimesh_2d_t>>(m, "Trimesh2D");
+    auto trimesh_2d = py::class_<trimesh_2d_t>(m, "Trimesh2D");
 
     // Defines Point2D methods.
     point_2d
