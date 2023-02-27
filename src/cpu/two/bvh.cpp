@@ -603,8 +603,8 @@ void sort_bounding_boxes_for_bvh(const std::vector<bounding_box_2d_t> &boxes,
     size_t mid = (hi - lo + 1) / 2;
     std::swap(indices[lo], indices[lo + mid]);
     tree[lo] = {indices[lo],
-                mid == 1 ? -1 : lo + 1,
-                mid == (hi - lo) ? -1 : lo + mid,
+                mid == 1 ? -1 : (int)(lo + 1),
+                mid == (hi - lo) ? -1 : (int)(lo + mid),
                 {{min_x, min_y}, {max_x, max_y}}};
 
     sort_bounding_boxes_for_bvh(boxes, indices, tree, lo + 1, lo + mid);

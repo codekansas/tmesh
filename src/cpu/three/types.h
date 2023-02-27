@@ -81,6 +81,7 @@ struct line_3d_t {
     bool operator!=(const line_3d_t &l) const;
     line_3d_t operator<<=(const affine_3d_t &q);
 
+    point_3d_t closest_point(const point_3d_t &p) const;
     std::optional<std::tuple<point_3d_t, point_3d_t>> closest_points(
         const line_3d_t &p) const;
     std::optional<point_3d_t> line_intersection(const line_3d_t &l) const;

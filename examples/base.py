@@ -50,6 +50,9 @@ def write_html_file(output_path: str | Path) -> None:
         output_path: Path to the output HTML file.
     """
 
+    # Makes the output directory if it doesn't exist.
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
     # Writes a dummy HTML file for now.
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("<html>")

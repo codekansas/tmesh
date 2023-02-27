@@ -46,7 +46,7 @@ struct face_t {
     face_t operator+(size_t offset) const;
 
     std::vector<size_t> get_vertices() const;
-    std::vector<edge_t> get_edges(bool directed = true) const;
+    edge_list_t get_edges(bool directed = true) const;
     bool has_edge(const edge_t &e) const;
     bool has_vertex(size_t v) const;
     size_t get_other_vertex(const edge_t &e) const;
@@ -75,6 +75,12 @@ struct volume_t {
     bool operator<(const volume_t &f) const;
     volume_t operator+(size_t offset) const;
 
+    std::vector<size_t> get_vertices() const;
+    face_list_t get_faces() const;
+    bool has_face(const face_t &f) const;
+    bool has_edge(const edge_t &e) const;
+    bool has_vertex(size_t v) const;
+    face_t get_other_vertex(const face_t &f) const;
     face_list_t faces() const;
     volume_t flip() const;
     std::string to_string() const;

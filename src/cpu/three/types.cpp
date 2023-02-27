@@ -221,6 +221,20 @@ line_3d_t line_3d_t::operator<<=(const affine_3d_t &a) {
     return *this;
 }
 
+point_3d_t line_3d_t::closest_point(const point_3d_t &p) const {
+    point_3d_t v = p2 - p1;
+    point_3d_t w = p - p1;
+
+    double c1 = w.dot(v);
+    if (c1 <= 0) return p1;
+
+    double c2 = v.dot(v);
+    if (c2 <= c1) return p2;
+
+    double b = c1 / c2;
+    return p1 + b * v;
+}
+
 std::optional<std::tuple<point_3d_t, point_3d_t>> line_3d_t::closest_points(
     const line_3d_t &l) const {
     point_3d_t d1 = p2 - p1, d2 = l.p2 - l.p1;
@@ -1540,10 +1554,11 @@ void add_3d_types_modules(py::module &m) {
              "The distance to another point", "other"_a)
         .def("distance_to_line", &line_3d_t::distance_to_line,
              "The distance to another line", "other"_a)
+        .def("closest_point", &line_3d_t::closest_point,
+             "The closest point on the line to another point", "other"_a)
         .def("closest_points", &line_3d_t::closest_points,
              "The closest points between two lines; returns None if the "
-             "lines "
-             "are parallel",
+             "lines are parallel",
              "other"_a)
         .def("line_intersection", &line_3d_t::line_intersection,
              "The intersection point between two lines; returns None if the "

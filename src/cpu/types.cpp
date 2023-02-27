@@ -93,7 +93,7 @@ face_t face_t::operator+(size_t offset) const {
 
 std::vector<size_t> face_t::get_vertices() const { return {a, b, c}; }
 
-std::vector<edge_t> face_t::get_edges(bool directed) const {
+edge_list_t face_t::get_edges(bool directed) const {
     return {{a, b, directed}, {b, c, directed}, {c, a, directed}};
 }
 
@@ -216,8 +216,16 @@ volume_t volume_t::operator+(size_t offset) const {
     return {a + offset, b + offset, c + offset, d + offset};
 }
 
-face_list_t volume_t::faces() const {
+std::vector<size_t> volume_t::get_vertices() const { return {a, b, c, d}; }
+
+face_list_t volume_t::get_faces() const {
     return {{a, c, b}, {a, d, c}, {a, b, d}, {b, c, d}};
+}
+
+bool volume_t::has_face(const face_t &f) const {
+    for (const auto &other_f : this->get_faces())
+        if (f == other_f) return true;
+    return false;
 }
 
 volume_t volume_t::flip() const { return {d, c, b, a}; }
