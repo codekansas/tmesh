@@ -739,32 +739,29 @@ std::vector<face_t> bounding_box_3d_t::triangle_faces() const {
 }
 
 std::vector<volume_t> bounding_box_3d_t::tetrahedron_volumes() const {
-    // TODO: Need to check if this is actually correct...
-    return {{0, 1, 2, 3}, {4, 5, 6, 7}, {0, 1, 5, 4},
-            {1, 2, 6, 5}, {2, 3, 7, 6}, {3, 0, 4, 7}};
+    return {{1, 3, 6, 2}, {1, 6, 3, 5}, {3, 7, 5, 6},
+            {1, 0, 4, 3}, {3, 4, 5, 7}, {3, 0, 5, 4}};
 }
 
 std::vector<point_3d_t> bounding_box_3d_t::corners() const {
-    return {{min.x, min.x, min.x}, {max.x, min.y, min.z}, {max.x, max.y, min.z},
+    return {{min.x, min.y, min.z}, {max.x, min.y, min.z}, {max.x, max.y, min.z},
             {min.x, max.y, min.z}, {min.x, min.y, max.z}, {max.x, min.y, max.z},
             {max.x, max.y, max.z}, {min.x, max.y, max.z}};
 }
 
 std::vector<line_3d_t> bounding_box_3d_t::edges() const {
-    return {
-        {min, {max.x, min.y, min.z}},
-        {min, {min.x, max.y, min.z}},
-        {min, {min.x, min.y, max.z}},
-        {max, {min.x, max.y, max.z}},
-        {max, {max.x, min.y, max.z}},
-        {max, {max.x, max.y, min.z}},
-        {{min.x, max.y, min.z}, {max.x, max.y, min.z}},
-        {{min.x, max.y, min.z}, {min.x, max.y, max.z}},
-        {{max.x, min.y, min.z}, {max.x, max.y, min.z}},
-        {{max.x, min.y, min.z}, {max.x, min.y, max.z}},
-        {{min.x, min.y, max.z}, {max.x, min.y, max.z}},
-        {{min.x, min.y, max.z}, {min.x, max.y, max.z}},
-    };
+    return {{min, {max.x, min.y, min.z}},
+            {min, {min.x, max.y, min.z}},
+            {min, {min.x, min.y, max.z}},
+            {max, {min.x, max.y, max.z}},
+            {max, {max.x, min.y, max.z}},
+            {max, {max.x, max.y, min.z}},
+            {{min.x, max.y, min.z}, {max.x, max.y, min.z}},
+            {{min.x, max.y, min.z}, {min.x, max.y, max.z}},
+            {{max.x, min.y, min.z}, {max.x, max.y, min.z}},
+            {{max.x, min.y, min.z}, {max.x, min.y, max.z}},
+            {{min.x, min.y, max.z}, {max.x, min.y, max.z}},
+            {{min.x, min.y, max.z}, {min.x, max.y, max.z}}};
 }
 
 std::vector<triangle_3d_t> bounding_box_3d_t::triangles() const {
@@ -1764,6 +1761,8 @@ void add_3d_types_modules(py::module &m) {
              "The bounding box's corners")
         .def("triangles", &bounding_box_3d_t::triangles,
              "The bounding box's triangles")
+        .def("tetrahedrons", &bounding_box_3d_t::tetrahedrons,
+             "The bounding box's tetrahedrons")
         .def("center", &bounding_box_3d_t::center, "The bounding box's center")
         .def("volume", &bounding_box_3d_t::volume, "The bounding box's volume");
 

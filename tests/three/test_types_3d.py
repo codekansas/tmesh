@@ -1,10 +1,11 @@
-"""Test CPU types."""
+"""Test 3D types."""
 
 import math
+import random
 
 import pytest
 
-from tmesh import Affine3D, Line3D, Point3D, Tetrahedron3D, Triangle3D
+from tmesh import Affine3D, BoundingBox3D, Line3D, Point3D, Tetrahedron3D, Triangle3D
 
 SQRT_2 = math.sqrt(2)
 SQRT_3 = math.sqrt(3)
@@ -283,3 +284,10 @@ def test_point_inside(lhs: Tetrahedron3D, rhs: Point3D, expected: bool) -> None:
     """
 
     assert lhs.point_is_inside(rhs) == expected
+
+
+def test_bounding_box_tetrahedrons() -> None:
+    bbox = BoundingBox3D([Point3D(*(random.random() for _ in range(3))) for _ in range(10)])
+    volumes = [tetr.signed_volume() for tetr in bbox.tetrahedrons()]
+    assert all(volume > 0 for volume in volumes)
+    assert sum(volumes) == bbox.volume()
