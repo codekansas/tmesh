@@ -515,29 +515,18 @@ tetrahedron_3d_t tetrahedron_3d_t::operator<<=(const affine_3d_t &a) {
 }
 
 bool tetrahedron_3d_t::point_is_inside(const point_3d_t &p) const {
-    point_3d_t v1 = p2 - p1;
-    point_3d_t v2 = p3 - p1;
-    point_3d_t v3 = p4 - p1;
-    point_3d_t v4 = p - p1;
-    double m1 = v1.dot(v1);
-    double m2 = v1.dot(v2);
-    double m3 = v1.dot(v3);
-    double m4 = v1.dot(v4);
-    double m5 = v2.dot(v2);
-    double m6 = v2.dot(v3);
-    double m7 = v2.dot(v4);
-    double m8 = v3.dot(v3);
-    double m9 = v3.dot(v4);
-    double m10 = v4.dot(v4);
-    double det = m1 * m5 * m8 + 2 * m2 * m3 * m4 - m1 * m6 * m6 - m5 * m3 * m3 -
-                 m8 * m2 * m2;
-    double det1 = m4 * m5 * m8 + m2 * m7 * m3 + m1 * m6 * m9 - m1 * m7 * m7 -
-                  m4 * m6 * m6 - m5 * m8 * m9;
-    double det2 = m1 * m7 * m8 + m4 * m2 * m9 + m3 * m5 * m4 - m3 * m7 * m7 -
-                  m4 * m2 * m2 - m1 * m5 * m9;
-    double det3 = m1 * m5 * m9 + m2 * m3 * m7 + m4 * m6 * m8 - m4 * m5 * m8 -
-                  m2 * m6 * m7 - m1 * m3 * m9;
-    return det1 >= 0 && det2 >= 0 && det3 >= 0 && det1 + det2 + det3 <= det;
+    auto same_side = [](const point_3d_t &v1, const point_3d_t &v2,
+                        const point_3d_t &v3, const point_3d_t &v4,
+                        const point_3d_t &p) {
+        point_3d_t normal = (v2 - v1).cross(v3 - v1);
+        double dot_v4 = normal.dot(v4 - v1);
+        double dot_p = normal.dot(p - v1);
+        return std::signbit(dot_v4) == std::signbit(dot_p - get_tolerance()) ||
+               std::signbit(dot_v4) == std::signbit(dot_p + get_tolerance());
+    };
+
+    return same_side(p1, p2, p3, p4, p) && same_side(p2, p3, p4, p1, p) &&
+           same_side(p3, p4, p1, p2, p) && same_side(p4, p1, p2, p3, p);
 }
 
 double tetrahedron_3d_t::distance_to_point(const point_3d_t &p) const {

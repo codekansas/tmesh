@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from tmesh import Affine3D, Line3D, Point3D, Triangle3D
+from tmesh import Affine3D, Line3D, Point3D, Tetrahedron3D, Triangle3D
 
 SQRT_2 = math.sqrt(2)
 SQRT_3 = math.sqrt(3)
@@ -251,3 +251,35 @@ def test_area_triangle_3d(lhs: Triangle3D, expected: float) -> None:
     """
 
     assert lhs.area() == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "lhs,rhs,expected",
+    [
+        (
+            Tetrahedron3D(Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0), Point3D(0, 0, 1)),
+            Point3D(0, 1, 0),
+            True,
+        ),
+        (
+            Tetrahedron3D(Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0), Point3D(0, 0, 1)),
+            Point3D(0.2, 0.2, 0.2),
+            True,
+        ),
+        (
+            Tetrahedron3D(Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0), Point3D(0, 0, 1)),
+            Point3D(0.2, 0.2, 0.8),
+            False,
+        ),
+    ],
+)
+def test_point_inside(lhs: Tetrahedron3D, rhs: Point3D, expected: bool) -> None:
+    """Tests if a point is inside a tetrahedron.
+
+    Args:
+        lhs: The tetrahedron.
+        rhs: The point.
+        expected: The expected result.
+    """
+
+    assert lhs.point_is_inside(rhs) == expected
