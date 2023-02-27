@@ -240,6 +240,8 @@ point_3d_t operator>>(const affine_3d_t &a, const point_3d_t &p);
 point_3d_t operator<<(const point_3d_t &p, const affine_3d_t &a);
 line_3d_t operator>>(const affine_3d_t &a, const line_3d_t &l);
 line_3d_t operator<<(const line_3d_t &l, const affine_3d_t &a);
+sphere_3d_t operator>>(const affine_3d_t &a, const sphere_3d_t &s);
+sphere_3d_t operator<<(const sphere_3d_t &s, const affine_3d_t &a);
 triangle_3d_t operator>>(const affine_3d_t &a, const triangle_3d_t &t);
 triangle_3d_t operator<<(const triangle_3d_t &t, const affine_3d_t &a);
 bounding_box_3d_t operator>>(const affine_3d_t &a, const bounding_box_3d_t &bb);

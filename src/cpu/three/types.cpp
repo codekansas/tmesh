@@ -1043,6 +1043,14 @@ line_3d_t operator<<(const line_3d_t &l, const affine_3d_t &a) {
     return a >> l;
 }
 
+sphere_3d_t operator>>(const affine_3d_t &a, const sphere_3d_t &s) {
+    return {a >> s.center, s.radius};
+}
+
+sphere_3d_t operator<<(const sphere_3d_t &s, const affine_3d_t &a) {
+    return a >> s;
+}
+
 triangle_3d_t operator>>(const affine_3d_t &a, const triangle_3d_t &p) {
     return {a >> p.p1, a >> p.p2, a >> p.p3};
 }
@@ -1622,6 +1630,11 @@ void add_3d_types_modules(py::module &m) {
         .def("__ne__", &sphere_3d_t::operator!=,
              "Checks if two spheres are not equal", "other"_a,
              py::is_operator())
+        .def("__lshift__",
+             py::overload_cast<const sphere_3d_t &, const affine_3d_t &>(
+                 operator<<),
+             "Applies a affine transformation to the sphere", "other"_a,
+             py::is_operator())
         .def_property_readonly("volume", &sphere_3d_t::volume,
                                "The sphere's volume")
         .def("contains_point", &sphere_3d_t::contains_point,
@@ -1815,6 +1828,11 @@ void add_3d_types_modules(py::module &m) {
              py::overload_cast<const affine_3d_t &, const line_3d_t &>(
                  &operator>>),
              "Applies an affine transformation to a line", "line"_a,
+             py::is_operator())
+        .def("__rshift__",
+             py::overload_cast<const affine_3d_t &, const sphere_3d_t &>(
+                 &operator>>),
+             "Applies an affine transformation to a sphere", "sphere"_a,
              py::is_operator())
         .def("__rshift__",
              py::overload_cast<const affine_3d_t &, const triangle_3d_t &>(
