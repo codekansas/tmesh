@@ -32,6 +32,20 @@ def test_simple_triangulate_3d(seed: int) -> None:
     assert sum(volumes) == pytest.approx(0.5)
 
 
+def test_random_triangulation() -> None:
+    """Tests Delaunay triangulation."""
+
+    random.seed(1337)
+    points = [Point3D(*(random.random() for _ in range(3))) for _ in range(100)]
+
+    tetramesh = triangulate_3d(points, shuffle=False)
+
+    assert len(tetramesh.vertices) == 100
+
+    volumes = [t.signed_volume() for t in tetramesh.get_tetrahedra()]
+    assert all(v > 0 for v in volumes)
+
+
 if __name__ == "__main__":
     # python -m tests.three.test_triangulate_3d
-    test_simple_triangulate_3d(1339)
+    test_random_triangulation()

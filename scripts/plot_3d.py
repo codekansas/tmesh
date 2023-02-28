@@ -7,20 +7,9 @@ from utils.plot_3d import plot_things
 
 
 def main() -> None:
-
-    points = [
-        Point3D(0, 0, 0),
-        Point3D(1, 0, 0),
-        Point3D(0, 1, 0),
-        Point3D(0, 0, 1),
-        Point3D(1, 1, 1),
-    ]
-
-    random.seed(1339)
-    random.shuffle(points)
-
-    tetramesh = triangulate_3d(points, shuffle=False)
-
+    random.seed(1337)
+    points = [Point3D(*(random.random() for _ in range(3))) for _ in range(10)]
+    tetramesh = triangulate_3d(points, shuffle=True)
     plot_things([tetramesh])
 
 
