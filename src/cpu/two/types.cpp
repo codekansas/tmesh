@@ -1758,7 +1758,7 @@ trimesh_2d_t triangulate(const std::vector<point_2d_t> &points, bool shuffle) {
     }
 
     // Don't remove super triangle (for debugging).
-    // std::vector<face_t> faces;
+    // face_list_t faces;
     // for (const auto i : tree.get_leaf_triangles()) {
     //     const auto face = tree.get_face(i);
     //     faces.push_back(face);
@@ -1767,7 +1767,7 @@ trimesh_2d_t triangulate(const std::vector<point_2d_t> &points, bool shuffle) {
     // return {old_points, faces, false};
 
     // Remove super triangle.
-    std::vector<face_t> faces;
+    face_list_t faces;
     for (const auto i : tree.get_leaf_triangles()) {
         const auto face = tree.get_face(i);
         if (face.a < 3 || face.b < 3 || face.c < 3) continue;

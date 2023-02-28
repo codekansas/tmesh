@@ -1,4 +1,4 @@
-"""Tests Delaunay triangulation."""
+"""Tests Delaunay triangulation in two dimensions."""
 
 import math
 import random

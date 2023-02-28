@@ -74,9 +74,9 @@ void delaunay_split_tree_3d_t::make_delaunay(const size_t &pi, const face_t &f,
     if (tj_tetr.circumsphere_contains(this->vertices[pi])) {
         const auto &pj = tj_vol.get_other_vertex(f_rev);
 
-        const auto t1 = this->add_volume({pi, f.a, f.b, pj}, {ti, tj}),
-                   t2 = this->add_volume({pi, f.b, f.c, pj}, {ti, tj}),
-                   t3 = this->add_volume({pi, f.c, f.a, pj}, {ti, tj});
+        const auto t1 = this->add_volume({pi, f.a, f.b, pj}, {ti, tj});
+        const auto t2 = this->add_volume({pi, f.b, f.c, pj}, {ti, tj});
+        const auto t3 = this->add_volume({pi, f.c, f.a, pj}, {ti, tj});
 
         if (t1 != 0) this->make_delaunay(pi, {f.a, f.b, pj}, t1);
         if (t2 != 0) this->make_delaunay(pi, {f.b, f.c, pj}, t2);

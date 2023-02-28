@@ -263,10 +263,10 @@ struct trimesh_3d_t {
 
    public:
     trimesh_3d_t(const std::vector<point_3d_t> &vertices,
-                 const face_set_t &faces);
+                 const face_set_t &faces, bool validate = true);
     trimesh_3d_t(const std::vector<point_3d_t> &vertices,
-                 const face_list_t &faces);
-    trimesh_3d_t(const std::vector<point_3d_t> &vertices);
+                 const face_list_t &faces, bool validate = true);
+    trimesh_3d_t(const std::vector<point_3d_t> &vertices, bool validate = true);
 
     const std::vector<point_3d_t> &vertices() const;
     const face_list_t &get_faces() const;
@@ -288,9 +288,9 @@ struct tetramesh_3d_t {
 
    public:
     tetramesh_3d_t(const std::vector<point_3d_t> &vertices,
-                   const volume_set_t &volumes);
+                   const volume_set_t &volumes, bool validate = true);
     tetramesh_3d_t(const std::vector<point_3d_t> &vertices,
-                   const volume_list_t &volumes);
+                   const volume_list_t &volumes, bool validate = true);
 
     const std::vector<point_3d_t> &vertices() const;
     const volume_list_t &volumes() const;
@@ -304,6 +304,9 @@ struct tetramesh_3d_t {
     tetramesh_3d_t operator&(const tetramesh_3d_t &other) const;
     tetramesh_3d_t operator-(const tetramesh_3d_t &other) const;
 };
+
+tetramesh_3d_t triangulate(const std::vector<point_3d_t> &points,
+                           bool shuffle = true);
 
 void add_3d_types_modules(py::module &m);
 

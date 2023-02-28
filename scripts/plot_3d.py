@@ -6,12 +6,17 @@ from utils.plot_3d import plot_things
 
 
 def main() -> None:
-    plot_things(
-        [
-            Tetrahedron3D(Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0), Point3D(0.25, 0.25, 1)),
-            Tetrahedron3D(Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0), Point3D(0.25, 0.25, -1)),
-        ]
-    )
+    points = [
+        Point3D(0, 0, 0),
+        Point3D(1, 0, 0),
+        Point3D(0, 1, 0),
+        Point3D(0, 0, 1),
+        Point3D(1, 1, 1),
+    ]
+
+    tetramesh = triangulate_3d(points, shuffle=False)
+
+    plot_things([tetramesh])
 
 
 if __name__ == "__main__":
