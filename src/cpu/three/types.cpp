@@ -1,10 +1,13 @@
 #include "types.h"
 
+#include <algorithm>
 #include <numeric>
+#include <random>
 #include <sstream>
 
 #include "../options.h"
 #include "boolean.h"
+#include "bvh.h"
 
 using namespace pybind11::literals;
 
@@ -1113,18 +1116,23 @@ tetramesh_3d_t operator<<(const tetramesh_3d_t &p, const affine_3d_t &a) {
  * ------------ */
 
 trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices,
-                           const face_set_t &faces)
+                           const face_set_t &faces, bool validate)
     : _vertices(vertices), _faces(faces.begin(), faces.end()) {
-    validate();
+    if (validate) {
+        this->validate();
+    }
 }
 
 trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices,
-                           const face_list_t &faces)
+                           const face_list_t &faces, bool validate)
     : _vertices(vertices), _faces(faces) {
-    validate();
+    if (validate) {
+        this->validate();
+    }
 }
 
-trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices) {
+trimesh_3d_t::trimesh_3d_t(const std::vector<point_3d_t> &vertices,
+                           bool validate) {
     // TODO: Implement Delaunay triangulation in 3D for creating a trimesh
     // from a set of points without associated faces.
     throw std::runtime_error("Not implemented");
@@ -1304,15 +1312,19 @@ trimesh_3d_t trimesh_3d_t::operator<<(const affine_3d_t &tf) const {
  * ------------ */
 
 tetramesh_3d_t::tetramesh_3d_t(const std::vector<point_3d_t> &vertices,
-                               const volume_set_t &volumes)
+                               const volume_set_t &volumes, bool validate)
     : _vertices(vertices), _volumes(volumes.begin(), volumes.end()) {
-    validate();
+    if (validate) {
+        this->validate();
+    }
 }
 
 tetramesh_3d_t::tetramesh_3d_t(const std::vector<point_3d_t> &vertices,
-                               const volume_list_t &volumes)
+                               const volume_list_t &volumes, bool validate)
     : _vertices(vertices), _volumes(volumes) {
-    validate();
+    if (validate) {
+        this->validate();
+    }
 }
 
 void tetramesh_3d_t::validate() const {
@@ -1458,6 +1470,67 @@ tetramesh_3d_t tetramesh_3d_t::operator&(const tetramesh_3d_t &other) const {
 
 tetramesh_3d_t tetramesh_3d_t::operator-(const tetramesh_3d_t &other) const {
     return mesh_difference(*this, other);
+}
+
+/* ----------------------- *
+ * Additional constructors *
+ * ----------------------- */
+
+tetramesh_3d_t triangulate(const std::vector<point_3d_t> &points,
+                           bool shuffle) {
+    if (points.size() < 3) {
+        throw std::invalid_argument("Not enough points");
+    }
+
+    // Super tetrahedron.
+    bounding_box_3d_t bb{points};
+    double d = std::max(std::max(bb.max.x - bb.min.x, bb.max.y - bb.min.y),
+                        bb.max.z - bb.min.z);
+    point_3d_t p1{bb.min.x - 10 * d, bb.min.y - d, bb.min.z - d};
+    point_3d_t p2{bb.max.x + 10 * d, bb.min.y - d, bb.min.z - d};
+    point_3d_t p3{bb.min.x, bb.max.y + 10 * d, bb.min.z - d};
+    point_3d_t p4{bb.min.x, bb.min.y - d, bb.max.z + 10 * d};
+    tetrahedron_3d_t super_tetra{p1, p2, p3, p4};
+
+    // Generates a random permutation of the point indices.
+    std::vector<size_t> indices(points.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    if (shuffle) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::shuffle(indices.begin(), indices.end(), gen);
+    }
+
+    // Triangulation.
+    delaunay_split_tree_3d_t tree{super_tetra};
+    for (size_t pi : indices) {
+        const auto &p = points[pi];
+        const size_t i = tree.find_leaf_index(p);
+        tree.split_tetrahedron(p, i);
+    }
+
+    // Don't remove super triangle (for debugging).
+    // std::vector<volume_t> volumes;
+    // for (const auto i : tree.get_leaf_indices()) {
+    //     const auto volume = tree.get_volume(i);
+    //     volumes.push_back(volume);
+    // }
+    // const auto &old_points = tree.get_vertices().get_points();
+    // return {old_points, volumes, false};
+
+    // Remove super triangle.
+    volume_list_t volumes;
+    for (const auto i : tree.get_leaf_indices()) {
+        const auto volume = tree.get_volume(i);
+        if (volume.a < 4 || volume.b < 4 || volume.c < 4 || volume.d < 4)
+            continue;
+        volumes.push_back(
+            {volume.a - 4, volume.b - 4, volume.c - 4, volume.d - 4});
+    }
+    const auto &old_points = tree.get_vertices().get_points();
+    std::vector<point_3d_t> new_points(old_points.begin() + 4,
+                                       old_points.end());
+    return {new_points, volumes, false};
 }
 
 void add_3d_types_modules(py::module &m) {
@@ -1870,9 +1943,6 @@ void add_3d_types_modules(py::module &m) {
 
     // Defines Trimesh3D methods.
     trimesh_3d
-        // .def(py::init<vertices3d_t &, face_set_t &>(),
-        //      "Creates a trimesh from vertices and faces", "vertices"_a,
-        //      "faces"_a)
         .def_property_readonly("vertices", &trimesh_3d_t::vertices,
                                "The mesh vertices")
         .def_property_readonly("faces", &trimesh_3d_t::get_faces,
@@ -1893,9 +1963,6 @@ void add_3d_types_modules(py::module &m) {
 
     // Defines Tetramesh3D methods.
     tetramesh_3d
-        // .def(py::init<vertices3d_t &, volume_set_t &>(),
-        //      "Creates a trimesh from vertices and volumes", "vertices"_a,
-        //      "volumes"_a)
         .def_property_readonly("vertices", &tetramesh_3d_t::vertices,
                                "The mesh vertices")
         .def_property_readonly("volumes", &tetramesh_3d_t::volumes,
@@ -1926,6 +1993,10 @@ void add_3d_types_modules(py::module &m) {
         .def("__lshift__", &tetramesh_3d_t::operator<<,
              "Applies affine transformation to 3D mesh", "affine"_a,
              py::is_operator());
+
+    // Defines additional constructors.
+    m.def("triangulate_3d", &triangulate, "Triangulates a set of points",
+          "polygon"_a, "shuffle"_a = true);
 }
 
 }  // namespace trimesh

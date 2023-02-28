@@ -276,7 +276,7 @@ struct trimesh_2d_t {
 };
 
 trimesh_2d_t triangulate(const std::vector<point_2d_t> &points,
-                         bool triangulate = true);
+                         bool shuffle = true);
 
 void add_2d_types_modules(py::module &m);
 
