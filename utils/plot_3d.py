@@ -98,7 +98,13 @@ def plot_triangle(
         axes.text(triangle.p3.x, triangle.p3.y, triangle.p3.z, labels[2])
 
 
-def plot_tetrahedron(axes: plt.Axes, tetrahedron: Tetrahedron3D, i: int, alpha: float = 1.0) -> None:
+def plot_tetrahedron(
+    axes: plt.Axes,
+    tetrahedron: Tetrahedron3D,
+    i: int,
+    labels: tuple[str, str, str, str] | None = None,
+    alpha: float = 1.0,
+) -> None:
     """Plots a tetrahedron.
 
     Args:
@@ -117,6 +123,12 @@ def plot_tetrahedron(axes: plt.Axes, tetrahedron: Tetrahedron3D, i: int, alpha: 
 
     for face in tetrahedron.faces:
         plot_triangle(axes, face, i, alpha=alpha)
+
+    if labels is not None:
+        axes.text(tetrahedron.p1.x, tetrahedron.p1.y, tetrahedron.p1.z, labels[0])
+        axes.text(tetrahedron.p2.x, tetrahedron.p2.y, tetrahedron.p2.z, labels[1])
+        axes.text(tetrahedron.p3.x, tetrahedron.p3.y, tetrahedron.p3.z, labels[2])
+        axes.text(tetrahedron.p4.x, tetrahedron.p4.y, tetrahedron.p4.z, labels[3])
 
 
 def plot_trimesh(axes: plt.Axes, trimesh: Trimesh3D, i: int, alpha: float = 1.0) -> None:
@@ -143,8 +155,10 @@ def plot_tetramesh(axes: plt.Axes, tetramesh: Tetramesh3D, i: int, alpha: float 
         alpha: Alpha value.
     """
 
-    for tetrahedron in tetramesh.get_tetrahedra():
-        plot_tetrahedron(axes, tetrahedron, i, alpha=alpha)
+    for volume in tetramesh.volumes:
+        labels = (str(volume.a), str(volume.b), str(volume.c), str(volume.d))
+        tetrahedron = tetramesh.get_tetrahedron(volume)
+        plot_tetrahedron(axes, tetrahedron, i, labels=labels, alpha=alpha)
 
 
 def plot_things(things: List[Thing], alpha: float = 1.0) -> None:
