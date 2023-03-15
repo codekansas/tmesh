@@ -41,11 +41,9 @@ struct delaunay_split_tree_3d_t {
     point_3d_set_t vertices;
 
     void make_delaunay(const size_t &pi, const face_t &f, const size_t &ti);
-    std::optional<size_t> add_volume(const volume_t &v,
-                                     const std::vector<size_t> &parents);
-    std::vector<std::optional<size_t>> add_volumes(
-        const std::vector<volume_t> &volumes,
-        const std::vector<size_t> &parents);
+    size_t add_volume(const volume_t &v, const std::vector<size_t> &parents);
+    std::vector<size_t> add_volumes(const std::vector<volume_t> &volumes,
+                                    const std::vector<size_t> &parents);
 
    public:
     delaunay_split_tree_3d_t(const tetrahedron_3d_t &root);

@@ -164,7 +164,7 @@ std::optional<point_3d_t> point_3d_t::project_to_triangle(
 }
 
 bool point_3d_t::projects_to_triangle(const triangle_3d_t &t) const {
-    return project_to_triangle(t).has_value();
+    return (bool)project_to_triangle(t);
 }
 
 std::string point_3d_t::to_string() const {
@@ -277,7 +277,7 @@ bool line_3d_t::intersects_triangle(const triangle_3d_t &t) const {
     //      s5 = signed_volume(p1, p2, t.p3, t.p1) > 0;
     // return (s1 != s2) && (s3 == s4 && s4 == s5);
 
-    return triangle_intersection(t).has_value();
+    return (bool)triangle_intersection(t);
 }
 
 std::optional<point_3d_t> line_3d_t::triangle_intersection(

@@ -77,13 +77,13 @@ trimesh_2d_t mesh_op(const trimesh_2d_t &mesh_a, const trimesh_2d_t &mesh_b,
          a_face_id++) {
         auto &a_face = a_split.faces()[a_face_id];
         auto &a_tri = a_split.get_triangle(a_face);
-        a_face_inside[a_face_id] = b_bvh.get_containing_face(a_tri).has_value();
+        a_face_inside[a_face_id] = (bool)b_bvh.get_containing_face(a_tri);
     }
     for (size_t b_face_id = 0; b_face_id < b_split.faces().size();
          b_face_id++) {
         auto &b_face = b_split.faces()[b_face_id];
         auto &b_tri = b_split.get_triangle(b_face);
-        b_face_inside[b_face_id] = a_bvh.get_containing_face(b_tri).has_value();
+        b_face_inside[b_face_id] = (bool)a_bvh.get_containing_face(b_tri);
     }
 
     // Adds all vertices from A to the new mesh. We will clean up unused
