@@ -547,6 +547,8 @@ double tetrahedron_3d_t::signed_volume() const {
     return v1.dot(v2.cross(v3)) / 6.0;
 }
 
+tetrahedron_3d_t tetrahedron_3d_t::flip() const { return {p1, p3, p2, p4}; }
+
 std::vector<triangle_3d_t> tetrahedron_3d_t::get_faces() const {
     volume_t v{0, 1, 2, 3};
     std::vector<point_3d_t> points{p1, p2, p3, p4};
@@ -1778,6 +1780,7 @@ void add_3d_types_modules(py::module &m) {
              "The distance to another point", "other"_a)
         .def("signed_volume", &tetrahedron_3d_t::signed_volume,
              "The signed volume of the tetrahedron")
+        .def("flip", &tetrahedron_3d_t::flip, "Flips the tetrahedron")
         .def_property_readonly("faces", &tetrahedron_3d_t::get_faces,
                                "The faces of the tetrahedron")
         .def("surface_area", &tetrahedron_3d_t::surface_area,

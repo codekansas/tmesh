@@ -148,6 +148,7 @@ struct tetrahedron_3d_t {
     bool point_is_inside(const point_3d_t &p) const;
     double distance_to_point(const point_3d_t &p) const;
     double signed_volume() const;
+    tetrahedron_3d_t flip() const;
     std::vector<triangle_3d_t> get_faces() const;
     double surface_area() const;
     point_3d_t circumcenter() const;

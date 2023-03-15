@@ -78,7 +78,8 @@ void delaunay_split_tree_3d_t::make_delaunay(const size_t &pi, const face_t &f,
     if (tj_tetr.circumsphere_contains(this->vertices[pi])) {
         const auto &pj = tj_vol.get_other_vertex(f_rev);
 
-        std::cout << "f" << std::endl;
+        // Don't replace the tetrahedron
+        std::cout << "a" << std::endl;
         const auto ts = this->add_volumes(
             {{pi, f.a, f.b, pj}, {pi, f.b, f.c, pj}, {pi, f.c, f.a, pj}},
             {ti, tj});
