@@ -110,6 +110,7 @@ struct sphere_3d_t {
 
     double volume() const;
     bool contains_point(const point_3d_t &p, double tolerance = 0.0) const;
+    std::optional<sphere_3d_t> intersection(const sphere_3d_t &s) const;
 
     std::string to_string() const;
 };

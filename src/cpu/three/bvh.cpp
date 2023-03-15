@@ -75,7 +75,7 @@ void delaunay_split_tree_3d_t::make_delaunay(const size_t &pi, const face_t &f,
     const auto &tj_vol = this->volumes[tj];
     const auto &tj_tetr = this->get_tetrahedron_from_volume(tj_vol);
 
-    if (tj_tetr.circumsphere_contains(this->vertices[pi])) {
+    if (tj_tetr.circumsphere_contains(this->vertices[pi], -get_tolerance())) {
         const auto &pj = tj_vol.get_other_vertex(f_rev);
 
         // Don't replace the tetrahedron

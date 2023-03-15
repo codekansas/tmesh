@@ -375,6 +375,29 @@ bool sphere_3d_t::contains_point(const point_3d_t &p, double tolerance) const {
     return center.distance_to_point(p) < radius + tolerance;
 }
 
+std::optional<sphere_3d_t> sphere_3d_t::intersection(
+    const sphere_3d_t &s) const {
+    double d = center.distance_to_point(s.center);
+    if (d + get_tolerance() > radius + s.radius) {
+        return std::nullopt;
+    }
+    if (d - get_tolerance() < std::abs(radius - s.radius)) {
+        return std::nullopt;
+    }
+    if (d < get_tolerance()) {
+        return std::nullopt;
+    }
+
+    double a = (radius * radius - s.radius * s.radius + d * d) / (2.0 * d);
+    double h = std::sqrt(radius * radius - a * a);
+    point_3d_t p = center + a * (s.center - center) / d;
+    point_3d_t n = (s.center - center) / d;
+    point_3d_t p1 = p + h * n;
+    point_3d_t p2 = p - h * n;
+    double r = p1.distance_to_point(p2) / 2.0;
+    return sphere_3d_t((p1 + p2) / 2.0, r);
+}
+
 std::string sphere_3d_t::to_string() const {
     std::ostringstream ss;
     ss << "Sphere3D(" << center.to_string() << ", " << radius << ")";
@@ -1708,7 +1731,11 @@ void add_3d_types_modules(py::module &m) {
                                "The sphere's volume")
         .def("contains_point", &sphere_3d_t::contains_point,
              "Checks if the sphere contains a point", "p"_a,
-             "tolerance"_a = 0.0);
+             "tolerance"_a = 0.0)
+        .def("intersection", &sphere_3d_t::intersection,
+             "The intersection between two spheres; returns None if the "
+             "spheres don't intersect",
+             "other"_a);
 
     // Defines Triangle3D methods.
     triangle_3d

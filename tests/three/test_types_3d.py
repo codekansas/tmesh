@@ -5,7 +5,7 @@ import random
 
 import pytest
 
-from tmesh import Affine3D, BoundingBox3D, Line3D, Point3D, Tetrahedron3D, Triangle3D
+from tmesh import Affine3D, BoundingBox3D, Line3D, Point3D, Sphere3D, Tetrahedron3D, Triangle3D
 
 SQRT_2 = math.sqrt(2)
 SQRT_3 = math.sqrt(3)
@@ -321,3 +321,23 @@ def test_signed_volume_faces_point_outwards(seed: int) -> None:
     for face in tetr.faces:
         normal = face.normal()
         assert normal.dot(centroid - face.p1) > 0
+
+
+@pytest.mark.parametrize(
+    "lhs,rhs,expected",
+    [
+        (Sphere3D(Point3D(0, 0, 0), 1), Sphere3D(Point3D(0, 0, 0), 1), None),
+        (Sphere3D(Point3D(0, 0, 0), 1), Sphere3D(Point3D(0, 0, 0), 2), None),
+        (Sphere3D(Point3D(0, 0, 0), 1), Sphere3D(Point3D(0, 0, 1), 1), Sphere3D(Point3D(0, 0, 0.5), SQRT_3 / 2)),
+    ],
+)
+def test_sphere_intersection(lhs: Sphere3D, rhs: Sphere3D, expected: Sphere3D | None) -> None:
+    """Tests the intersection of two spheres.
+
+    Args:
+        lhs: The first sphere.
+        rhs: The second sphere.
+        expected: The expected intersection.
+    """
+
+    assert lhs.intersection(rhs) == expected

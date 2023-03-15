@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from tmesh import BoundingBox2D, Line2D, Point2D, Polygon2D, Triangle2D
+from tmesh import BoundingBox2D, Circle2D, Line2D, Point2D, Polygon2D, Triangle2D
 
 SQRT_2 = math.sqrt(2)
 SQRT_3 = math.sqrt(3)
@@ -337,3 +337,23 @@ def test_barycentric_coordinates_2d(lhs: Point2D, rhs: Triangle2D) -> None:
     assert bary.w >= 0
     assert bary.u + bary.v + bary.w == pytest.approx(1)
     assert rhs.point_from_barycentric_coords(bary) == lhs
+
+
+@pytest.mark.parametrize(
+    "lhs,rhs,expected",
+    [
+        (Circle2D(Point2D(0, 0), 1), Circle2D(Point2D(0, 0), 1), []),
+        (Circle2D(Point2D(0, 0), 1), Circle2D(Point2D(0, 0), 2), []),
+        (Circle2D(Point2D(0, 0), 1), Circle2D(Point2D(0, 1), 1), [Point2D(SQRT_3 / 2, 0.5), Point2D(-SQRT_3 / 2, 0.5)]),
+    ],
+)
+def test_circle_intersection(lhs: Circle2D, rhs: Circle2D, expected: list[Point2D]) -> None:
+    """Tests circle intersection.
+
+    Args:
+        lhs: The first circle.
+        rhs: The second circle.
+        expected: The expected intersection points.
+    """
+
+    assert sorted(lhs.intersection(rhs)) == sorted(expected)

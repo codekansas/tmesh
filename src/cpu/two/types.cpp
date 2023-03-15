@@ -89,6 +89,8 @@ point_2d_t point_2d_t::rotate(double angle) const {
     return point_2d_t{x * c - y * s, x * s + y * c};
 }
 
+point_2d_t point_2d_t::perpendicular() const { return {-y, x}; }
+
 double point_2d_t::determinant(const point_2d_t &other) const {
     return x * other.y - y * other.x;
 }
@@ -519,6 +521,23 @@ double circle_2d_t::circumference() const { return 2.0 * M_PI * radius; }
 
 bool circle_2d_t::contains_point(const point_2d_t &p, double tolerance) const {
     return center.distance_to_point(p) <= radius + tolerance;
+}
+
+std::vector<point_2d_t> circle_2d_t::intersection(const circle_2d_t &c) const {
+    std::vector<point_2d_t> points;
+    double d = center.distance_to_point(c.center);
+    if (d + get_tolerance() > radius + c.radius) return points;
+    if (d - get_tolerance() < std::abs(radius - c.radius)) return points;
+    double a = (radius * radius - c.radius * c.radius + d * d) / (2.0 * d);
+    double h = std::sqrt(radius * radius - a * a);
+    point_2d_t p2 = center + (c.center - center) * (a / d);
+    point_2d_t p3 = p2 + (c.center - center).perpendicular() * (h / d);
+    points.push_back(p3);
+    if (h > get_tolerance()) {
+        p3 = p2 - (c.center - center).perpendicular() * (h / d);
+        points.push_back(p3);
+    }
+    return points;
 }
 
 std::string circle_2d_t::to_string() const {
@@ -2001,7 +2020,9 @@ void add_2d_types_modules(py::module &m) {
         .def("__ne__", &circle_2d_t::operator!=,
              "Inequality with another circle", "other"_a, py::is_operator())
         .def("contains_point", &circle_2d_t::contains_point,
-             "Does the circle contain a point", "p"_a, "tolerance"_a = 0.0);
+             "Does the circle contain a point", "p"_a, "tolerance"_a = 0.0)
+        .def("intersection", &circle_2d_t::intersection,
+             "The intersection of two circles", "other"_a);
 
     // Defines BoundingBox2D methods.
     bbox_2d
