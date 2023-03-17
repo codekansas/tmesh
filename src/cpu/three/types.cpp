@@ -620,11 +620,6 @@ point_3d_t tetrahedron_3d_t::centroid() const {
 
 sphere_3d_t tetrahedron_3d_t::circumsphere() const { return {*this}; }
 
-bool tetrahedron_3d_t::circumsphere_contains(const point_3d_t &p,
-                                             double tolerance) const {
-    return circumsphere().contains_point(p, tolerance);
-}
-
 std::string tetrahedron_3d_t::to_string() const {
     return "Tetrahedron3D(" + p1.to_string() + ", " + p2.to_string() + ", " +
            p3.to_string() + ", " + p4.to_string() + ")";

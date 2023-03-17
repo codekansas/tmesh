@@ -75,19 +75,9 @@ void delaunay_split_tree_3d_t::make_delaunay(const size_t &pi, const face_t &f,
     const auto &tj_vol = this->volumes[tj];
     const auto &tj_tetr = this->get_tetrahedron_from_volume(tj_vol);
 
-    if (tj_tetr.circumsphere_contains(this->vertices[pi], -get_tolerance())) {
-        const auto &pj = tj_vol.get_other_vertex(f_rev);
-
-        // Don't replace the tetrahedron
-        std::cout << "a" << std::endl;
-        const auto ts = this->add_volumes(
-            {{pi, f.a, f.b, pj}, {pi, f.b, f.c, pj}, {pi, f.c, f.a, pj}},
-            {ti, tj});
-
-        this->make_delaunay(pi, {f.a, f.b, pj}, ts[0]);
-        this->make_delaunay(pi, {f.b, f.c, pj}, ts[1]);
-        this->make_delaunay(pi, {f.c, f.a, pj}, ts[2]);
-    }
+    auto is_delaunay = [](const tetrahedron_3d_t &t, const point_3d_t &p) {
+        return t.circumsphere().contains_point(p);
+    };
 }
 
 size_t delaunay_split_tree_3d_t::add_volume(

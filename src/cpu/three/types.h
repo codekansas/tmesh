@@ -156,8 +156,6 @@ struct tetrahedron_3d_t {
     point_3d_t incenter() const;
     point_3d_t centroid() const;
     sphere_3d_t circumsphere() const;
-    bool circumsphere_contains(const point_3d_t &p,
-                               double tolerance = 0.0) const;
 
     std::string to_string() const;
 };
