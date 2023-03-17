@@ -387,24 +387,29 @@ circle_2d_t triangle_2d_t::circumcircle() const { return {*this}; }
 
 bool triangle_2d_t::circumcircle_contains(const point_2d_t &p,
                                           double tolerance) const {
-    return circumcircle().contains_point(p, tolerance);
+    // Naive version.
+    // return circumcircle().contains_point(p, tolerance);
 
     // Faster version.
-    // double a = p1.x - p.x;
-    // double b = p1.y - p.y;
-    // double c = p2.x - p.x;
-    // double d = p2.y - p.y;
-    // double e = p3.x - p.x;
-    // double f = p3.y - p.y;
+    double x0 = p1.x - p.x;
+    double y0 = p1.y - p.y;
+    double x1 = p2.x - p.x;
+    double y1 = p2.y - p.y;
+    double x2 = p3.x - p.x;
+    double y2 = p3.y - p.y;
 
-    // double A = a * (p1.x + p.x) + b * (p1.y + p.y);
-    // double B = c * (p2.x + p.x) + d * (p2.y + p.y);
-    // double C = e * (p3.x + p.x) + f * (p3.y + p.y);
+    double z0 = x0 * (p1.x + p.x) + y0 * (p1.y + p.y);
+    double z1 = x1 * (p2.x + p.x) + y1 * (p2.y + p.y);
+    double z2 = x2 * (p3.x + p.x) + y2 * (p3.y + p.y);
 
-    // double det = a * (d * f - e * B) - b * (c * f - e * C) + A * (c * B - d *
-    // C);
+    // Determinant of
+    // | x0 y0 z0 |
+    // | x1 y1 z1 |
+    // | x2 y2 z2 |
+    double det = x0 * (y1 * z2 - y2 * z1) - y0 * (x1 * z2 - x2 * z1) +
+                 z0 * (x1 * y2 - x2 * y1);
 
-    // return det > 0.0;
+    return det > -tolerance;
 }
 
 bool triangle_2d_t::contains_point(const point_2d_t &p) const {
