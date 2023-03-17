@@ -34,7 +34,7 @@ jobs:
         uses: actions/configure-pages@v3
       - name: Build static page
         run: |
-          python -c "from examples.base import write_html_file; write_html_file('_site/index.html')"
+          python -c "from examples.base import write_examples; write_examples('_site/')"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
 

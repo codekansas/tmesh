@@ -1,6 +1,8 @@
 """Example of icospheres and UV spheres."""
 
-from tmesh import Affine3D, cuboid, icosphere, save_stl, uv_sphere
+from tmesh import Affine3D, cuboid, icosphere, uv_sphere
+
+from .base import Registry
 
 num_iters = 4
 
@@ -15,4 +17,5 @@ for i in range(num_iters):
     mesh &= uvsphr << Affine3D(trans=(1.5 + 3.0 * i, 0.0, -2.0))
 
 # Save the result.
-save_stl("sphere.stl", mesh)
+# save_stl("sphere.stl", mesh)
+Registry.add_item("sphere", mesh)
