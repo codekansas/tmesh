@@ -12,7 +12,6 @@ Usage:
     python setup.py build_ext --inplace  # Build the extension inplace
 """
 
-import glob
 import os
 import re
 import shutil
@@ -133,8 +132,7 @@ class CMakeBuild(build_ext):
                 build_args += [f"-j{self.parallel}"]
 
         build_temp = Path(self.build_temp) / ext.name
-        if not build_temp.exists():
-            build_temp.mkdir(parents=True)
+        build_temp.mkdir(exist_ok=True, parents=True)
 
         def show_and_run(cmd: List[str]) -> None:
             print(" ".join(cmd))
@@ -175,7 +173,7 @@ setup(
     description="A fast triangular implementation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    ext_modules=[CMakeExtension("tmesh")],
+    ext_modules=[CMakeExtension("tmesh.cpp")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     setup_requires=["cmake", "mypy", "pybind11"],

@@ -102,7 +102,7 @@ clean-py:
 	rm -rf **/*.pyc **/*.pyd **/*.pyo **/__pycache__
 
 clean-package:
-	rm -rf build dist *.so **/*.so **/*.pyi *.egg-info .eggs/ tmesh/
+	rm -rf build dist *.so **/*.so **/*.pyi *.egg-info .eggs/
 
 clean: clean-py clean-package
 .PHONY: clean
