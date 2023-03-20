@@ -89,6 +89,8 @@ point_2d_t point_2d_t::rotate(double angle) const {
     return point_2d_t{x * c - y * s, x * s + y * c};
 }
 
+point_2d_t point_2d_t::perpendicular() const { return {-y, x}; }
+
 double point_2d_t::determinant(const point_2d_t &other) const {
     return x * other.y - y * other.x;
 }
@@ -385,24 +387,29 @@ circle_2d_t triangle_2d_t::circumcircle() const { return {*this}; }
 
 bool triangle_2d_t::circumcircle_contains(const point_2d_t &p,
                                           double tolerance) const {
-    return circumcircle().contains_point(p, tolerance);
+    // Naive version.
+    // return circumcircle().contains_point(p, tolerance);
 
     // Faster version.
-    // double a = p1.x - p.x;
-    // double b = p1.y - p.y;
-    // double c = p2.x - p.x;
-    // double d = p2.y - p.y;
-    // double e = p3.x - p.x;
-    // double f = p3.y - p.y;
+    double x0 = p1.x - p.x;
+    double y0 = p1.y - p.y;
+    double x1 = p2.x - p.x;
+    double y1 = p2.y - p.y;
+    double x2 = p3.x - p.x;
+    double y2 = p3.y - p.y;
 
-    // double A = a * (p1.x + p.x) + b * (p1.y + p.y);
-    // double B = c * (p2.x + p.x) + d * (p2.y + p.y);
-    // double C = e * (p3.x + p.x) + f * (p3.y + p.y);
+    double z0 = x0 * (p1.x + p.x) + y0 * (p1.y + p.y);
+    double z1 = x1 * (p2.x + p.x) + y1 * (p2.y + p.y);
+    double z2 = x2 * (p3.x + p.x) + y2 * (p3.y + p.y);
 
-    // double det = a * (d * f - e * B) - b * (c * f - e * C) + A * (c * B - d *
-    // C);
+    // Determinant of
+    // | x0 y0 z0 |
+    // | x1 y1 z1 |
+    // | x2 y2 z2 |
+    double det = x0 * (y1 * z2 - y2 * z1) - y0 * (x1 * z2 - x2 * z1) +
+                 z0 * (x1 * y2 - x2 * y1);
 
-    // return det > 0.0;
+    return det > -tolerance;
 }
 
 bool triangle_2d_t::contains_point(const point_2d_t &p) const {
@@ -519,6 +526,23 @@ double circle_2d_t::circumference() const { return 2.0 * M_PI * radius; }
 
 bool circle_2d_t::contains_point(const point_2d_t &p, double tolerance) const {
     return center.distance_to_point(p) <= radius + tolerance;
+}
+
+std::vector<point_2d_t> circle_2d_t::intersection(const circle_2d_t &c) const {
+    std::vector<point_2d_t> points;
+    double d = center.distance_to_point(c.center);
+    if (d + get_tolerance() > radius + c.radius) return points;
+    if (d - get_tolerance() < std::abs(radius - c.radius)) return points;
+    double a = (radius * radius - c.radius * c.radius + d * d) / (2.0 * d);
+    double h = std::sqrt(radius * radius - a * a);
+    point_2d_t p2 = center + (c.center - center) * (a / d);
+    point_2d_t p3 = p2 + (c.center - center).perpendicular() * (h / d);
+    points.push_back(p3);
+    if (h > get_tolerance()) {
+        p3 = p2 - (c.center - center).perpendicular() * (h / d);
+        points.push_back(p3);
+    }
+    return points;
 }
 
 std::string circle_2d_t::to_string() const {
@@ -1452,7 +1476,7 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
     };
 
     // Counts number of edges between boundary vertices.
-    edge_map_t edge_counts;
+    edge_map_t<size_t> edge_counts;
     for (const auto &face : component) {
         for (auto &edge : face.get_edges(false)) {
             if (is_boundary(edge.a) && is_boundary(edge.b)) {
@@ -1597,7 +1621,7 @@ trimesh_2d_t trimesh_2d_t::make_delaunay() const {
     face_list_t faces = _faces;
 
     // Map from each edge to the associated face.
-    edge_map_t edge_to_face;
+    edge_map_t<size_t> edge_to_face;
     for (size_t i = 0; i < faces.size(); i++) {
         const auto &face = faces[i];
         for (const auto &edge : face.get_edges(true)) {
@@ -2001,7 +2025,9 @@ void add_2d_types_modules(py::module &m) {
         .def("__ne__", &circle_2d_t::operator!=,
              "Inequality with another circle", "other"_a, py::is_operator())
         .def("contains_point", &circle_2d_t::contains_point,
-             "Does the circle contain a point", "p"_a, "tolerance"_a = 0.0);
+             "Does the circle contain a point", "p"_a, "tolerance"_a = 0.0)
+        .def("intersection", &circle_2d_t::intersection,
+             "The intersection of two circles", "other"_a);
 
     // Defines BoundingBox2D methods.
     bbox_2d

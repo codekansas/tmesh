@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <queue>
 #include <random>
 #include <sstream>
 
@@ -164,7 +165,7 @@ std::optional<point_3d_t> point_3d_t::project_to_triangle(
 }
 
 bool point_3d_t::projects_to_triangle(const triangle_3d_t &t) const {
-    return project_to_triangle(t).has_value();
+    return (bool)project_to_triangle(t);
 }
 
 std::string point_3d_t::to_string() const {
@@ -277,7 +278,7 @@ bool line_3d_t::intersects_triangle(const triangle_3d_t &t) const {
     //      s5 = signed_volume(p1, p2, t.p3, t.p1) > 0;
     // return (s1 != s2) && (s3 == s4 && s4 == s5);
 
-    return triangle_intersection(t).has_value();
+    return (bool)triangle_intersection(t);
 }
 
 std::optional<point_3d_t> line_3d_t::triangle_intersection(
@@ -373,6 +374,29 @@ double sphere_3d_t::volume() const {
 
 bool sphere_3d_t::contains_point(const point_3d_t &p, double tolerance) const {
     return center.distance_to_point(p) < radius + tolerance;
+}
+
+std::optional<sphere_3d_t> sphere_3d_t::intersection(
+    const sphere_3d_t &s) const {
+    double d = center.distance_to_point(s.center);
+    if (d + get_tolerance() > radius + s.radius) {
+        return std::nullopt;
+    }
+    if (d - get_tolerance() < std::abs(radius - s.radius)) {
+        return std::nullopt;
+    }
+    if (d < get_tolerance()) {
+        return std::nullopt;
+    }
+
+    double a = (radius * radius - s.radius * s.radius + d * d) / (2.0 * d);
+    double h = std::sqrt(radius * radius - a * a);
+    point_3d_t p = center + a * (s.center - center) / d;
+    point_3d_t n = (s.center - center) / d;
+    point_3d_t p1 = p + h * n;
+    point_3d_t p2 = p - h * n;
+    double r = p1.distance_to_point(p2) / 2.0;
+    return sphere_3d_t((p1 + p2) / 2.0, r);
 }
 
 std::string sphere_3d_t::to_string() const {
@@ -546,6 +570,8 @@ double tetrahedron_3d_t::signed_volume() const {
     point_3d_t v3 = p4 - p1;
     return v1.dot(v2.cross(v3)) / 6.0;
 }
+
+tetrahedron_3d_t tetrahedron_3d_t::flip() const { return {p1, p3, p2, p4}; }
 
 std::vector<triangle_3d_t> tetrahedron_3d_t::get_faces() const {
     volume_t v{0, 1, 2, 3};
@@ -1510,7 +1536,7 @@ tetramesh_3d_t triangulate(const std::vector<point_3d_t> &points,
     }
 
     // Don't remove super triangle (for debugging).
-    // std::vector<volume_t> volumes;
+    // volume_list_t volumes;
     // for (const auto i : tree.get_leaf_indices()) {
     //     const auto volume = tree.get_volume(i);
     //     volumes.push_back(volume);
@@ -1706,7 +1732,11 @@ void add_3d_types_modules(py::module &m) {
                                "The sphere's volume")
         .def("contains_point", &sphere_3d_t::contains_point,
              "Checks if the sphere contains a point", "p"_a,
-             "tolerance"_a = 0.0);
+             "tolerance"_a = 0.0)
+        .def("intersection", &sphere_3d_t::intersection,
+             "The intersection between two spheres; returns None if the "
+             "spheres don't intersect",
+             "other"_a);
 
     // Defines Triangle3D methods.
     triangle_3d
@@ -1778,6 +1808,7 @@ void add_3d_types_modules(py::module &m) {
              "The distance to another point", "other"_a)
         .def("signed_volume", &tetrahedron_3d_t::signed_volume,
              "The signed volume of the tetrahedron")
+        .def("flip", &tetrahedron_3d_t::flip, "Flips the tetrahedron")
         .def_property_readonly("faces", &tetrahedron_3d_t::get_faces,
                                "The faces of the tetrahedron")
         .def("surface_area", &tetrahedron_3d_t::surface_area,
@@ -1789,7 +1820,10 @@ void add_3d_types_modules(py::module &m) {
         .def("centroid", &tetrahedron_3d_t::centroid,
              "The centroid of the tetrahedron")
         .def("circumsphere", &tetrahedron_3d_t::circumsphere,
-             "The circumsphere of the tetrahedron");
+             "The circumsphere of the tetrahedron")
+        .def("circumsphere_contains", &tetrahedron_3d_t::circumsphere_contains,
+             "Checks if a point is inside the circumsphere", "p"_a,
+             "tolerance"_a = 0.0);
 
     // Defines BoundingBox3D methods.
     bbox_3d

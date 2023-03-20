@@ -64,9 +64,14 @@ develop: initialize
 
 build: initialize
 	[[ -d build ]] || mkdir build
-	cd build && cmake ../src && make -j
-	cp build/tmesh.*.so .
-	stubgen -p tmesh -o .
+	cd build && \
+		PYTHON_EXECUTABLE=$(shell which python) \
+		PYTHON_INCLUDE_DIR=$(shell python -c 'import sysconfig; print(sysconfig.get_paths()["include"])') \
+		PYTHON_LIBRARY=$(shell python -c 'import sysconfig; print(sysconfig.get_paths()["platlib"])') \
+		CMAKE_PREFIX_PATH=$(shell python -c 'import pybind11; print(pybind11.get_cmake_dir())') \
+		cmake ../src && make -j
+	cp build/cpp.*.so tmesh/
+	stubgen -p tmesh.cpp -o .
 .PHONY: build
 
 build-ext-inplace: initialize
@@ -102,7 +107,7 @@ clean-py:
 	rm -rf **/*.pyc **/*.pyd **/*.pyo **/__pycache__
 
 clean-package:
-	rm -rf build dist *.so **/*.so **/*.pyi *.egg-info .eggs/ tmesh/
+	rm -rf build dist **/*.so **/*.pyi *.egg-info .eggs/
 
 clean: clean-py clean-package
 .PHONY: clean
@@ -122,6 +127,10 @@ upload: initialize
 # Examples
 # --------
 
-examples: initialize
-	cd examples && make build
-.PHONY: examples
+build-examples: initialize
+	python -c "from examples.base import write_examples; write_examples('_site/')"
+.PHONY: build-examples
+
+serve-examples: initialize
+	cd _site && python -m http.server
+.PHONY: serve-examples

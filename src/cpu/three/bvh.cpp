@@ -24,7 +24,7 @@ point_3d_set_t::point_3d_set_t(const std::initializer_list<point_3d_t> &points)
 point_3d_t point_3d_set_t::operator[](size_t i) const { return points[i]; }
 
 size_t point_3d_set_t::add_point(const point_3d_t &p) {
-    if (auto it = point_id(p); it.has_value()) return it.value();
+    if (auto it = point_id(p); it) return *it;
     points.push_back(p);
     indices[p] = points.size() - 1;
     return points.size() - 1;
@@ -53,48 +53,105 @@ const std::vector<point_3d_t> &point_3d_set_t::get_points() const {
 
 void delaunay_split_tree_3d_t::make_delaunay(const size_t &pi, const face_t &f,
                                              const size_t &ti) {
-    tetrahedron_3d_t t{vertices[pi], vertices[f.a], vertices[f.b],
-                       vertices[f.c]};
-    if (t.signed_volume() < 0) {
-        throw std::runtime_error(
-            "Tetrahedron to make Delaunay is not oriented correctly.");
-    }
-
     const auto f_rev = f.flip();
 
     // This means that the face is not an interior face.
-    if (this->face_to_volume.find(f_rev) == this->face_to_volume.end()) {
+    if (this->face_to_volume.find(f_rev) == this->face_to_volume.end()) return;
+
+    size_t tj = this->face_to_volume[f_rev];
+    const auto &ti_vol = this->volumes[ti];
+    const auto &tj_vol = this->volumes[tj];
+    const auto &pj = tj_vol.get_other_vertex(f_rev);
+    const auto &ti_tetr = this->get_tetrahedron_from_volume(ti_vol);
+    const auto &tj_tetr = this->get_tetrahedron_from_volume(tj_vol);
+
+    // Checks for 2-3 flips.
+    if (tj_tetr.circumsphere_contains(this->vertices[pi]) ||
+        ti_tetr.circumsphere_contains(this->vertices[pj])) {
+        const auto &pj = tj_vol.get_other_vertex(f_rev);
+
+        const auto ts = this->add_volumes(
+            {{pi, f.a, f.b, pj}, {pi, f.b, f.c, pj}, {pi, f.c, f.a, pj}},
+            {ti, tj});
+
+        this->make_delaunay(pi, {f.a, f.b, pj}, ts[0]);
+        this->make_delaunay(pi, {f.b, f.c, pj}, ts[1]);
+        this->make_delaunay(pi, {f.c, f.a, pj}, ts[2]);
         return;
     }
 
-    size_t tj = this->face_to_volume[f_rev];
-    const auto &tj_vol = this->volumes[tj];
-    const auto &tj_tetr = this->get_tetrahedron_from_volume(tj_vol);
+    /*
+    This isn't working yet.
 
-    if (tj_tetr.circumsphere_contains(this->vertices[pi])) {
-        const auto &pj = tj_vol.get_other_vertex(f_rev);
+    auto get_common_face = [](const volume_t &va,
+                              const volume_t &vb) -> std::optional<face_t> {
+        for (const auto &fa : va.get_faces()) {
+            for (const auto &fb : vb.get_faces()) {
+                if (fa == fb.flip()) return fa;
+            }
+        }
+        return std::nullopt;
+    };
 
-        const auto t1 = this->add_volume({pi, f.a, f.b, pj}, {ti, tj});
-        const auto t2 = this->add_volume({pi, f.b, f.c, pj}, {ti, tj});
-        const auto t3 = this->add_volume({pi, f.c, f.a, pj}, {ti, tj});
+    auto get_common_edge = [](const face_t &fa, const face_t &fb,
+                              const face_t &fc) -> edge_t {
+        for (const auto &ea : fa.get_edges(false)) {
+            for (const auto &eb : fb.get_edges(false)) {
+                if (ea == eb) {
+                    for (const auto &ec : fc.get_edges(false)) {
+                        if (ea == ec) return ea;
+                    }
+                }
+            }
+        }
+        throw std::runtime_error("No common edge found");
+    };
 
-        if (t1 != 0) this->make_delaunay(pi, {f.a, f.b, pj}, t1);
-        if (t2 != 0) this->make_delaunay(pi, {f.b, f.c, pj}, t2);
-        if (t3 != 0) this->make_delaunay(pi, {f.c, f.a, pj}, t3);
+    // Checks for 3-2 flips.
+    const auto pc = this->volumes[ti].get_other_vertex(f);
+    for (const auto &fo : this->volumes[ti].get_faces()) {
+        if (fo == f) continue;
+        const auto &fo_rev = fo.flip();
+        if (this->face_to_volume.find(fo_rev) == this->face_to_volume.end())
+            continue;
+
+        const auto &tk = this->face_to_volume[fo_rev];
+        const auto &tk_vol = this->volumes[tk];
+        const auto &tk_tetr = this->get_tetrahedron_from_volume(tk_vol);
+        const auto fc = get_common_face(tj_vol, tk_vol);
+        if (!fc) continue;
+        const auto ec = get_common_edge(f, fo, *fc);
+
+        // The three points around the edge.
+        const size_t pk_opp = tj_vol.get_other_vertex(*fc),
+                     pj_opp = tk_vol.get_other_vertex((*fc).flip()),
+                     pi_opp = tk_vol.get_other_vertex(fo_rev);
+
+        if (ti_tetr.circumsphere_contains(this->vertices[pi_opp]) ||
+            tj_tetr.circumsphere_contains(this->vertices[pj_opp]) ||
+            tk_tetr.circumsphere_contains(this->vertices[pk_opp])) {
+            const auto ts = this->add_volumes({{ec.a, pi_opp, pj_opp, pk_opp},
+                                               {pi_opp, pj_opp, pk_opp, ec.b}},
+                                              {ti, tj, tk});
+
+            this->make_delaunay(pi, {ec.a, pi_opp, pj_opp}, ts[0]);
+            this->make_delaunay(pi, {pi_opp, pj_opp, pk_opp}, ts[0]);
+            this->make_delaunay(pi, {pi_opp, pj_opp, pk_opp}, ts[1]);
+            this->make_delaunay(pi, {pi_opp, pk_opp, ec.b}, ts[1]);
+            return;
+        }
     }
+    */
 }
 
 size_t delaunay_split_tree_3d_t::add_volume(
     const volume_t &v, const std::vector<size_t> &parents) {
     tetrahedron_3d_t t{this->vertices[v.a], this->vertices[v.b],
                        this->vertices[v.c], this->vertices[v.d]};
-    const auto sv = t.signed_volume();
-    if (sv < 0) {
-        throw std::runtime_error("Tetrahedron is not oriented correctly.");
-    }
-
-    if (sv < get_tolerance()) {
-        return 0;
+    if (t.signed_volume() < 0) {
+        throw std::runtime_error(
+            "Tetrahedron is not oriented correctly (signed volume is "
+            "negative).");
     }
 
     const size_t i = this->volumes.size();
@@ -110,6 +167,47 @@ size_t delaunay_split_tree_3d_t::add_volume(
     }
     this->children.push_back({});
     return i;
+}
+
+std::vector<size_t> delaunay_split_tree_3d_t::add_volumes(
+    const std::vector<volume_t> &volumes, const std::vector<size_t> &parents) {
+    std::vector<size_t> indices;
+
+    // Checks that the total volume of the new volumes matches parents.
+    double child_volume = 0, parent_volume = 0;
+    for (size_t i = 0; i < volumes.size(); i++) {
+        const auto &v = volumes[i];
+        tetrahedron_3d_t t{this->vertices[v.a], this->vertices[v.b],
+                           this->vertices[v.c], this->vertices[v.d]};
+        const auto sv = t.signed_volume();
+        if (sv < 0) {
+            throw std::runtime_error(
+                "Tetrahedron is not oriented correctly (volume is negative).");
+        }
+        child_volume += sv;
+    }
+    for (size_t i = 0; i < parents.size(); i++) {
+        const auto &pv = this->volumes[parents[i]];
+        tetrahedron_3d_t t{this->vertices[pv.a], this->vertices[pv.b],
+                           this->vertices[pv.c], this->vertices[pv.d]};
+        const auto sv = t.signed_volume();
+        if (sv < 0) {
+            throw std::runtime_error("Parent tetrahedron " + std::to_string(i) +
+                                     " volume is negative.");
+        }
+        parent_volume += sv;
+    }
+    if (std::abs(child_volume - parent_volume) > get_tolerance()) {
+        throw std::runtime_error("The total volume of the new volumes " +
+                                 std::to_string(child_volume) +
+                                 " does not match the parent volume " +
+                                 std::to_string(parent_volume));
+    }
+
+    for (size_t i = 0; i < volumes.size(); ++i) {
+        indices.push_back(this->add_volume(volumes[i], parents));
+    }
+    return indices;
 }
 
 delaunay_split_tree_3d_t::delaunay_split_tree_3d_t(const tetrahedron_3d_t &root)
@@ -196,23 +294,18 @@ std::vector<size_t> delaunay_split_tree_3d_t::get_leaf_indices() const {
 
 void delaunay_split_tree_3d_t::split_tetrahedron(const point_3d_t &p, size_t i,
                                                  bool make_delaunay) {
-    if (!this->get_tetrahedron(i).point_is_inside(p)) {
-        std::ostringstream ss;
-        ss << "Point " << p.to_string() << " is not inside tetrahedron "
-           << this->get_tetrahedron(i).to_string() << std::endl;
-        throw std::runtime_error(ss.str());
-    }
+    // if (!this->get_tetrahedron(i).point_is_inside(p)) {
+    //     std::ostringstream ss;
+    //     ss << "Point " << p.to_string() << " is not inside tetrahedron "
+    //        << this->get_tetrahedron(i).to_string();
+    //     throw std::runtime_error(ss.str());
+    // }
 
-    const auto pi = this->vertices.add_point(p);
     const auto [fa, fb, fc, fd] = this->volumes[i];
     const auto &va = this->vertices[fa], &vb = this->vertices[fb],
                &vc = this->vertices[fc], &vd = this->vertices[fd];
-
-    // Checks if the point is at the same location as one of
-    // the vertices.
-    if (p == va || p == vb || p == vc) {
-        return;
-    }
+    if (p == va || p == vb || p == vc) return;
+    const auto pi = this->vertices.add_point(p);
 
     for (const auto face : this->volumes[i].get_faces()) {
         // Checks if the point intersects an edge.
@@ -228,20 +321,19 @@ void delaunay_split_tree_3d_t::split_tetrahedron(const point_3d_t &p, size_t i,
                                  pc = v.get_other_vertex(fa);
 
                     // Splits each tetrahedron.
-                    size_t t1, t2;
                     if (fa.has_directed_edge(edge)) {
-                        t1 = this->add_volume({pi, edge.a, pa, pc}, {vi});
-                        t2 = this->add_volume({pi, edge.b, pc, pa}, {vi});
+                        const auto ts = this->add_volumes(
+                            {{pi, edge.a, pa, pc}, {pi, edge.b, pc, pa}}, {vi});
                         if (make_delaunay) {
-                            this->make_delaunay(pi, {edge.a, pa, pc}, t1);
-                            this->make_delaunay(pi, {edge.b, pc, pa}, t2);
+                            this->make_delaunay(pi, {edge.a, pa, pc}, ts[0]);
+                            this->make_delaunay(pi, {edge.b, pc, pa}, ts[1]);
                         }
                     } else {
-                        t1 = this->add_volume({pi, edge.b, pa, pc}, {vi});
-                        t2 = this->add_volume({pi, edge.a, pc, pa}, {vi});
+                        const auto ts = this->add_volumes(
+                            {{pi, edge.b, pa, pc}, {pi, edge.a, pc, pa}}, {vi});
                         if (make_delaunay) {
-                            this->make_delaunay(pi, {edge.a, pc, pa}, t1);
-                            this->make_delaunay(pi, {edge.b, pa, pc}, t2);
+                            this->make_delaunay(pi, {edge.a, pc, pa}, ts[0]);
+                            this->make_delaunay(pi, {edge.b, pa, pc}, ts[1]);
                         }
                     }
                 }
@@ -260,15 +352,16 @@ void delaunay_split_tree_3d_t::split_tetrahedron(const point_3d_t &p, size_t i,
             const size_t pc = this->volumes[i].get_other_vertex(face);
 
             // Splits each tetrahedron.
-            const auto t1 = this->add_volume({face.a, face.b, pc, pi}, {i});
-            const auto t2 = this->add_volume({face.b, face.c, pc, pi}, {i});
-            const auto t3 = this->add_volume({face.c, face.a, pc, pi}, {i});
+            const auto ts = this->add_volumes({{face.a, face.b, pc, pi},
+                                               {face.b, face.c, pc, pi},
+                                               {face.c, face.a, pc, pi}},
+                                              {i});
 
-            // Makes the new tetraheda Delaunay.
+            // Makes the new tetrahedra Delaunay.
             if (make_delaunay) {
-                this->make_delaunay(pi, {face.a, pc, face.b}, t1);
-                this->make_delaunay(pi, {face.b, pc, face.c}, t2);
-                this->make_delaunay(pi, {face.c, pc, face.a}, t3);
+                this->make_delaunay(pi, {face.a, pc, face.b}, ts[0]);
+                this->make_delaunay(pi, {face.b, pc, face.c}, ts[1]);
+                this->make_delaunay(pi, {face.c, pc, face.a}, ts[2]);
             }
 
             const face_t face_rev = face.flip();
@@ -277,14 +370,15 @@ void delaunay_split_tree_3d_t::split_tetrahedron(const point_3d_t &p, size_t i,
                 const size_t j = this->face_to_volume[face_rev];
                 const size_t pn = this->volumes[j].get_other_vertex(face_rev);
 
-                const auto t4 = this->add_volume({face.a, face.b, pi, pn}, {j});
-                const auto t5 = this->add_volume({face.b, face.c, pi, pn}, {j});
-                const auto t6 = this->add_volume({face.c, face.a, pi, pn}, {j});
+                const auto ts = this->add_volumes({{face.a, face.b, pi, pn},
+                                                   {face.b, face.c, pi, pn},
+                                                   {face.c, face.a, pi, pn}},
+                                                  {j});
 
                 if (make_delaunay) {
-                    this->make_delaunay(pi, {face.a, face.b, pn}, t4);
-                    this->make_delaunay(pi, {face.b, face.c, pn}, t5);
-                    this->make_delaunay(pi, {face.c, face.a, pn}, t6);
+                    this->make_delaunay(pi, {face.a, face.b, pn}, ts[0]);
+                    this->make_delaunay(pi, {face.b, face.c, pn}, ts[1]);
+                    this->make_delaunay(pi, {face.c, face.a, pn}, ts[2]);
                 }
             }
 
@@ -293,17 +387,18 @@ void delaunay_split_tree_3d_t::split_tetrahedron(const point_3d_t &p, size_t i,
     }
 
     // Splits the current tetrahedrons.
-    const auto t1 = this->add_volume({fa, fb, fc, pi}, {i});
-    const auto t2 = this->add_volume({fa, fb, pi, fd}, {i});
-    const auto t3 = this->add_volume({fa, pi, fc, fd}, {i});
-    const auto t4 = this->add_volume({pi, fb, fc, fd}, {i});
+    const auto ts = this->add_volumes({{fa, fb, fc, pi},
+                                       {fa, fb, pi, fd},
+                                       {fa, pi, fc, fd},
+                                       {pi, fb, fc, fd}},
+                                      {i});
 
     // Makes the new tetrahedra Delaunay.
     if (make_delaunay) {
-        this->make_delaunay(pi, {fa, fc, fb}, t1);
-        this->make_delaunay(pi, {fa, fb, fd}, t2);
-        this->make_delaunay(pi, {fa, fd, fc}, t3);
-        this->make_delaunay(pi, {fb, fc, fd}, t4);
+        this->make_delaunay(pi, {fa, fc, fb}, ts[0]);
+        this->make_delaunay(pi, {fa, fb, fd}, ts[1]);
+        this->make_delaunay(pi, {fa, fd, fc}, ts[2]);
+        this->make_delaunay(pi, {fb, fc, fd}, ts[3]);
     }
 }
 

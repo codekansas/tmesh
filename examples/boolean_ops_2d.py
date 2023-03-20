@@ -2,7 +2,9 @@
 
 import math
 
-from tmesh import Affine2D, linear_extrude, regular_polygon_mesh, save_stl_text
+from tmesh import Affine2D, linear_extrude, regular_polygon_mesh
+
+from .base import Registry
 
 scale = Affine2D(scale=1.0)
 rotate = Affine2D(rot=math.pi / 3)
@@ -17,4 +19,5 @@ mesh_difference = (mesh - (mesh << scale @ rotate @ translate)) << Affine2D(tran
 combined_mesh = mesh_union | mesh_intersection | mesh_difference
 final_mesh = linear_extrude(combined_mesh, 1.0)
 
-save_stl_text("boolean_ops_2d.stl", final_mesh)
+# save_stl("final_mesh.stl", final_mesh)
+Registry.add_item("final_mesh", final_mesh)

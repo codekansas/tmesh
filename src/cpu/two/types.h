@@ -37,6 +37,7 @@ struct point_2d_t {
 
     point_2d_t normalize() const;
     point_2d_t rotate(double angle) const;
+    point_2d_t perpendicular() const;
     double determinant(const point_2d_t &other) const;
     double length() const;
     double dot(const point_2d_t &other) const;
@@ -142,6 +143,7 @@ struct circle_2d_t {
     double area() const;
     double circumference() const;
     bool contains_point(const point_2d_t &p, double tolerance = 0.0) const;
+    std::vector<point_2d_t> intersection(const circle_2d_t &c) const;
 
     std::string to_string() const;
 };

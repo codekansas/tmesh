@@ -9,12 +9,21 @@
   },
   "[python]": {
     "editor.defaultFormatter": "ms-python.python",
+    "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.organizeImports": false,
-      "source.fixAll": true
-    },
-    "editor.formatOnSave": false
+      "source.fixAll": true,
+      "source.organizeImports": true
+    }
   },
+
+  /* Python language features (prefer Ruff over Pylint / Flake8) */
+  "python.formatting.provider": "black",
+  "python.linting.enabled": true,
+  "python.linting.lintOnSave": true,
+  "python.linting.mypyEnabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": false,
+  "python.analysis.exclude": ["setup.py"],
 
   "cmake.sourceDirectory": "${workspaceFolder}/src",
   "cmake.buildDirectory": "${workspaceFolder}/build",

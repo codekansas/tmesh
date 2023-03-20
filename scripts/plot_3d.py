@@ -1,8 +1,9 @@
 # ruff: noqa
 """Plots 3D objects using Matplotlib. Useful for debugging."""
 
+import random
 from tmesh import *
-from utils.plot_3d import plot_things
+from tmesh.py.utils.plot_3d import plot_things
 
 
 def main() -> None:
@@ -13,6 +14,9 @@ def main() -> None:
         Point3D(0, 0, 1),
         Point3D(1, 1, 1),
     ]
+
+    random.seed(1338)
+    random.shuffle(points)
 
     tetramesh = triangulate_3d(points, shuffle=False)
 

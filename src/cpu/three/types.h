@@ -110,6 +110,7 @@ struct sphere_3d_t {
 
     double volume() const;
     bool contains_point(const point_3d_t &p, double tolerance = 0.0) const;
+    std::optional<sphere_3d_t> intersection(const sphere_3d_t &s) const;
 
     std::string to_string() const;
 };
@@ -148,6 +149,7 @@ struct tetrahedron_3d_t {
     bool point_is_inside(const point_3d_t &p) const;
     double distance_to_point(const point_3d_t &p) const;
     double signed_volume() const;
+    tetrahedron_3d_t flip() const;
     std::vector<triangle_3d_t> get_faces() const;
     double surface_area() const;
     point_3d_t circumcenter() const;
@@ -155,7 +157,7 @@ struct tetrahedron_3d_t {
     point_3d_t centroid() const;
     sphere_3d_t circumsphere() const;
     bool circumsphere_contains(const point_3d_t &p,
-                               double tolerance = 0.0) const;
+                               double tolerance = 0.0f) const;
 
     std::string to_string() const;
 };

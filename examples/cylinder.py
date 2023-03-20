@@ -1,6 +1,8 @@
 """Example of using subdivide and linear extrude to create weird cylinders."""
 
-from tmesh import Affine3D, linear_extrude, regular_polygon_mesh, save_stl
+from tmesh import linear_extrude, regular_polygon_mesh
+
+from .base import Registry
 
 # Create a circle (approximated as a 20 sided polygon).
 circ = regular_polygon_mesh(radius=1.0, n=20)
@@ -11,11 +13,6 @@ cyl = linear_extrude(
     height_func=lambda _, y: y**3 + 1.5,
 )
 
-# Linear extude the circle with a function.
-cyl2 = linear_extrude(
-    circ.subdivide().subdivide(),
-    height_func=lambda x, _: x**2 + 0.5,
-) << Affine3D(trans=(0, 3, 0))
-
 # Save the result.
-save_stl("cylinder.stl", cyl | cyl2)
+# save_stl("cylinder.stl", cyl)
+Registry.add_item("cylinder", cyl)

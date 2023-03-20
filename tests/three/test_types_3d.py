@@ -5,7 +5,7 @@ import random
 
 import pytest
 
-from tmesh import Affine3D, BoundingBox3D, Line3D, Point3D, Tetrahedron3D, Triangle3D
+from tmesh import Affine3D, BoundingBox3D, Line3D, Point3D, Sphere3D, Tetrahedron3D, Triangle3D
 
 SQRT_2 = math.sqrt(2)
 SQRT_3 = math.sqrt(3)
@@ -291,3 +291,53 @@ def test_bounding_box_tetrahedrons() -> None:
     volumes = [tetr.signed_volume() for tetr in bbox.tetrahedrons()]
     assert all(volume > 0 for volume in volumes)
     assert sum(volumes) == pytest.approx(bbox.volume())
+
+
+@pytest.mark.parametrize("seed", [1337, 1338, 1339])
+def test_signed_volume_faces_point_outwards(seed: int) -> None:
+    """Tests that the signed volume of a tetrahedron is positive if the faces point outwards.
+
+    Args:
+        seed: The random seed.
+    """
+
+    random.seed(seed)
+
+    points = [Point3D(*(random.random() for _ in range(3))) for _ in range(4)]
+    tetr = Tetrahedron3D(*points)
+
+    # Ensures that the tetrahedron's signed volume is positive.
+    if tetr.signed_volume() < 0:
+        tetr = tetr.flip()
+    centroid = tetr.centroid()
+
+    # Checks the normal vector of each face against the centroid.
+    for face in tetr.faces:
+        normal = face.normal()
+        assert normal.dot(centroid - face.p1) < 0
+
+    # Checks that flipping the tetrahedron inside out results in the opposite behavior.
+    tetr = tetr.flip()
+    for face in tetr.faces:
+        normal = face.normal()
+        assert normal.dot(centroid - face.p1) > 0
+
+
+@pytest.mark.parametrize(
+    "lhs,rhs,expected",
+    [
+        (Sphere3D(Point3D(0, 0, 0), 1), Sphere3D(Point3D(0, 0, 0), 1), None),
+        (Sphere3D(Point3D(0, 0, 0), 1), Sphere3D(Point3D(0, 0, 0), 2), None),
+        (Sphere3D(Point3D(0, 0, 0), 1), Sphere3D(Point3D(0, 0, 1), 1), Sphere3D(Point3D(0, 0, 0.5), SQRT_3 / 2)),
+    ],
+)
+def test_sphere_intersection(lhs: Sphere3D, rhs: Sphere3D, expected: Sphere3D | None) -> None:
+    """Tests the intersection of two spheres.
+
+    Args:
+        lhs: The first sphere.
+        rhs: The second sphere.
+        expected: The expected intersection.
+    """
+
+    assert lhs.intersection(rhs) == expected
