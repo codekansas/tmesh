@@ -34,10 +34,10 @@ def test_simple_split_tree_3d(point: Point3D) -> None:
 @pytest.mark.parametrize(
     "points,make_delaunay,num_tetras",
     [
-        ([Point3D(0.5, 0.5, 0), Point3D(0.25, 0.25, 0), Point3D(0.25, 0.25, 0.5)], False, 8),
-        ([Point3D(0.25, 0.25, 0.5)], False, 4),
-        # ([Point3D(0.25, 0.25, 0), Point3D(0.25, 0.3, 0)], True, 6),
-        # ([Point3D(0.25, 0.25, 0.5), Point3D(0.25, 0.3, 0.5)], True, 7),
+        # ([Point3D(0.5, 0.5, 0), Point3D(0.25, 0.25, 0), Point3D(0.25, 0.25, 0.5)], False, 8),
+        # ([Point3D(0.25, 0.25, 0.5)], False, 4),
+        ([Point3D(0.25, 0.25, 0), Point3D(0.25, 0.3, 0)], True, 6),
+        ([Point3D(0.25, 0.25, 0.5), Point3D(0.25, 0.3, 0.5)], True, 7),
         ([Point3D(0.2, 0.2, 0.2), Point3D(0.3, 0.3, 0.1)], True, 8),
     ],
 )

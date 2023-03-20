@@ -66,8 +66,7 @@ void delaunay_split_tree_3d_t::make_delaunay(const size_t &pi, const face_t &f,
     const auto &tj_tetr = this->get_tetrahedron_from_volume(tj_vol);
 
     // Checks for 2-3 flips.
-    if (tj_tetr.circumsphere_contains(this->vertices[pi]) ||
-        ti_tetr.circumsphere_contains(this->vertices[pj])) {
+    if (tj_tetr.circumsphere_contains(this->vertices[pi])) {
         const auto &pj = tj_vol.get_other_vertex(f_rev);
 
         const auto ts = this->add_volumes(
@@ -80,68 +79,64 @@ void delaunay_split_tree_3d_t::make_delaunay(const size_t &pi, const face_t &f,
         return;
     }
 
-    /*
-    This isn't working yet.
+    // auto get_common_face = [](const volume_t &va,
+    //                           const volume_t &vb) -> std::optional<face_t> {
+    //     for (const auto &fa : va.get_faces()) {
+    //         for (const auto &fb : vb.get_faces()) {
+    //             if (fa == fb.flip()) return fa;
+    //         }
+    //     }
+    //     return std::nullopt;
+    // };
 
-    auto get_common_face = [](const volume_t &va,
-                              const volume_t &vb) -> std::optional<face_t> {
-        for (const auto &fa : va.get_faces()) {
-            for (const auto &fb : vb.get_faces()) {
-                if (fa == fb.flip()) return fa;
-            }
-        }
-        return std::nullopt;
-    };
+    // auto get_common_edge = [](const face_t &fa, const face_t &fb,
+    //                           const face_t &fc) -> edge_t {
+    //     for (const auto &ea : fa.get_edges(false)) {
+    //         for (const auto &eb : fb.get_edges(false)) {
+    //             if (ea == eb) {
+    //                 for (const auto &ec : fc.get_edges(false)) {
+    //                     if (ea == ec) return ea;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     throw std::runtime_error("No common edge found");
+    // };
 
-    auto get_common_edge = [](const face_t &fa, const face_t &fb,
-                              const face_t &fc) -> edge_t {
-        for (const auto &ea : fa.get_edges(false)) {
-            for (const auto &eb : fb.get_edges(false)) {
-                if (ea == eb) {
-                    for (const auto &ec : fc.get_edges(false)) {
-                        if (ea == ec) return ea;
-                    }
-                }
-            }
-        }
-        throw std::runtime_error("No common edge found");
-    };
+    // // Checks for 3-2 flips.
+    // const auto pc = this->volumes[ti].get_other_vertex(f);
+    // for (const auto &fo : this->volumes[ti].get_faces()) {
+    //     if (fo == f) continue;
+    //     const auto &fo_rev = fo.flip();
+    //     if (this->face_to_volume.find(fo_rev) == this->face_to_volume.end())
+    //         continue;
 
-    // Checks for 3-2 flips.
-    const auto pc = this->volumes[ti].get_other_vertex(f);
-    for (const auto &fo : this->volumes[ti].get_faces()) {
-        if (fo == f) continue;
-        const auto &fo_rev = fo.flip();
-        if (this->face_to_volume.find(fo_rev) == this->face_to_volume.end())
-            continue;
+    //     const auto &tk = this->face_to_volume[fo_rev];
+    //     const auto &tk_vol = this->volumes[tk];
+    //     const auto &tk_tetr = this->get_tetrahedron_from_volume(tk_vol);
+    //     const auto fc = get_common_face(tj_vol, tk_vol);
+    //     if (!fc) continue;
+    //     const auto ec = get_common_edge(f, fo, *fc);
 
-        const auto &tk = this->face_to_volume[fo_rev];
-        const auto &tk_vol = this->volumes[tk];
-        const auto &tk_tetr = this->get_tetrahedron_from_volume(tk_vol);
-        const auto fc = get_common_face(tj_vol, tk_vol);
-        if (!fc) continue;
-        const auto ec = get_common_edge(f, fo, *fc);
+    //     // The three points around the edge.
+    //     const size_t pk_opp = tj_vol.get_other_vertex(*fc),
+    //                  pj_opp = tk_vol.get_other_vertex((*fc).flip()),
+    //                  pi_opp = tk_vol.get_other_vertex(fo_rev);
 
-        // The three points around the edge.
-        const size_t pk_opp = tj_vol.get_other_vertex(*fc),
-                     pj_opp = tk_vol.get_other_vertex((*fc).flip()),
-                     pi_opp = tk_vol.get_other_vertex(fo_rev);
+    //     if (ti_tetr.circumsphere_contains(this->vertices[pi_opp]) ||
+    //         tj_tetr.circumsphere_contains(this->vertices[pj_opp]) ||
+    //         tk_tetr.circumsphere_contains(this->vertices[pk_opp])) {
+    //         const auto ts = this->add_volumes({{ec.a, pi_opp, pj_opp, pk_opp},
+    //                                            {pi_opp, pj_opp, pk_opp, ec.b}},
+    //                                           {ti, tj, tk});
 
-        if (ti_tetr.circumsphere_contains(this->vertices[pi_opp]) ||
-            tj_tetr.circumsphere_contains(this->vertices[pj_opp]) ||
-            tk_tetr.circumsphere_contains(this->vertices[pk_opp])) {
-            const auto ts = this->add_volumes({{ec.a, pi_opp, pj_opp, pk_opp},
-                                               {pi_opp, pj_opp, pk_opp, ec.b}},
-                                              {ti, tj, tk});
-
-            this->make_delaunay(pi, {ec.a, pi_opp, pj_opp}, ts[0]);
-            this->make_delaunay(pi, {pi_opp, pj_opp, pk_opp}, ts[0]);
-            this->make_delaunay(pi, {pi_opp, pj_opp, pk_opp}, ts[1]);
-            this->make_delaunay(pi, {pi_opp, pk_opp, ec.b}, ts[1]);
-            return;
-        }
-    }
-    */
+    //         this->make_delaunay(pi, {ec.a, pi_opp, pj_opp}, ts[0]);
+    //         this->make_delaunay(pi, {pi_opp, pj_opp, pk_opp}, ts[0]);
+    //         this->make_delaunay(pi, {pi_opp, pj_opp, pk_opp}, ts[1]);
+    //         this->make_delaunay(pi, {pi_opp, pk_opp, ec.b}, ts[1]);
+    //         return;
+    //     }
+    // }
 }
 
 size_t delaunay_split_tree_3d_t::add_volume(
@@ -162,7 +157,7 @@ size_t delaunay_split_tree_3d_t::add_volume(
     for (const auto &face : v.get_faces()) {
         this->face_to_volume[face] = i;
         for (const auto &edge : face.get_edges(false)) {
-            this->edge_to_volumes[edge].insert(i);
+            this->edge_to_faces[edge].insert(face);
         }
     }
     this->children.push_back({});
@@ -214,11 +209,11 @@ delaunay_split_tree_3d_t::delaunay_split_tree_3d_t(const tetrahedron_3d_t &root)
     : root(root) {
     this->volumes = {{0, 1, 2, 3}};
     this->face_to_volume = {};
-    this->edge_to_volumes = {};
+    this->edge_to_faces = {};
     for (const auto &f : this->volumes[0].get_faces()) {
         this->face_to_volume[f] = 0;
         for (const auto &e : f.get_edges(false)) {
-            this->edge_to_volumes[e].insert(0);
+            this->edge_to_faces[e].insert(f);
         }
     }
     this->children = {{}};
@@ -312,7 +307,10 @@ void delaunay_split_tree_3d_t::split_tetrahedron(const point_3d_t &p, size_t i,
         for (const auto edge : face.get_edges(false)) {
             const line_3d_t l{this->vertices[edge.a], this->vertices[edge.b]};
             if (l.closest_point(p) == p) {
-                for (const auto &vi : this->edge_to_volumes[edge]) {
+                for (const auto &face : this->edge_to_faces[edge]) {
+                    const size_t vi = this->face_to_volume[face];
+                    if (this->is_leaf(vi)) continue;
+
                     const auto &v = this->volumes[vi];
                     const auto &[fa, fb] = v.get_faces_with_edge(edge);
 

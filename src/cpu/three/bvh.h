@@ -36,7 +36,7 @@ struct delaunay_split_tree_3d_t {
     std::vector<volume_t> volumes;
     std::vector<std::vector<size_t>> children;
     face_map_t<size_t> face_to_volume;
-    edge_map_t<std::unordered_set<size_t>> edge_to_volumes;
+    edge_map_t<face_set_t> edge_to_faces;
     point_3d_set_t vertices;
 
     void make_delaunay(const size_t &pi, const face_t &f, const size_t &ti);

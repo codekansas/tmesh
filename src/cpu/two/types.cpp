@@ -1778,7 +1778,7 @@ trimesh_2d_t triangulate(const std::vector<point_2d_t> &points, bool shuffle) {
     for (size_t pi : indices) {
         const auto &p = points[pi];
         const size_t i = tree.find_leaf_index(p);
-        tree.split_triangle(p, i);
+        tree.split_triangle(p, i, true);
     }
 
     // Don't remove super triangle (for debugging).

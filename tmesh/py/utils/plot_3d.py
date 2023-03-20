@@ -1,6 +1,6 @@
 """Utility functions for plotting in 3D."""
 
-from typing import List, Union
+from typing import Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -60,7 +60,7 @@ def plot_sphere(axes: plt.Axes, sphere: Sphere3D, i: int, alpha: float = 1.0) ->
         alpha: Alpha value.
     """
 
-    u, v = np.mgrid[0 : 2 * np.pi : 20j, 0 : np.pi : 10j]
+    u, v = np.mgrid[0 : 2 * np.pi : 20j, 0 : np.pi : 10j]  # type: ignore
     x = sphere.center.x + sphere.radius * np.cos(u) * np.sin(v)
     y = sphere.center.y + sphere.radius * np.sin(u) * np.sin(v)
     z = sphere.center.z + sphere.radius * np.cos(v)
@@ -161,7 +161,7 @@ def plot_tetramesh(axes: plt.Axes, tetramesh: Tetramesh3D, i: int, alpha: float 
         plot_tetrahedron(axes, tetrahedron, i, labels=labels, alpha=alpha)
 
 
-def plot_things(things: List[Thing], alpha: float = 1.0) -> None:
+def plot_things(things: Sequence[Thing], alpha: float = 1.0) -> None:
     """Plots the things.
 
     Args:
