@@ -36,14 +36,13 @@ struct delaunay_split_tree_3d_t {
     std::vector<volume_t> volumes;
     std::vector<std::vector<size_t>> children;
     face_map_t<size_t> face_to_volume;
-    edge_map_t<std::unordered_set<size_t>> edge_to_volumes;
+    edge_map_t<face_set_t> edge_to_faces;
     point_3d_set_t vertices;
-
-    void make_delaunay(const size_t &pi, const face_t &f, const size_t &ti);
 
     size_t add_volume(const volume_t &v, const std::vector<size_t> &parents);
     std::vector<size_t> add_volumes(const std::vector<volume_t> &volumes,
                                     const std::vector<size_t> &parents);
+    void make_delaunay(const size_t &pi, const size_t &ti);
 
    public:
     delaunay_split_tree_3d_t(const tetrahedron_3d_t &root);
@@ -55,8 +54,7 @@ struct delaunay_split_tree_3d_t {
     tetrahedron_3d_t get_tetrahedron_from_volume(const volume_t &f) const;
     tetrahedron_3d_t get_tetrahedron(size_t i) const;
     std::vector<size_t> get_leaf_indices() const;
-    void split_tetrahedron(const point_3d_t &p, size_t i,
-                           bool make_delaunay = true);
+    void split_tetrahedron(const point_3d_t &p, size_t i);
     const point_3d_set_t &get_vertices() const;
 };
 

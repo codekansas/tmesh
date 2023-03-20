@@ -15,7 +15,7 @@ def main() -> None:
         Point3D(1, 1, 1),
     ]
 
-    random.seed(1338)
+    random.seed(1337)
     random.shuffle(points)
 
     tetramesh = triangulate_3d(points, shuffle=False)

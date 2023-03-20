@@ -7,7 +7,6 @@ import pytest
 from tmesh import Point3D, triangulate_3d
 
 
-@pytest.mark.skip(reason="Not working")
 @pytest.mark.parametrize("seed", [1337, 1338, 1339, 1340, 1341])
 def test_simple_triangulate_3d(seed: int) -> None:
     """Tests Delaunay triangulation."""
@@ -33,7 +32,6 @@ def test_simple_triangulate_3d(seed: int) -> None:
     assert sum(volumes) == pytest.approx(0.5)
 
 
-@pytest.mark.skip(reason="Not working")
 def test_random_triangulation() -> None:
     """Tests Delaunay triangulation."""
 
@@ -50,4 +48,6 @@ def test_random_triangulation() -> None:
 
 if __name__ == "__main__":
     # python -m tests.three.test_triangulate_3d
-    test_random_triangulation()
+    # test_random_triangulation()
+    for i in [1337, 1338, 1339, 1340, 1341]:
+        test_simple_triangulate_3d(i)

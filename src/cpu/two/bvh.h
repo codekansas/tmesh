@@ -84,7 +84,8 @@ struct delaunay_split_tree_2d_t {
     triangle_2d_t get_triangle(const face_t &f) const;
     triangle_2d_t get_triangle(size_t i) const;
     std::vector<size_t> get_leaf_triangles() const;
-    void split_triangle(const point_2d_t &p, size_t i);
+    void split_triangle(const point_2d_t &p, size_t i,
+                        bool make_delaunay = true);
     const point_2d_set_t &get_vertices() const;
 };
 

@@ -499,7 +499,8 @@ std::vector<size_t> delaunay_split_tree_2d_t::get_leaf_triangles() const {
     return leaf_triangles;
 }
 
-void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
+void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i,
+                                              bool make_delaunay) {
     // if (!this->get_triangle(i).contains_point(p)) {
     //     std::ostringstream ss;
     //     ss << "Point " << p.to_string() << " is not in triangle "
@@ -530,10 +531,12 @@ void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
                        t4 = this->add_triangle({pi, pn, eb}, {j});
 
             // Makes the new triangles Delaunay.
-            this->make_delaunay(pi, {pc, ea, true}, t1);
-            this->make_delaunay(pi, {eb, pc, true}, t2);
-            this->make_delaunay(pi, {ea, pn, true}, t3);
-            this->make_delaunay(pi, {pn, eb, true}, t4);
+            if (make_delaunay) {
+                this->make_delaunay(pi, {pc, ea, true}, t1);
+                this->make_delaunay(pi, {eb, pc, true}, t2);
+                this->make_delaunay(pi, {ea, pn, true}, t3);
+                this->make_delaunay(pi, {pn, eb, true}, t4);
+            }
 
             return;
         }
@@ -545,9 +548,11 @@ void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
     const auto t3 = this->add_triangle({fc, fa, pi}, {i});
 
     // Makes the new triangles Delaunay.
-    this->make_delaunay(pi, {fa, fb, true}, t1);
-    this->make_delaunay(pi, {fb, fc, true}, t2);
-    this->make_delaunay(pi, {fc, fa, true}, t3);
+    if (make_delaunay) {
+        this->make_delaunay(pi, {fa, fb, true}, t1);
+        this->make_delaunay(pi, {fb, fc, true}, t2);
+        this->make_delaunay(pi, {fc, fa, true}, t3);
+    }
 }
 
 const point_2d_set_t &delaunay_split_tree_2d_t::get_vertices() const {
@@ -802,7 +807,8 @@ void add_2d_bvh_modules(py::module &m) {
              &delaunay_split_tree_2d_t::get_leaf_triangles,
              "Returns the triangles associated with a leaf.")
         .def("split_triangle", &delaunay_split_tree_2d_t::split_triangle,
-             "point"_a, "i"_a, "Splits a triangle at a point.");
+             "point"_a, "i"_a, "make_delaunay"_a = false,
+             "Splits a triangle at a point.");
 
     bvh_2d
         .def(py::init<const trimesh_2d_t &>(), "Boundary volume hierarchy",

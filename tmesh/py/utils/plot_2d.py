@@ -1,6 +1,6 @@
 """Utility functions for plotting in 2D."""
 
-from typing import List, Union
+from typing import Sequence, Union
 
 import matplotlib.pyplot as plt
 
@@ -103,7 +103,7 @@ def plot_circle(circle: Circle2D, i: int) -> None:
     plt.ylim(min(cur_min_y, new_min_y), max(cur_max_y, new_max_y))
 
 
-def plot_things(things: List[Thing]) -> None:
+def plot_things(things: Sequence[Thing]) -> None:
     """Plots the things.
 
     Args:
