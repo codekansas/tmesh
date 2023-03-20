@@ -5,9 +5,9 @@ from typing import Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from tmesh import Line3D, Point3D, Sphere3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D
+from tmesh import DelaunaySplitTree3D, Line3D, Point3D, Sphere3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D
 
-Thing = Union[Line3D, Point3D, Sphere3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D]
+Thing = Union[DelaunaySplitTree3D, Line3D, Point3D, Sphere3D, Tetrahedron3D, Tetramesh3D, Triangle3D, Trimesh3D]
 
 
 def get_color(i: int) -> str:
@@ -161,6 +161,27 @@ def plot_tetramesh(axes: plt.Axes, tetramesh: Tetramesh3D, i: int, alpha: float 
         plot_tetrahedron(axes, tetrahedron, i, labels=labels, alpha=alpha)
 
 
+def plot_split_tree(
+    axes: plt.Axes,
+    split_tree: DelaunaySplitTree3D,
+    i: int,
+    alpha: float = 1.0,
+) -> None:
+    """Plots a split tree.
+
+    Args:
+        axes: Axes to plot on.
+        split_tree: Split tree to plot.
+        i: Index of split tree.
+        alpha: Alpha value.
+    """
+
+    for leaf_index in split_tree.get_leaf_indices():
+        v = split_tree.get_volume(leaf_index)
+        labels = (str(v.a), str(v.b), str(v.c), str(v.d))
+        plot_tetrahedron(axes, split_tree.get_tetrahedron(leaf_index), i, labels=labels, alpha=alpha)
+
+
 def plot_things(things: Sequence[Thing], alpha: float = 1.0) -> None:
     """Plots the things.
 
@@ -189,6 +210,8 @@ def plot_things(things: Sequence[Thing], alpha: float = 1.0) -> None:
             plot_tetrahedron(axes, thing, i, alpha=alpha)
         elif isinstance(thing, Tetramesh3D):
             plot_tetramesh(axes, thing, i, alpha=alpha)
+        elif isinstance(thing, DelaunaySplitTree3D):
+            plot_split_tree(axes, thing, i, alpha=alpha)
         else:
             raise ValueError(f"Unknown thing to plot: {thing}")
 
