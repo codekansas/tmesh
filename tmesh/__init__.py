@@ -1,2 +1,2 @@
-from .py import *
 from .cpp import *
+from .py import *
