@@ -22,7 +22,7 @@ from multiprocessing import cpu_count
 from pathlib import Path
 from typing import List
 
-from setuptools import Extension, setup
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 PLAT_TO_CMAKE = {
@@ -178,5 +178,6 @@ setup(
     zip_safe=False,
     setup_requires=["cmake", "mypy", "pybind11"],
     extras_require={"dev": ["pytest", "ruff", "mypy", "darglint"]},
+    packages=find_packages("tmesh"),
     python_requires=">=3.7",
 )

@@ -2,7 +2,7 @@
 """Plots 3D objects using Matplotlib. Useful for debugging."""
 
 from tmesh import *
-from utils.plot_2d import plot_things
+from tmesh.py.utils.plot_2d import plot_things
 
 
 def main() -> None:

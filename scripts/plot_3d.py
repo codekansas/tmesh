@@ -3,7 +3,7 @@
 
 import random
 from tmesh import *
-from utils.plot_3d import plot_things
+from tmesh.py.utils.plot_3d import plot_things
 
 
 def main() -> None:
