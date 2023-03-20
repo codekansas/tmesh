@@ -128,7 +128,7 @@ upload: initialize
 # --------
 
 build-examples: initialize
-	python -c "from examples.base import write_examples; write_examples('_site/')"
+	python -m examples.base
 .PHONY: build-examples
 
 serve-examples: initialize
