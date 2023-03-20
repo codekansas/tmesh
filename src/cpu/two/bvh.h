@@ -68,7 +68,7 @@ struct delaunay_split_tree_2d_t {
     const triangle_2d_t root;
     std::vector<face_t> faces;
     std::vector<std::vector<size_t>> children;
-    edge_map_t edge_to_face;
+    edge_map_t<size_t> edge_to_face;
     point_2d_set_t vertices;
 
     void make_delaunay(const size_t &pi, const edge_t &e, const size_t &ti);

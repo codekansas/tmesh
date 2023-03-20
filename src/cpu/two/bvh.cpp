@@ -400,7 +400,7 @@ void delaunay_split_tree_2d_t::make_delaunay(const size_t &pi, const edge_t &e,
     const auto &tj_face = this->faces[tj];
     const auto &tj_tri = this->get_triangle(tj_face);
 
-    if (tj_tri.circumcircle_contains(this->vertices[pi])) {
+    if (tj_tri.circumcircle_contains(this->vertices[pi], -get_tolerance())) {
         const auto &pj = tj_face.get_other_vertex(e_rev);
         const auto tk = this->add_triangle({pi, pj, e.b}, {ti, tj}),
                    tl = this->add_triangle({pj, pi, e.a}, {ti, tj});
@@ -500,15 +500,18 @@ std::vector<size_t> delaunay_split_tree_2d_t::get_leaf_triangles() const {
 }
 
 void delaunay_split_tree_2d_t::split_triangle(const point_2d_t &p, size_t i) {
-    const auto pi = this->vertices.add_point(p);
+    // if (!this->get_triangle(i).contains_point(p)) {
+    //     std::ostringstream ss;
+    //     ss << "Point " << p.to_string() << " is not in triangle "
+    //        << this->get_triangle(i).to_string();
+    //     throw std::runtime_error(ss.str());
+    // }
+
     const auto [fa, fb, fc] = this->faces[i];
     const auto &va = this->vertices[fa], &vb = this->vertices[fb],
                &vc = this->vertices[fc];
-
-    // Checks if the point is at the same location as one of the vertices.
-    if (p == va || p == vb || p == vc) {
-        return;
-    }
+    if (p == va || p == vb || p == vc) return;
+    const auto pi = this->vertices.add_point(p);
 
     // Checks if the point intersects an edge.
     for (const auto [ea, eb, directed] : this->faces[i].get_edges(true)) {

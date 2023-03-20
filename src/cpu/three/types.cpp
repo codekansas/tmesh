@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <queue>
 #include <random>
 #include <sstream>
 
@@ -619,6 +620,11 @@ point_3d_t tetrahedron_3d_t::centroid() const {
 }
 
 sphere_3d_t tetrahedron_3d_t::circumsphere() const { return {*this}; }
+
+bool tetrahedron_3d_t::circumsphere_contains(const point_3d_t &p,
+                                             double tolerance) const {
+    return circumsphere().contains_point(p, tolerance);
+}
 
 std::string tetrahedron_3d_t::to_string() const {
     return "Tetrahedron3D(" + p1.to_string() + ", " + p2.to_string() + ", " +
@@ -1530,7 +1536,7 @@ tetramesh_3d_t triangulate(const std::vector<point_3d_t> &points,
     }
 
     // Don't remove super triangle (for debugging).
-    // std::vector<volume_t> volumes;
+    // volume_list_t volumes;
     // for (const auto i : tree.get_leaf_indices()) {
     //     const auto volume = tree.get_volume(i);
     //     volumes.push_back(volume);
@@ -1814,7 +1820,10 @@ void add_3d_types_modules(py::module &m) {
         .def("centroid", &tetrahedron_3d_t::centroid,
              "The centroid of the tetrahedron")
         .def("circumsphere", &tetrahedron_3d_t::circumsphere,
-             "The circumsphere of the tetrahedron");
+             "The circumsphere of the tetrahedron")
+        .def("circumsphere_contains", &tetrahedron_3d_t::circumsphere_contains,
+             "Checks if a point is inside the circumsphere", "p"_a,
+             "tolerance"_a = 0.0);
 
     // Defines BoundingBox3D methods.
     bbox_3d

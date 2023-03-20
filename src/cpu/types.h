@@ -32,7 +32,8 @@ struct __edge_hash_fn {
 
 typedef std::vector<edge_t> edge_list_t;
 typedef std::unordered_set<edge_t, __edge_hash_fn> edge_set_t;
-typedef std::unordered_map<edge_t, size_t, __edge_hash_fn> edge_map_t;
+template <typename Tv>
+using edge_map_t = std::unordered_map<edge_t, Tv, __edge_hash_fn>;
 
 struct face_t {
     size_t a, b, c;
@@ -64,7 +65,8 @@ struct __face_hash_fn {
 
 typedef std::vector<face_t> face_list_t;
 typedef std::unordered_set<face_t, __face_hash_fn> face_set_t;
-typedef std::unordered_map<face_t, size_t, __face_hash_fn> face_map_t;
+template <typename Tv>
+using face_map_t = std::unordered_map<face_t, Tv, __face_hash_fn>;
 
 struct volume_t {
     size_t a, b, c, d;
@@ -79,10 +81,12 @@ struct volume_t {
 
     std::vector<size_t> get_vertices() const;
     face_list_t get_faces() const;
+    edge_list_t get_edges(bool directed = true) const;
     bool has_face(const face_t &f) const;
     bool has_edge(const edge_t &e) const;
     bool has_vertex(size_t v) const;
     size_t get_other_vertex(const face_t &f) const;
+    std::tuple<size_t, size_t> get_other_vertices(const edge_t &e) const;
     std::tuple<face_t, face_t> get_faces_with_edge(const edge_t &e) const;
     volume_t flip() const;
     std::string to_string() const;
@@ -96,7 +100,8 @@ struct __volume_hash_fn {
 
 typedef std::vector<volume_t> volume_list_t;
 typedef std::unordered_set<volume_t, __volume_hash_fn> volume_set_t;
-typedef std::unordered_map<volume_t, size_t, __volume_hash_fn> volume_map_t;
+template <typename Tv>
+using volume_map_t = std::unordered_map<volume_t, Tv, __volume_hash_fn>;
 
 struct barycentric_coordinates_t {
     double u, v, w;

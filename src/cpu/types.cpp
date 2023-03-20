@@ -18,7 +18,9 @@ edge_t::edge_t(size_t a, size_t b, bool directed)
     : a(a), b(b), directed(directed) {}
 
 bool edge_t::operator==(const edge_t &e) const {
-    if (e.directed != directed) throw std::runtime_error("Cannot compare");
+    if (e.directed != directed)
+        throw std::runtime_error(
+            "Cannot compare directed and undirected edges");
     if (directed) return a == e.a && b == e.b;
     return (a == e.a && b == e.b) || (a == e.b && b == e.a);
 }
@@ -26,7 +28,9 @@ bool edge_t::operator==(const edge_t &e) const {
 bool edge_t::operator!=(const edge_t &f) const { return !(*this == f); }
 
 bool edge_t::operator<(const edge_t &f) const {
-    if (f.directed != directed) throw std::runtime_error("Cannot compare");
+    if (f.directed != directed)
+        throw std::runtime_error(
+            "Cannot compare directed and undirected edges");
     auto a1 = a, b1 = b, a2 = f.a, b2 = f.b;
     if (!directed) {
         if (a1 > b1) std::swap(a1, b1);
@@ -234,6 +238,11 @@ face_list_t volume_t::get_faces() const {
     return {{a, c, b}, {a, d, c}, {a, b, d}, {b, c, d}};
 }
 
+edge_list_t volume_t::get_edges(bool directed) const {
+    return {
+        {a, b, directed}, {b, c, directed}, {c, d, directed}, {d, a, directed}};
+}
+
 bool volume_t::has_face(const face_t &f) const {
     for (const auto &other_f : this->get_faces())
         if (f == other_f) return true;
@@ -256,6 +265,22 @@ size_t volume_t::get_other_vertex(const face_t &f) const {
     if (c != f.a && c != f.b && c != f.c) return c;
     if (d != f.a && d != f.b && d != f.c) return d;
     throw std::runtime_error("Face is not part of volume");
+}
+
+std::tuple<size_t, size_t> volume_t::get_other_vertices(const edge_t &f) const {
+    if (a != f.a && a != f.b) {
+        if (b != f.a && b != f.b) return {a, b};
+        if (c != f.a && c != f.b) return {a, c};
+        if (d != f.a && d != f.b) return {a, d};
+    }
+    if (b != f.a && b != f.b) {
+        if (c != f.a && c != f.b) return {b, c};
+        if (d != f.a && d != f.b) return {b, d};
+    }
+    if (c != f.a && c != f.b) {
+        if (d != f.a && d != f.b) return {c, d};
+    }
+    throw std::runtime_error("Edge is not part of volume");
 }
 
 std::tuple<face_t, face_t> volume_t::get_faces_with_edge(

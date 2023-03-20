@@ -1476,7 +1476,7 @@ trimesh_2d_t::get_polygon(const face_set_t &component) const {
     };
 
     // Counts number of edges between boundary vertices.
-    edge_map_t edge_counts;
+    edge_map_t<size_t> edge_counts;
     for (const auto &face : component) {
         for (auto &edge : face.get_edges(false)) {
             if (is_boundary(edge.a) && is_boundary(edge.b)) {
@@ -1621,7 +1621,7 @@ trimesh_2d_t trimesh_2d_t::make_delaunay() const {
     face_list_t faces = _faces;
 
     // Map from each edge to the associated face.
-    edge_map_t edge_to_face;
+    edge_map_t<size_t> edge_to_face;
     for (size_t i = 0; i < faces.size(); i++) {
         const auto &face = faces[i];
         for (const auto &edge : face.get_edges(true)) {
