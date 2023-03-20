@@ -178,6 +178,6 @@ setup(
     zip_safe=False,
     setup_requires=["cmake", "mypy", "pybind11"],
     extras_require={"dev": ["pytest", "ruff", "mypy", "darglint"]},
-    packages=find_packages("tmesh"),
+    packages=find_packages(include=["tmesh", "tmesh.*"]),
     python_requires=">=3.7",
 )
