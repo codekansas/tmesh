@@ -1,2 +1,2 @@
 recursive-include src/ *.txt *.cpp *.h *.cu *.cuh MANIFEST.in
-recursive-include tmesh/ *.py *.pyi
+recursive-include tmesh/ *.py *.pyi *.so
