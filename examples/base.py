@@ -28,7 +28,7 @@ def write_item(name: str, item: ItemType, root: Path) -> Path:
 
 class __Registry:
     def __init__(self) -> None:
-        self.registry: dict[str, dict[str | None, ItemType]] = {}
+        self.registry: dict[str | None, dict[str, ItemType]] = {}
         self.key: str | None = None
 
     def set_key(self, key: str) -> None:
@@ -94,7 +94,7 @@ def write_examples(output_path: str | Path) -> None:
 
     # Writes each item in the registry.
     for key, items in Registry.registry.items():
-        key_path = output_path / key / "index.html"
+        key_path = output_path / "index.html" if key is None else output_path / key / "index.html"
         key_path.parent.mkdir(exist_ok=True)
         with open(key_path, "w", encoding="utf-8") as f:
             f.write("<html>")
@@ -122,10 +122,18 @@ def write_examples(output_path: str | Path) -> None:
         f.write("<body>")
         f.write("<h1>Examples</h1>")
         f.write("<ul>")
-        for key in sorted(Registry.registry.keys()):
+        for key in sorted([k for k in Registry.registry.keys() if k is not None]):
             f.write("<li>")
             f.write(f"<a href='/{key}'>{key}</a>")
             f.write("</li>")
         f.write("</ul>")
         f.write("</body>")
         f.write("</html>")
+
+
+def main() -> None:
+    write_examples("_site/")
+
+
+if __name__ == "__main__":
+    main()
