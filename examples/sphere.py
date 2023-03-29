@@ -1,5 +1,3 @@
-"""Example of icospheres and UV spheres."""
-
 from tmesh import Affine3D, cuboid, icosphere, uv_sphere
 
 from .base import Registry
